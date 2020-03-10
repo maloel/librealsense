@@ -168,8 +168,6 @@ namespace librealsense
             : bool_option( false )
             , _hwm( hwm )
         {
-            // bool_option initializes with def=true, which is what we want
-//            assert( is_true() );
         }
 
         void autocal_option::set( float value )
@@ -200,12 +198,24 @@ namespace librealsense
             }
         }
 
-        void auto_calibration::set_special_frame( rs2::frame const& f )
+        void auto_calibration::set_special_frame( rs2::frameset const& fs )
         {
             if( _is_processing )
                 return;
+            auto irf = fs.get_infrared_frame();
+            if( ! irf )
+            {
+                LOG_DEBUG( "Ignoring special frame: no IR frame found!" );
+                return;
+            }
+            auto df = fs.get_depth_frame();
+            if( !df )
+            {
+                LOG_DEBUG( "Ignoring special frame: no depth frame found!" );
+                return;
+            }
 
-            _sf = f;
+            _sf = fs;
             if( check_color_depth_sync() )
                 start();
         }
@@ -271,18 +281,24 @@ namespace librealsense
                 if( !is_enabled->is_true() )
                     return f;
 
-            // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
-            if( f.is< rs2::frameset >() )
+            auto fs = f.as< rs2::frameset >();
+            if( fs )
+            {
+                auto df = fs.get_depth_frame();
+                if( is_special_frame( df ))
+                {
+                    LOG_INFO( "Auto calibration SF received" );
+                    _autocal->set_special_frame( f );
+                }
+                // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
                 return rs2::frame{};
+            }
 
-            if( !is_special_frame( f.as< rs2::depth_frame >() ) )
-                return f;
-
-            LOG_INFO( "Auto calibration SF received" );
-            _autocal->set_special_frame( f );
-
-            // We don't want the user getting this frame!
-            return rs2::frame{};
+            if( is_special_frame( f.as< rs2::depth_frame >() ) )
+                // We don't want the user getting this frame!
+                return rs2::frame{};
+            
+            return f;
         }
 
         bool autocal_depth_processing_block::should_process( const rs2::frame & frame )

@@ -365,7 +365,7 @@ namespace librealsense
         {
             std::weak_ptr< autocal_option > _enabler_opt;
 
-            rs2::frame _sf;
+            rs2::frameset _sf;
             rs2::frame _cf, _pcf;  // Keep the last and previous frame!
 
             std::atomic_bool _is_processing;
@@ -377,7 +377,7 @@ namespace librealsense
 
             std::shared_ptr< autocal_option > get_enabler_opt() const { return _enabler_opt.lock(); }
 
-            void set_special_frame( rs2::frame const& );
+            void set_special_frame( rs2::frameset const& );
             void set_color_frame( rs2::frame const& );
 
         private:
