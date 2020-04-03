@@ -158,7 +158,56 @@ namespace librealsense
 
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
+
+        if( _autocal )
+        {
+            // Have the auto-calibration mechanism notify us when calibration has finished
+            _autocal->register_callback(
+                [this]( rs2_calibration_status status )
+                {
+                    if( status == RS2_CALIBRATION_SUCCESSFUL )
+                    {
+                        update_intrinsics( to_profile( new_calib.to ), new_calib.intrinsics );
+                        for( auto&& cb : _calibration_change_callbacks )
+                            (*cb)( status );
+                    }
+                } );
+        }
     }
+
+    void l500_color::update_intrinsics( stream_profile const& profile, rs2_intrinsics const& intr )
+    {
+        if( intr.width != profile.width  ||  intr.height != profile.height )
+            throw std::runtime_error( to_string() << "auto calibration intrinsics do not match profile!" );
+
+        using namespace ivcam2;
+
+        auto intrinsic = *const_cast<intrinsic_rgb *>( check_calib< intrinsic_rgb >( *_color_intrinsics_table_raw ));
+        auto num_of_res = intrinsic.resolution.num_of_resolutions;
+        for( auto i = 0; i < num_of_res; i++ )
+        {
+            auto & model = intrinsic.resolution.intrinsic_resolution[i];
+            if( model.height != profile.height || model.width != profile.width )
+                continue;
+
+            model.ipm.focal_length.x = intr.fx;
+            model.ipm.focal_length.y = intr.fy;
+            model.ipm.principal_point.x = intr.ppx;
+            model.ipm.principal_point.y = intr.ppy;
+
+            bool const is_inverse = (intr.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+
+            model.distort.radial_k1     = is_inverse ? intr.coeffs[0] : 0;
+            model.distort.radial_k2     = is_inverse ? intr.coeffs[1] : 0;
+            model.distort.tangential_p1 = is_inverse ? intr.coeffs[2] : 0;
+            model.distort.tangential_p2 = is_inverse ? intr.coeffs[3] : 0;
+            model.distort.radial_k3     = is_inverse ? intr.coeffs[4] : 0;
+
+            return intrinsics;
+        }
+        throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist" );
+    }
+
 
     std::vector<tagged_profile> l500_color::get_profiles_tags() const
     {

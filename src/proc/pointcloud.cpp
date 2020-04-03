@@ -115,29 +115,27 @@ namespace librealsense
             if (!_registered_auto_calib_cb)
             {
                 auto sensor = ((frame_interface*)other.get())->get_sensor();
-
                 if (sensor)
                 {
                     device_interface* dev = nullptr;
                     try
                     {
-                        dev = sensor->get_device().shared_from_this().get();
-
-                        if (dev)
-                        {
-                            auto dev_ = dynamic_cast<device*>(dev);
-                            if (dev_)
-                                dev_->register_update_calic_callback([&](calibration new_calib)
-                            {
-                                if (to_profile(new_calib.to) == to_profile(_other_stream.get_profile().get()->profile) &&
-                                    to_profile(new_calib.from) == to_profile(_depth_stream.get_profile().get()->profile))
+                        auto const expected_wh = to_profile( _other_stream.get_profile().get()->profile ).width_height();
+                        sensor->register_calibration_change_callback(
+                            std::make_shared< rs2_calibration_change_callback >(
+                                [&]( rs2_calibration_status status )
                                 {
-                                    _extrinsics = new_calib.extrinsics;
-                                    _other_intrinsics = new_calib.intrinsics;
-                                }
-
-                            });
-                        }
+                                    if( status == RS2_CALIBRATION_SUCCESSFUL )
+                                    {
+                                        auto stream_profile = _other_stream.get_profile();
+                                        if( auto video = stream_profile.as<rs2::video_stream_profile>() )
+                                        {
+                                            _other_intrinsics = video.get_intrinsics();
+                                            _occlusion_filter->set_texel_intrinsics( _other_intrinsics.value() );
+                                        }
+                                        set_extrinsics();
+                                    }
+                                } ));
                         _registered_auto_calib_cb = true;
 
                     }

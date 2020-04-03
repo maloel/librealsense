@@ -381,14 +381,23 @@ namespace librealsense
             void set_special_frame( rs2::frameset const& );
             void set_color_frame( rs2::frame const& );
 
-            void register_callback(update_calic_callback cb);
+            using callback = std::function< void( rs2_calibration_status ) >;
+            void register_callback( callback cb )
+            {
+                _callbacks.push_back( cb );
+            }
         private:
+            std::vector< callback > _callbacks;
+
+            void call_back( rs2_calibration_status status ) const
+            {
+                for( auto cb : _callbacks )
+                    cb( status );
+            }
+
             bool check_color_depth_sync();
             void start();
             void reset();
-            auto_cal_algo _auto_cal_algo;
-
-            std::vector< update_calic_callback> _callbacks;
         };
 
         /* Depth frame processing for Auto Calibration: detect special frames
