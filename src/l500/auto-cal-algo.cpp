@@ -36,7 +36,7 @@ namespace librealsense
         auto z_data = preproccess_z(depth, ir_data, vf.get_intrinsics(), depth_units);
 
         optimaization_params params_orig;
-        params_orig.curr_calib = intrinsics_extrinsics_to_calib(old_calib.intrinsics, old_calib.extrinsics);
+        params_orig.curr_calib = intrinsics_extrinsics_to_calib(_intr, _extr);
 
         auto optimized = false;
 

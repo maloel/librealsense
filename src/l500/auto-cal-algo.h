@@ -165,6 +165,11 @@ namespace librealsense
             rs2::frame prev_yuy
         );
 
+        rs2_extrinsics const & get_extrinsics() const { return _extr; }
+        rs2_intrinsics const & get_intrinsics() const { return _intr; }
+        stream_profile_interface * get_from_profile() const { return _from; }
+        stream_profile_interface * get_to_profile() const { return _to; }
+
         bool optimize();
 
 
