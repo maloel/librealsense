@@ -4,6 +4,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/hpp/rs_export.hpp"
+#include "types.h"
 
 PYBIND11_MODULE(NAME, m) {
     m.doc() = R"pbdoc(
@@ -38,6 +39,18 @@ PYBIND11_MODULE(NAME, m) {
     /** rs.hpp **/
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
     m.def("log_to_file", &rs2::log_to_file, "min_severity"_a, "file_path"_a);
-    // rs2::log?
+    m.def("log_to_callback",
+        []( rs2_log_severity min_severity, std::function< void( rs2_log_severity, char const * message ) > callback )
+        {
+            rs2::log_to_callback( min_severity,
+                [callback]( rs2_log_severity severity, rs2::log_message const & msg )
+                {
+                    char const * raw = msg.raw();
+                    std::cout << "log: " << raw << std::endl;
+                    try { callback( severity, raw ); }
+                    catch( ... ) { std::cerr << "failed to call log callback!" << std::endl; }
+                } );
+        }, "min_severity"_a, "callback"_a );
+    m.def( "log", &rs2::log, "severity"_a, "message"_a );
     /** end rs.hpp **/
 }
