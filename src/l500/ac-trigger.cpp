@@ -110,23 +110,30 @@ namespace ivcam2 {
     {
     }
 
+    ac_trigger::reset_option::reset_option( std::shared_ptr< ac_trigger > const & autocal )
+        : bool_option( false )
+        , _autocal( autocal )
+    {
+    }
+
     void ac_trigger::enabler_option::set( float value )
     {
-        bool_option::set( value );
-        if( is_true() )
+        //bool_option::set( value );
+        _autocal->trigger_calibration();
+        _record_action( *this );
+    }
+
+    void ac_trigger::reset_option::set( float value )
+    {
+        //bool_option::set( value );
+        if( _autocal->_to_profile )
         {
-            // We've turned it on -- try to immediately get a special frame
-            _autocal->trigger_calibration();
-        }
-        else if( _autocal->_to_profile )
-        {
-            // TODO remove before release
             // Reset the calibration so we can do it all over again
-            //if( auto color_sensor = _autocal->_dev.get_color_sensor() )
-            //    color_sensor->reset_calibration();
-            //_autocal->_dev.get_depth_sensor().reset_calibration();
+            if( auto color_sensor = _autocal->_dev.get_color_sensor() )
+                color_sensor->reset_calibration();
+            _autocal->_dev.get_depth_sensor().reset_calibration();
 #if 1
-            //_autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
+            _autocal->_dev.notify_of_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
 #else
             // Make sure we have the new setting before calling the callback
             //auto&& active_streams = get_active_streams();
