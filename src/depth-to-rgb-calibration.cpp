@@ -122,11 +122,13 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         {
             AC_LOG( ERROR, "Calibration scene was found invalid!" );
             call_back( RS2_CALIBRATION_SCENE_INVALID );
+#if 0  // disable for CDE, where it's only manual trigger
             if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) )
             {
                 // Default behavior is to stop AC and trigger a retry
                 return RS2_CALIBRATION_RETRY;
             }
+#endif
             AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is on; continuing" );
         }
 
@@ -143,12 +145,14 @@ rs2_calibration_status depth_to_rgb_calibration::optimize(
         {
             // Error would have printed inside
             call_back( RS2_CALIBRATION_BAD_RESULT );
+#if 0  // disable for CDE, where it's only manual trigger
             if( !getenv( DISABLE_RS2_CALIBRATION_CHECKS ) )
             {
                 // Default behavior is to stop and trigger a retry
                 AC_LOG( DEBUG, DISABLE_RS2_CALIBRATION_CHECKS << " is off; will retry if possible" );
                 return RS2_CALIBRATION_RETRY;
             }
+#endif
             if( !getenv( "FORCE_RS2_CALIBRATION_RESULTS" ) )
             {
                 // This is mostly for validation use, where we don't want the retries and instead want
