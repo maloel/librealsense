@@ -16,10 +16,10 @@ include_directories( ${ELPP_DIR} )
 set( ELPP_FILES
     ${ELPP_DIR}/easylogging++.cc
     ${ELPP_DIR}/easylogging++.h)
-    
+
 include(../../common/CMakeLists.txt)
 
-SET(DELAYED 
+SET(DELAYED
     realsense2d.dll
     realsense2-gld.dll
     realsense2.dll
@@ -78,12 +78,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                                              ../../third-party/tinyfiledialogs
                                              ${CMAKE_CURRENT_SOURCE_DIR}/res/)
 
-        list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
-        string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
-        set_target_properties(rs-depth-quality PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
-
     else()
-        add_executable(rs-depth-quality 
+        add_executable(rs-depth-quality
         ${RS_QUALITY_TOOL_CPP}
         ${ELPP_FILES}
         )
@@ -103,7 +99,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_dependencies(rs-depth-quality libcurl)
         target_link_libraries(rs-depth-quality curl)
     endif()
-    
+
     target_link_libraries(rs-depth-quality ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
                                            Threads::Threads
@@ -113,8 +109,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_definitions(-DINTERNAL_FW)
         target_link_libraries(rs-depth-quality fw)
     endif()
-    
-    
+
+
 
 
     set_target_properties (rs-depth-quality PROPERTIES
