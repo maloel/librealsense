@@ -2127,7 +2127,7 @@ size_t optimizer::optimize( std::function< void( data_collect const & data ) > c
                                            << new_params.cost );
 
     _final_dsm_params = _z.orig_dsm_params;
-    clip_ac_scaling( _z.orig_dsm_params, new_dsm_params );
+//    clip_ac_scaling( _z.orig_dsm_params, new_dsm_params );
     new_dsm_params.copy_to( _final_dsm_params );
     _final_dsm_params.temp_x2 = byte( _settings.hum_temp * 2 );
 

@@ -1280,15 +1280,23 @@ namespace ivcam2 {
             {
                 // If from some reason there is no thermal_table or its not valid
                 // Temperature must be within range or algo may not work right
+#if 1
+                AC_LOG( DEBUG, "Invalid conditions for CAH: temperature (" << _temp << ") too low (<32)" );
+#else
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string() << "temperature (" << _temp << ") too low (<32)";
+#endif
             }
             else if( _temp > 46. )
             {
+#if 1
+                AC_LOG( DEBUG, "Invalid conditions for CAH: temperature (" << _temp << ") too high (>46)" );
+#else
                 if( ! invalid_reason.empty() )
                     invalid_reason += ", ";
                 invalid_reason += to_string() << "temperature (" << _temp << ") too high (>46)";
+#endif
             }
         }
        

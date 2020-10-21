@@ -331,9 +331,9 @@ namespace librealsense
         }
         catch( invalid_value_exception const & e )
         {
-            if( ! getenv( "RS2_AC_IGNORE_LIMITERS" ))
-                throw;
-            AC_LOG( ERROR, "Ignoring (RS2_AC_IGNORE_LIMITERS) " << e.what() );
+//            if( ! getenv( "RS2_AC_IGNORE_LIMITERS" ))
+//                throw;
+            AC_LOG( ERROR, "Ignoring (no-limit build): " << e.what() );
         }
 
         ac_depth_results table( dsm_params );
