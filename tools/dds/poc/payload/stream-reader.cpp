@@ -29,7 +29,9 @@ stream_reader::stream_reader( std::shared_ptr< realdds::dds_topic > const & topi
         this->on_subscription_matched( status );
     } );
     _reader->on_data_available( [this]() { this->on_data_available(); } );
-    _reader->run();
+
+    realdds::dds_topic_reader::qos qos(eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS);
+    _reader->run(qos);
 
     // By default, unless someone else overrides with on_data(), we assume users will be waiting on the data:
     on_data( [&]( data_t & data ) {
