@@ -56,10 +56,91 @@ void stream_stats_data_dump(const string& stream_name, const stream_stats_data& 
     LOG_INFO("  last_number: " << data.last_number);
 }
 
-dds_nsec
-calc_time_offset( poc::op_writer & h2e, poc::op_reader & e2h, int const n_reps = 10 )
+// Return (a+b)/2 without any chance of overflow
+//
+dds_nsec calc_avg( dds_nsec a, dds_nsec b, dds_nsec * p_leftover = nullptr )
 {
-    int64_t avg_time_offset = 0;
+	dds_nsec avg = a/2;
+	avg += b/2;
+	dds_nsec leftover = (a%2 + b%2);
+	avg += leftover/2;
+	if( p_leftover )
+		*p_leftover += leftover%2;
+    return avg;
+}
+
+
+template< class T >
+class running_average
+{
+    T _avg = 0;
+    T _n = 0;
+    T _leftover = 0;
+
+public:
+    running_average() = default;
+
+    T size() const { return _n; }
+    T get() const { return _avg; }
+    T leftover() const { return _leftover; }
+
+    void add( T x )
+    {
+        _avg += int_div_mod( x-_avg, ++_n, &_leftover );
+    }
+
+private:
+    static T int_div_mod( T dividend_, T n, T * r )
+    {
+        // We ned the modulo sign to be the same as the dividend!
+        // And, more importantly, modulo can be implemented differently based on the compiler, so we cannot use it!
+        T dividend = dividend_ + *r;
+        // We want 6.5 to be rounded to 7, but have to be careful with the sign:
+        T rounded = dividend;
+        if( dividend > 0 )
+            rounded += n / 2;  // round up
+        else if( dividend < 0 )
+            rounded -= n / 2;  // round down
+        if(( rounded < 0 ) != ( dividend_ < 0 ))
+        {
+            // Overflow...
+            if(( dividend < 0 ) != ( dividend_ < 0 ))
+                dividend = dividend_;
+            rounded = dividend;
+        }
+        T d = rounded / n;
+        *r = dividend - n * d;
+        return d;
+    }
+};
+
+
+
+struct offset_stats {
+    dds_nsec avg = 0;
+    dds_nsec min = 0;
+    dds_nsec max = 0;
+    // TODO:
+    dds_nsec std = 0;
+};
+
+void dump_offset_stats(const offset_stats& data) {
+    LOG_INFO( "max-offset= " << timestr(data.max, timestr::rel));
+    LOG_INFO( "min-offset= " << timestr(data.min, timestr::rel));
+    LOG_INFO( "max-offset-diff= " << timestr(data.max,data.avg));
+    LOG_INFO( "min-offset-diff= " << timestr(data.avg, data.min));
+    LOG_INFO( "Average time-offset= " << timestr( data.avg, timestr::rel ) );
+}
+
+void calc_time_offset(
+    poc::op_writer & h2e,
+    poc::op_reader & e2h,
+    uint32_t const n_reps,
+    offset_stats& output_stats)
+{
+    running_average< dds_nsec > running_offset_avg;
+    dds_nsec max_offset = 0;
+    dds_nsec min_offset = 0;
     for( uint64_t i = 0; i < n_reps; ++i )
     {
         auto t0_ = realdds::now().to_ns();
@@ -68,37 +149,54 @@ calc_time_offset( poc::op_writer & h2e, poc::op_reader & e2h, int const n_reps =
         //dds_nsec t0_ = data.msg._data[0];  // before H app send
         dds_nsec t0 = data.msg._data[1];   // "originate" H DDS send time
         dds_nsec t1 = data.msg._data[2];   // "receive" E receive time
-        //dds_nsec t2_ = data.msg._data[3];   // E app send time
-        dds_nsec t2 = data.sample.source_timestamp.to_ns();  // "transmit" E DDS send time
+        dds_nsec t2 = data.msg._data[3];   // E app send time
+        //dds_nsec t2_ = data.sample.source_timestamp.to_ns();  // "transmit" E DDS send time
         dds_nsec t3 = data.sample.reception_timestamp.to_ns();
         dds_nsec t3_ = realdds::now().to_ns();
 
+#if 1
 #define RJ(N,S) std::setw(N) << std::right << (S)
 
         LOG_DEBUG( "\n"
-            "    E: " << RJ(45, timestr(t1,timestr::no_suffix)) << " " << timestr(t2,t1) << "\n"
-            "       " << RJ(44, "(" + timestr(t1,t0) + ")/" )  << "   \\\n"
+            "    E: " << RJ(45, timestr(t1,timestr::abs,timestr::no_suffix)) << " " << timestr(t2,t1) << "\n"
+            "       " << RJ(44, "/")                           << "   \\\n"
             "       " << RJ(43, "/")                          << "     \\\n"
-            "       " << RJ(42, "/")                         << "       \\(" << timestr(t3,t2) << ")\n"
+            "       " << RJ(42, "/")                         << "       \\\n"
             "    H: " << RJ(25, timestr(t0_,timestr::no_suffix)) << RJ(16, timestr(t0,t0_) )
-                                                           << "         " << timestr(t3,t0) << "   " << RJ(13, timestr(t3_,t3) ) << "\n"
+                      << "         " << timestr(t3,t0) << "   " << RJ(13, timestr(t3_,t3) ) << "\n"
             );
+#else
+        LOG_DEBUG( " t0: " << timestr(t0,timestr::abs,timestr::no_suffix));
+        LOG_DEBUG( " t1: " << timestr(t1,timestr::abs,timestr::no_suffix));
+        LOG_DEBUG( " t2: " << timestr(t2,timestr::abs,timestr::no_suffix));
+        LOG_DEBUG( " t3: " << timestr(t3,timestr::abs,timestr::no_suffix));
+#endif
 
-        auto time_offset = ( t1 - t0 + t2 - t3 );
-        time_offset /= 2;
+        auto time_offset = calc_avg( t0, t3 ) - calc_avg( t1, t2 );
+        //auto time_offset = ( t1 - t0 + t2 - t3 );
+        //time_offset /= 2;
         LOG_DEBUG( "   time-offset= " << timestr( time_offset, timestr::rel ) << "    round-trip= " << timestr( t3_, t0_ ) );
         
         // ignore first iteration
-        if (i > 0)
-            avg_time_offset += time_offset;
+        if (i > 0) {
+            // running average
+            running_offset_avg.add( time_offset );
+            if (i== 1) {
+                max_offset = time_offset;
+                min_offset = time_offset;
+            }
+            if (time_offset > max_offset) {
+                max_offset = time_offset;
+            }
+            if (time_offset < min_offset) {
+                min_offset = time_offset;
+            }
+        }
     }
-    //
-    // NOTE: the time-offset is what needs to be added to the HOST timestamp in order to arrive at the EMBEDDED time.
-    // Obviously, negating it will yield the other direction...
-    //
-    avg_time_offset /= -(n_reps-1);
-    LOG_INFO( "Average time-offset= " << timestr( avg_time_offset, timestr::rel ) );
-    return avg_time_offset;
+
+    output_stats.avg = running_offset_avg.get();
+    output_stats.max = max_offset;
+    output_stats.min = min_offset;
 }
 
 
@@ -162,18 +260,23 @@ int main( int argc, char** argv ) try
     participant->init( domain, "poc-h" );
     dds_nsec time_offset = 0;
 
-    if (create_op_pub_sub) 
-    {
+    shared_ptr<poc::op_writer> h2e;
+    shared_ptr<poc::op_reader> e2h;
+
+    offset_stats start_offset_stats;
+    offset_stats end_offset_stats;
+
+    if (create_op_pub_sub) {
         LOG_INFO( "   create h2e writer");
-        poc::op_writer h2e( participant, "realsense/h2e" );
+        h2e = make_shared<poc::op_writer>( participant, "realsense/h2e" );
         LOG_INFO( "   h2e writer wait for reader");
-        h2e.wait_for_readers( 1, std::chrono::seconds( 300 ) );
+        h2e->wait_for_readers( 1, std::chrono::seconds( 300 ) );
         if( command_arg.isSet() )
         {
             if( command_arg.getValue() == "exit" )
             {
-                h2e.write( poc::op_payload::EXIT, 0 );
-                h2e.wait_for_readers( 0 );
+                h2e->write( poc::op_payload::EXIT, 0 );
+                h2e->wait_for_readers( 0 );
                 exit( 0 );
             }
             LOG_ERROR( "Invalid command: " << command_arg.getValue() );
@@ -181,15 +284,17 @@ int main( int argc, char** argv ) try
         }
 
         LOG_INFO( "   create e2h reader");
-        poc::op_reader e2h( participant, "realsense/e2h" );
+        e2h = make_shared<poc::op_reader>( participant, "realsense/e2h" );
 
-        if (time_sync_iter_arg.isSet())
-            time_offset = calc_time_offset( h2e, e2h, time_sync_iter_arg.getValue());
+        if (time_sync_iter_arg.isSet()) {
+            calc_time_offset( *h2e, *e2h, time_sync_iter_arg.getValue(), start_offset_stats);
+            dump_offset_stats(start_offset_stats);
+        }
 
 #if 0
         // Tell E to start
-        h2e.write( { { "op", "start" }, { "id", 0 } } );
-        auto msg = e2h.read().msg.json_data();  // wait for confirmation
+        h2e->write( { { "op", "start" }, { "id", 0 } } );
+        auto msg = e2h->read().msg.json_data();  // wait for confirmation
         auto status = utilities::json::get< int64_t >( msg, "status" );
         if( status != 0 )
             LOG_FATAL( "Got bad status " << status << " from E in response to 'start' op" );
@@ -303,6 +408,17 @@ int main( int argc, char** argv ) try
 
     if (is_stream_enabled(streams_mask, stream_enable_flags::SAFETY))
         stream_stats_data_dump("SAFETY", *safety_data);    
+
+    if (create_op_pub_sub) {
+        if (time_sync_iter_arg.isSet()) {
+            calc_time_offset( *h2e, *e2h, time_sync_iter_arg.getValue(), end_offset_stats);
+            dump_offset_stats(end_offset_stats);
+        }
+    }
+
+    LOG_INFO( "extrinsic diff between calculated offsets averages= " << timestr(start_offset_stats.avg, end_offset_stats.avg));
+    LOG_INFO( "extrinsic diff between calculated offsets max= " << timestr(start_offset_stats.max, end_offset_stats.max));
+    LOG_INFO( "extrinsic diff between calculated offsets min= " << timestr(start_offset_stats.min, end_offset_stats.min));
 
     return EXIT_SUCCESS;
 }
