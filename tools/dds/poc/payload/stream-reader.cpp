@@ -8,12 +8,11 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-time.h>
 
+#include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 
-#include <librealsense2/utilities/string/shorten-json-string.h>
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <librealsense2/utilities/time/timer.h>
-#include <third-party/json.hpp>
 
 
 using realdds::timestr;
@@ -24,11 +23,18 @@ namespace poc {
 
 stream_reader::stream_reader( std::shared_ptr< realdds::dds_topic > const & topic )
     : _reader( std::make_shared< realdds::dds_topic_reader >( topic ) )
+    , _th( [this]( dispatcher::cancellable_timer timer ) {
+        if( ! _reader->get() )
+            return;
+        eprosima::fastrtps::Duration_t const one_second = { 1, 0 };
+        if( _reader->get()->wait_for_unread_message( one_second ) )
+            on_data_available();
+    } )
 {
     _reader->on_subscription_matched( [this]( eprosima::fastdds::dds::SubscriptionMatchedStatus const & status ) {
         this->on_subscription_matched( status );
     } );
-    _reader->on_data_available( [this]() { this->on_data_available(); } );
+    //_reader->on_data_available( [this]() { this->on_data_available(); } );
     _reader->run();
 
     // By default, unless someone else overrides with on_data(), we assume users will be waiting on the data:
@@ -104,6 +110,16 @@ void stream_reader::on_subscription_matched( eprosima::fastdds::dds::Subscriptio
     _n_writers += status.current_count_change;
     LOG_DEBUG( name() << ".on_subscription_matched " << ( status.current_count_change > 0 ? "+" : "" )
                       << status.current_count_change << " -> " << _n_writers );
+    if( _n_writers <= 0 )
+    {
+        LOG_INFO( "stopping streaming on " << name() );
+        _th.stop();
+    }
+    else if( !_th.is_active() )
+    {
+        LOG_INFO( "starting streaming on " << name() );
+        _th.start();
+    }
 }
 
 

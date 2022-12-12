@@ -7,6 +7,7 @@
 #include "stream-payload.h"
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
+#include <librealsense2/utilities/concurrency/concurrency.h>
 
 #include <string>
 #include <memory>
@@ -60,6 +61,8 @@ private:
     std::condition_variable _data_cv;
     std::mutex _data_mutex;
     on_data_callback _on_data;
+
+    active_object<> _th;
 
 public:
     stream_reader( std::shared_ptr< realdds::dds_topic > const & topic );
