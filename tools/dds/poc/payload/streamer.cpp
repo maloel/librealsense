@@ -26,7 +26,9 @@ streamer::streamer( std::shared_ptr< realdds::dds_topic > const & topic, uint64_
         else
             stop_streaming();
     } );
-    _writer->run();
+    
+    realdds::dds_topic_writer::qos qos(eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS);
+    _writer->run(qos);
 }
 
 
