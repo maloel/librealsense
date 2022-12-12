@@ -68,13 +68,22 @@ int main( int argc, char ** argv ) try
     auto participant = std::make_shared< realdds::dds_participant >();
     participant->init( domain, "poc-e" );
 
-    poc::op_writer e2h( participant, "e2h" );
-    poc::op_reader h2e( participant, "h2e" );
+    poc::op_writer e2h( participant, "realsense/e2h" );
+    poc::op_reader h2e( participant, "realsense/h2e" );
 
-    enum { DEPTH, IR1, IR2 };
-    poc::streamer depth( participant, "depth", DEPTH );
-    poc::streamer ir1( participant, "ir1", IR1 );
-    poc::streamer ir2( participant, "ir2", IR2 );
+    enum
+    {
+        RGB = 0x1,
+        DEPTH = 0x2,
+        GYRO = 0x4,
+        IMU = 0x8,
+        SAFETY = 0x10
+    };
+    poc::streamer depth( participant, "realsense/depth", DEPTH );
+    poc::streamer rgb( participant, "realsense/rgb", RGB );
+    poc::streamer gyro( participant, "realsense/gyro", GYRO );
+    poc::streamer imu( participant, "realsense/imu", IMU );
+    poc::streamer safety( participant, "realsense/safety", SAFETY );
 
     std::map< poc::op_payload::op_t, std::function< void( poc::op_payload const &, eprosima::fastdds::dds::SampleInfo const & ) > >
         ops;
