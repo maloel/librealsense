@@ -18,16 +18,32 @@
 #include <tclap/SwitchArg.h>
 #include <tclap/UnlabeledValueArg.h>
 
+#include "running-average.h"
+
 
 using realdds::dds_nsec;
 using realdds::dds_time;
 using realdds::timestr;
 
 
+// Return (a+b)/2 without any chance of overflow
+//
+dds_nsec calc_avg( dds_nsec a, dds_nsec b, dds_nsec * p_leftover = nullptr )
+{
+    dds_nsec avg = a / 2;
+    avg += b / 2;
+    dds_nsec leftover = (a % 2 + b % 2);
+    avg += leftover / 2;
+    if( p_leftover )
+        *p_leftover += leftover % 2;
+    return avg;
+}
+
+
 dds_nsec
 calc_time_offset( poc::op_writer & h2e, poc::op_reader & e2h, int const n_reps = 5 )
 {
-    int64_t avg_time_offset = 0;
+    rsutils::number::running_average< dds_nsec > running_offset_avg;
     for( uint64_t i = 0; i < n_reps; ++i )
     {
         auto t0_ = realdds::now().to_ns();
@@ -36,34 +52,31 @@ calc_time_offset( poc::op_writer & h2e, poc::op_reader & e2h, int const n_reps =
         //dds_nsec t0_ = data.msg._data[0];  // before H app send
         dds_nsec t0 = data.msg._data[1];   // "originate" H DDS send time
         dds_nsec t1 = data.msg._data[2];   // "receive" E receive time
-        //dds_nsec t2_ = data.msg._data[3];   // E app send time
-        dds_nsec t2 = data.sample.source_timestamp.to_ns();  // "transmit" E DDS send time
+        dds_nsec t2 = data.msg._data[3];   // E app send time
+        //dds_nsec t2_ = data.sample.source_timestamp.to_ns();  // "transmit" E DDS send time
         dds_nsec t3 = data.sample.reception_timestamp.to_ns();
         dds_nsec t3_ = realdds::now().to_ns();
 
 #define RJ(N,S) std::setw(N) << std::right << (S)
 
         LOG_DEBUG( "\n"
-            "    E: " << RJ(45, timestr(t1,timestr::no_suffix)) << " " << timestr(t2,t1) << "\n"
-            "       " << RJ(44, "(" + timestr(t1,t0) + ")/" )  << "   \\\n"
+            "    E: " << RJ(45, timestr(t1,timestr::abs,timestr::no_suffix)) << " " << timestr(t2,t1) << "\n"
+            "       " << RJ(44, "(" + timestr(t1+running_offset_avg.get(),t0) + ")/" )  << "   \\\n"
             "       " << RJ(43, "/")                          << "     \\\n"
-            "       " << RJ(42, "/")                         << "       \\(" << timestr(t3,t2) << ")\n"
+            "       " << RJ(42, "/")                         << "       \\(" << timestr(t3,t2+running_offset_avg.get()) << ")\n"
             "    H: " << RJ(25, timestr(t0_,timestr::no_suffix)) << RJ(16, timestr(t0,t0_) )
                                                            << "         " << timestr(t3,t0) << "   " << RJ(13, timestr(t3_,t3) ) << "\n"
             );
 
-        auto time_offset = ( t1 - t0 + t2 - t3 );
-        time_offset /= 2;
+        auto time_offset = calc_avg( t0, t3 ) - calc_avg( t1, t2 );
         LOG_DEBUG( "   time-offset= " << timestr( time_offset, timestr::rel ) << "    round-trip= " << timestr( t3_, t0_ ) );
-        avg_time_offset += time_offset;
+        if( i > 0 ) {
+            running_offset_avg.add( time_offset );
+        }
     }
     //
-    // NOTE: the time-offset is what needs to be added to the HOST timestamp in order to arrive at the EMBEDDED time.
-    // Obviously, negating it will yield the other direction...
-    //
-    avg_time_offset /= -n_reps;
-    LOG_INFO( "Average time-offset= " << timestr( avg_time_offset, timestr::rel ) );
-    return avg_time_offset;
+    LOG_INFO( "Average time-offset= " << timestr( running_offset_avg.get(), timestr::rel ) );
+    return running_offset_avg.get();
 }
 
 
@@ -145,6 +158,7 @@ int main( int argc, char** argv ) try
         realdds::dds_nsec total_transit_nsec = 0;
         realdds::dds_nsec max_transit_nsec, min_transit_nsec;
         realdds::dds_time first, last;
+        rsutils::number::running_average< dds_nsec > avg_transit_nsec;
     };
     auto process_frame = [time_offset]( std::shared_ptr< framedata > const & fdata,
                                         poc::stream_reader::data_t const & mdata ) {
@@ -157,6 +171,7 @@ int main( int argc, char** argv ) try
         // latency
         auto transit_nsec = mdata.sample.reception_timestamp.to_ns()                  // in our time domain
                           - ( mdata.sample.source_timestamp.to_ns() + time_offset );  // in the embedded time domain
+        fdata->avg_transit_nsec.add( transit_nsec );
         fdata->total_transit_nsec += transit_nsec;
         if( ! fdata->count || fdata->max_transit_nsec > transit_nsec )
             fdata->max_transit_nsec = transit_nsec;
@@ -175,15 +190,22 @@ int main( int argc, char** argv ) try
 
     using namespace std::placeholders;  // _1, etc...
 
-    poc::stream_reader depth( participant, "depth" );
     auto depth_data = std::make_shared< framedata >();
-    depth.on_data( std::bind( process_frame, depth_data, _1 ));
-    depth.wait_for_writers( 1, std::chrono::seconds( 3 ) );
+    {
+        poc::stream_reader depth( participant, "depth" );
+        depth.on_data( std::bind( process_frame, depth_data, _1 ) );
+        depth.wait_for_writers( 1, std::chrono::seconds( 3 ) );
 
-    // Collect frame data
-    std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
+        // Collect frame data
+        std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
+    }
 
-    // Dump it all out somehow
+    // Dump it all out
+    LOG_INFO( "Depth:" );
+    LOG_INFO( "    in " << timestr(( depth_data->last - depth_data->first ).to_ns(), timestr::abs ) );
+    LOG_INFO( "    received " << depth_data->count << " frames" );
+    LOG_INFO( "    of which " << depth_data->drops << " frames were dropped" );
+    LOG_INFO( "    with an average transit time of " << timestr( depth_data->avg_transit_nsec.get(), timestr::abs ) );
 
     return EXIT_SUCCESS;
 }
