@@ -3,10 +3,11 @@
 
 module realsense {
 
-const uint32 MAX_IMAGE_WIDTH = 720;
-const uint32 MAX_IMAGE_HEIGHT = 480;
-const uint32 MAX_BYTES_PER_PIXEL = 3;
-const uint32 MAX_IMAGE_PAYLOAD_SIZE = MAX_IMAGE_WIDTH * MAX_IMAGE_HEIGHT * MAX_BYTES_PER_PIXEL;
+// The maximum payload size in the PoC is the one for the topic realsense/depth.
+const uint32 DEPTH_IMAGE_WIDTH = 1280;
+const uint32 DEPTH_IMAGE_HEIGHT = 960;
+const uint32 DEPTH_BYTES_PER_PIXEL = 2;
+const uint32 MAX_IMAGE_PAYLOAD_SIZE = DEPTH_IMAGE_WIDTH * DEPTH_IMAGE_HEIGHT * DEPTH_BYTES_PER_PIXEL;
 
 @final
 @verbatim (language="comment", text="Generic type for embedded to host topics")
@@ -17,7 +18,7 @@ struct STREAM_payload {
 };
 
 @final
-@verbatim (language="comment", text="Generic type for host to embedded echo topics")
+@verbatim (language="comment", text="Generic type for command topics")
 struct OP_payload {
     uint64 op;
     uint64 id;
@@ -25,6 +26,3 @@ struct OP_payload {
 };
 
 };  // module realsense
-
-
-

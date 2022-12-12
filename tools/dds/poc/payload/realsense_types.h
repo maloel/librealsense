@@ -64,10 +64,10 @@ class Cdr;
 
 
 namespace realsense {
-    const uint32_t MAX_IMAGE_WIDTH = 720;
-    const uint32_t MAX_IMAGE_HEIGHT = 480;
-    const uint32_t MAX_BYTES_PER_PIXEL = 3;
-    const uint32_t MAX_IMAGE_PAYLOAD_SIZE = MAX_IMAGE_WIDTH*MAX_IMAGE_HEIGHT*MAX_BYTES_PER_PIXEL;
+    const uint32_t DEPTH_IMAGE_WIDTH = 1280;
+    const uint32_t DEPTH_IMAGE_HEIGHT = 960;
+    const uint32_t DEPTH_BYTES_PER_PIXEL = 2;
+    const uint32_t MAX_IMAGE_PAYLOAD_SIZE = DEPTH_IMAGE_WIDTH*DEPTH_IMAGE_HEIGHT*DEPTH_BYTES_PER_PIXEL;
     /*!
      * @brief This class represents the structure STREAM_payload defined by the user in the IDL file.
      * @ingroup REALSENSE_TYPES
