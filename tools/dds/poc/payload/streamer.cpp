@@ -5,6 +5,7 @@
 
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-topic.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
 
@@ -55,12 +56,18 @@ void streamer::start_streaming()
             int64_t number = 0;
             while( _is_streaming )
             {
+                //auto t = realdds::now();
+                //LOG_DEBUG( "0 payload    - " << realdds::timestr( t ) );
                 poc::stream_payload msg;
                 msg._stream_id = _id;
                 msg._frame_number = number++;
                 msg._data = data;
+                //auto t2 = realdds::now();
+                //LOG_DEBUG( " 1 writing   -  " << realdds::timestr( t2, t ));
                 msg.write_to( *_writer );
-                std::this_thread::sleep_for( std::chrono::milliseconds( 33 ) );
+                //LOG_DEBUG( "  2 finished -  " << realdds::timestr( realdds::now(), t2 ));
+                std::this_thread::sleep_for( std::chrono::milliseconds( 23 ) );
+                //LOG_DEBUG( "   3 sleep   -  " << realdds::timestr( realdds::now(), t2 ) );
             }
         }
         catch( std::exception & e )
