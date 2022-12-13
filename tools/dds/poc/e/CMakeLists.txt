@@ -25,7 +25,7 @@ set( SRC
     )
 
 add_executable(${PROJECT_NAME} ${SRC})
-target_link_libraries(${PROJECT_NAME} PRIVATE realdds ${DEPENDENCIES} )
+target_link_libraries(${PROJECT_NAME} PRIVATE realdds )
 target_include_directories( ${PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/include
     ${REPO_ROOT}/third-party/tclap/include
