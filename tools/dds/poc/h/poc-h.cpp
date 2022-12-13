@@ -107,7 +107,7 @@ offset_stats calc_time_offset( poc::op_writer & h2e, poc::op_reader & e2h, uint3
         auto t0_ = realdds::now().to_ns();
         h2e.write( poc::op_payload::SYNC, i, t0_ );
         auto data = e2h.read( std::chrono::seconds( 300 ) );
-        dds_nsec const e_skew = -5000000000;
+        dds_nsec const e_skew = 0; // -5000000000;
         //dds_nsec t0_ = data.msg._data[0];  // before H app send
         dds_nsec t0 = data.msg._data[1];   // "originate" H DDS send time
         dds_nsec t1 = data.msg._data[2] + e_skew;   // "receive" E receive time
