@@ -133,6 +133,10 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
 
+    // Listen socket buffer for ALL listen resources; 0 (default) uses default system buffer size
+    // In our case, we know we're dealing with BIG data (images), so we ask for a big buffer:
+    pqos.transport().listen_socket_buffer_size = 1024 * 1024 * 2;
+
     // Listener will call DataReaderListener::on_data_available for a specific reader,
     // not SubscriberListener::on_data_on_readers for any reader
     // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
