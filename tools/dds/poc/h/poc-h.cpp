@@ -20,6 +20,10 @@
 
 #include "running-average.h"
 
+#ifndef BUILD_SHARED_LIBS
+INITIALIZE_EASYLOGGINGPP
+#endif
+
 
 using realdds::dds_nsec;
 using realdds::dds_time;
@@ -86,6 +90,10 @@ struct offset_stats
     // TODO:
     dds_nsec std = 0;
 
+    offset_stats() {}
+    offset_stats(dds_nsec avg_, dds_nsec min_, dds_nsec max_) :
+        avg(avg_), min(min_), max(max_) {}
+
     void dump() const
     {
         LOG_INFO( "max-offset= " << timestr( max, timestr::rel ) );
@@ -112,25 +120,27 @@ offset_stats calc_time_offset( poc::op_writer & h2e, poc::op_reader & e2h, uint3
         dds_nsec t0 = data.msg._data[1];   // "originate" H DDS send time
         dds_nsec t1 = data.msg._data[2] + e_skew;   // "receive" E receive time
         dds_nsec t2 = data.msg._data[3] + e_skew;   // E app send time
-        //dds_nsec t2_ = data.sample.source_timestamp.to_ns();  // "transmit" E DDS send time
+        dds_nsec t2_ = data.sample.source_timestamp.to_ns();  // "transmit" E DDS send time
         dds_nsec t3 = data.sample.reception_timestamp.to_ns();
         dds_nsec t3_ = realdds::now().to_ns();
 
-#if 1
+
 #define RJ(N,S) std::setw(N) << std::right << (S)
 
         LOG_DEBUG( "\n"
-            "    E: " << RJ(45, timestr(t1,timestr::abs,timestr::no_suffix)) << " " << timestr(t2,t1) << "\n"
+            "    E: " << RJ(45, timestr(t1,timestr::abs,timestr::no_suffix)) << " " << timestr(t2,t1) << "       =" << timestr(t2_,timestr::abs,timestr::no_suffix) << "\n"
             "       " << RJ(44, "(" + timestr(t1+running_offset_avg.get(),t0) + ")/" )  << "   \\\n"
             "       " << RJ(43, "/")                          << "     \\\n"
             "       " << RJ(42, "/")                         << "       \\(" << timestr(t3,t2+running_offset_avg.get()) << ")\n"
             "    H: " << RJ(25, timestr(t0_,timestr::no_suffix)) << RJ(16, timestr(t0,t0_) )
                 << "         " << timestr(t3,t0) << "   " << RJ(13, timestr(t3_,t3) ) << "\n"
             );
-#else
+
+#if 1
         LOG_DEBUG( " t0: " << timestr(t0,timestr::abs,timestr::no_suffix));
         LOG_DEBUG( " t1: " << timestr(t1,timestr::abs,timestr::no_suffix));
         LOG_DEBUG( " t2: " << timestr(t2,timestr::abs,timestr::no_suffix));
+        LOG_DEBUG( " t2_: " << timestr(t2_,timestr::abs,timestr::no_suffix));
         LOG_DEBUG( " t3: " << timestr(t3,timestr::abs,timestr::no_suffix));
 #endif
 
@@ -149,7 +159,7 @@ offset_stats calc_time_offset( poc::op_writer & h2e, poc::op_reader & e2h, uint3
                 min_offset = time_offset;
         }
     }
-    return offset_stats{ running_offset_avg.get(), max_offset, min_offset };
+    return offset_stats(running_offset_avg.get(), min_offset, max_offset);
 }
 
 
@@ -245,6 +255,7 @@ int main( int argc, char** argv ) try
     if( ! streams_mask )
         return EXIT_SUCCESS;
 
+    time_offset = start_offset_stats.avg;
     auto process_frame = [time_offset]( std::shared_ptr< stream_stats_data > const & fdata,
                                         poc::stream_reader::data_t const & mdata ) {
         auto number = mdata.msg._frame_number;
@@ -332,9 +343,10 @@ int main( int argc, char** argv ) try
 
         LOG_INFO( "   main thread goes to sleep for " << std::dec << stream_run_time.getValue() << " seconds" );
         std::this_thread::sleep_for( std::chrono::seconds( stream_run_time.getValue() ) );
+        LOG_INFO( " Woke up after " << stream_run_time.getValue() << " seconds" );
     }
 
-    if( n_time_syncs > 0 )
+    if( command_arg.isSet() || n_time_syncs > 0)
     {
         end_offset_stats = calc_time_offset( *h2e, *e2h, n_time_syncs );
         end_offset_stats.dump();
@@ -355,6 +367,7 @@ int main( int argc, char** argv ) try
     if( safety_data )
         safety_data->dump( "SAFETY" );
 
+    LOG_INFO( "Done POC ");
     return EXIT_SUCCESS;
 }
 catch( const TCLAP::ExitException& )

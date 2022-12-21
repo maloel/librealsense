@@ -133,6 +133,8 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
 
+    pqos.transport().listen_socket_buffer_size = 1024 * 1024 * 2;
+
     // Listener will call DataReaderListener::on_data_available for a specific reader,
     // not SubscriberListener::on_data_on_readers for any reader
     // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
@@ -304,7 +306,7 @@ dds_guid dds_participant::create_guid()
     //      Group, Writer Group) and whether the Entity is a built-in Entity (fully pre-defined by the
     //      Protocol, automatically instantiated), a user-defined Entity (defined by the Protocol, but
     //      instantiated by the user only as needed by the application) or a vendor-specific Entity (defined by a
-    //      vendor-specific extension to the Protocol, can therefore be ignored by another vendor’s
+    //      vendor-specific extension to the Protocol, can therefore be ignored by another vendorï¿½s
     //      implementation)
     // 
     //      ...
