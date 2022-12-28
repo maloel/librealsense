@@ -50,7 +50,9 @@ struct stream_stats_data
 {
     uint64_t count = 0;
     uint64_t drops = 0;
-    uint64_t last_number;
+    uint64_t last_number = 0;
+    uint32_t consecutive_drops = 0;
+    uint32_t max_consecutive_drops = 0;
     realdds::dds_nsec total_transit_nsec = 0;
     realdds::dds_nsec max_transit_nsec, min_transit_nsec;
     realdds::dds_time first, last;
@@ -59,11 +61,21 @@ struct stream_stats_data
     void dump( const std::string & stream_name ) const
     {
         LOG_INFO( "stream " << stream_name << " stats:" );
-        LOG_INFO( "  in " << timestr( (last - first).to_ns(), timestr::abs ) );
+        LOG_INFO( "  total run time: " << timestr( (last - first).to_ns(), timestr::abs ) );
         LOG_INFO( "  count: " << count );
         LOG_INFO( "  drops: " << drops );
+        LOG_INFO( "  max consecutive drops: " << max_consecutive_drops );
         LOG_INFO( "  last_number: " << last_number );
-        LOG_INFO( "  average transit: " << timestr( avg_transit_nsec.get(), timestr::abs ) );
+        realdds::dds_nsec avg = avg_transit_nsec.get();
+        double min_side_jitter = double(avg- min_transit_nsec)*100/avg;
+        double max_side_jitter = double(max_transit_nsec - avg)*100/avg;
+        double jitter = std::max(min_side_jitter,max_side_jitter);
+        LOG_INFO( "  average transit: " << timestr( avg, timestr::abs ) );
+        LOG_INFO( "  min diff: " << avg - min_transit_nsec );
+        LOG_INFO( "  min side jitter: " << min_side_jitter );
+        LOG_INFO( "  max diff: " << max_transit_nsec - avg );
+        LOG_INFO( "  max side jitter: " << max_side_jitter );
+        LOG_INFO( "  jitter: " << jitter );
     }
 };
 
@@ -261,18 +273,25 @@ int main( int argc, char** argv ) try
         auto number = mdata.msg._frame_number;
         //
         // drops
-        if( fdata->count && fdata->last_number + 1 != number )
-            ++fdata->drops;
+        auto expected_number = fdata->last_number + 1;
+        if( expected_number < number ) {
+            fdata->consecutive_drops = number - expected_number;
+            fdata->drops += fdata->consecutive_drops;
+            if (fdata->consecutive_drops > fdata->max_consecutive_drops)
+                fdata->max_consecutive_drops = fdata->consecutive_drops;
+        }
+
         //
         // latency
         auto transit_nsec = mdata.sample.reception_timestamp.to_ns()                  // in our time domain
                           - ( mdata.sample.source_timestamp.to_ns() + time_offset );  // in the embedded time domain
         fdata->avg_transit_nsec.add( transit_nsec );
         fdata->total_transit_nsec += transit_nsec;
-        if( ! fdata->count || fdata->max_transit_nsec < transit_nsec )
+        if( !fdata->count || fdata->max_transit_nsec < transit_nsec )
             fdata->max_transit_nsec = transit_nsec;
-        if( ! fdata->count || fdata->min_transit_nsec > transit_nsec )
+        if( !fdata->count || fdata->min_transit_nsec > transit_nsec )
             fdata->min_transit_nsec = transit_nsec;
+            
         //
         // time spread, so we can average
         fdata->last = realdds::now();
