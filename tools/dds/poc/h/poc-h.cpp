@@ -34,8 +34,8 @@ enum class stream_enable_flags : uint32_t
 {
     RGB = 0x1,
     DEPTH = 0x2,
-    GYRO = 0x4,
-    IMU = 0x8,
+    IMU_GYRO = 0x4,
+    IMU_ACC = 0x8,
     SAFETY = 0x10
 };
 
@@ -285,6 +285,9 @@ int main( int argc, char** argv ) try
         // latency
         auto transit_nsec = mdata.sample.reception_timestamp.to_ns()                  // in our time domain
                           - ( mdata.sample.source_timestamp.to_ns() + time_offset );  // in the embedded time domain
+
+        // we devide by 2 (worst case as host is not real time, so latency from embedded to line is worst case half of transit time)
+        transit_nsec /= 2;
         fdata->avg_transit_nsec.add( transit_nsec );
         fdata->total_transit_nsec += transit_nsec;
         if( !fdata->count || fdata->max_transit_nsec < transit_nsec )
@@ -305,7 +308,7 @@ int main( int argc, char** argv ) try
 
     using namespace std::placeholders;  // _1, etc...
 
-    std::shared_ptr< stream_stats_data > depth_data, rgb_data, gyro_data, imu_data, safety_data;
+    std::shared_ptr< stream_stats_data > depth_data, rgb_data, imu_gyro_data, imu_acc_data, safety_data;
     {
         std::shared_ptr< poc::stream_reader > depth;
         if( is_stream_enabled( streams_mask, stream_enable_flags::DEPTH ) )
@@ -327,24 +330,24 @@ int main( int argc, char** argv ) try
             rgb->wait_for_writers( 1, std::chrono::seconds( 300 ) );
         }
 
-        std::shared_ptr< poc::stream_reader > gyro;
-        if( is_stream_enabled( streams_mask, stream_enable_flags::GYRO ) )
+        std::shared_ptr< poc::stream_reader > imu_gyro;
+        if( is_stream_enabled( streams_mask, stream_enable_flags::IMU_GYRO ) )
         {
             LOG_INFO( "   create gyro stream reader" );
-            gyro_data = std::make_shared< stream_stats_data >();
-            gyro = std::make_shared< poc::stream_reader >( participant, "realsense/gyro" );
-            gyro->on_data( bind( process_frame, gyro_data, _1 ) );
-            gyro->wait_for_writers( 1, std::chrono::seconds( 300 ) );
+            imu_gyro_data = std::make_shared< stream_stats_data >();
+            imu_gyro = std::make_shared< poc::stream_reader >( participant, "realsense/gyro" );
+            imu_gyro->on_data( bind( process_frame, imu_gyro_data, _1 ) );
+            imu_gyro->wait_for_writers( 1, std::chrono::seconds( 300 ) );
         }
 
-        std::shared_ptr< poc::stream_reader > imu;
-        if( is_stream_enabled( streams_mask, stream_enable_flags::IMU ) )
+        std::shared_ptr< poc::stream_reader > imu_acc;
+        if( is_stream_enabled( streams_mask, stream_enable_flags::IMU_ACC ) )
         {
             LOG_INFO( "   create imu stream reader" );
-            imu_data = std::make_shared< stream_stats_data >();
-            imu = std::make_shared< poc::stream_reader >( participant, "realsense/imu" );
-            imu->on_data( bind( process_frame, imu_data, _1 ) );
-            imu->wait_for_writers( 1, std::chrono::seconds( 300 ) );
+            imu_acc_data = std::make_shared< stream_stats_data >();
+            imu_acc = std::make_shared< poc::stream_reader >( participant, "realsense/imu" );
+            imu_acc->on_data( bind( process_frame, imu_acc_data, _1 ) );
+            imu_acc->wait_for_writers( 1, std::chrono::seconds( 300 ) );
         }
 
         std::shared_ptr< poc::stream_reader > safety;
@@ -379,10 +382,10 @@ int main( int argc, char** argv ) try
         depth_data->dump( "DEPTH" );
     if( rgb_data )
         rgb_data->dump( "RGB" );
-    if( gyro_data )
-        gyro_data->dump( "GYRO" );
-    if( imu_data )
-        imu_data->dump( "IMU" );
+    if( imu_gyro_data )
+        imu_gyro_data->dump( "IMU_GYRO" );
+    if( imu_acc_data )
+        imu_acc_data->dump( "IMU_ACC" );
     if( safety_data )
         safety_data->dump( "SAFETY" );
 
