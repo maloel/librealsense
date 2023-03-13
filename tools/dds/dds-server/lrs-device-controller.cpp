@@ -95,12 +95,62 @@ static std::string stream_name_from_rs2( const rs2::stream_profile & profile )
 }
 
 
+namespace realdds {
+    struct profile_set
+    {
+        size_t width = 0, height = 0;  // 0x0 if not relevant
+        size_t frequency;
+        std::map< std::string, dds_stream_format > type2format;
+    };
+    inline bool operator<( profile_set const & l, profile_set const & r )
+    {
+        auto al = l.width * l.height;
+        auto ar = r.width * r.height;
+        if( al < ar )
+            return false;
+        if( al > ar )
+            return true;
+        if( l.width < r.width )
+            return false;
+        if( l.width > r.width )
+            return true;
+        if( l.frequency < r.frequency )
+            return false;
+        if( l.frequency > r.frequency )
+            return true;
+        // We do not compare the formats
+        return false;
+    };
+    inline std::ostream & operator<<( std::ostream & os, profile_set const & set )
+    {
+        if( set.width * set.height != 0 )
+            os << set.width << 'x' << set.height << ' ';
+        os << set.frequency << ' ';
+        os << '{';
+        bool first = true;
+        for( auto & kv : set.type2format )
+        {
+            if( first )
+                first = false;
+            else
+                os << ' ';
+            os << kv.first << '=' << kv.second.to_string();
+        }
+        os << '}';
+        return os;
+    }
+}
+
+
 std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controller::get_supported_streams()
 {
     std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
     std::map< std::string, int > stream_name_to_default_profile;
     std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
     std::map< std::string, realdds::motion_intrinsics > stream_name_to_motion_intrinsics;
+
+    std::map< std::string, std::multiset< realdds::profile_set > > device_profiles;
+
 
     // Iterate over all profiles of all sensors and build appropriate dds_stream_servers
     for( auto sensor : _rs_dev.query_sensors() )
@@ -135,6 +185,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             // Create appropriate realdds::profile for each sensor profile and map to a stream
             auto & profiles = stream_name_to_profiles[stream_name];
             std::shared_ptr< realdds::dds_stream_profile > profile;
+            realdds::profile_set profile_set;
+            profile_set.frequency = sp.fps();
             if( sp.is< rs2::video_stream_profile >() )
             {
                 auto const & vsp = sp.as< rs2::video_stream_profile >();
@@ -143,6 +195,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                     realdds::dds_stream_format::from_rs2( vsp.format() ),
                     static_cast< uint16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ) );
+                profile_set.width = vsp.width();
+                profile_set.height = vsp.height();
                 try
                 {
                     auto intr = to_realdds( vsp.get_intrinsics() );
@@ -168,7 +222,44 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
                 stream_name_to_default_profile[stream_name] = static_cast< int >( profiles.size() );
             profiles.push_back( profile );
             LOG_DEBUG( stream_name << ": " << profile->to_string() );
+
+            auto & sensor_profiles = device_profiles[sensor_name];
+            auto range = sensor_profiles.equal_range( profile_set );
+            bool found = false;
+            for( auto it = range.first; it != range.second; ++it )
+            {
+                // "For associative containers where the value type is the same as the key type, both iterator and
+                // const_iterator are constant iterators."
+                // This, because changing the value changes the key therefore changes the ordering. But type2format is
+                // not part of the ordering, so:
+                auto & set = const_cast< realdds::profile_set & >( *it );
+                auto & format = set.type2format[server->type_string()];
+                if( format.is_valid() )
+                {
+                    if( profile->format() == format )
+                        found = true;
+                }
+                else
+                {
+                    format = profile->format();
+                    found = true;
+                }
+            }
+            if( ! found )
+            {
+                profile_set.type2format[server->type_string()] = profile->format();
+                sensor_profiles.emplace( std::move( profile_set ) );
+            }
         } );
+    }
+
+    for( auto const & sensor2set : device_profiles )
+    {
+        LOG_DEBUG( "---> " << sensor2set.first );
+        for( auto const & set : sensor2set.second )
+        {
+            LOG_DEBUG( "     " << set );
+        }
     }
 
     // Iterate over the mapped streams and initialize
