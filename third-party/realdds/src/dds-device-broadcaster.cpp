@@ -41,14 +41,17 @@ protected:
         if( info.current_count_change == 1 )
         {
             // We send the work to the dispatcher to avoid waiting on the mutex here.
-            _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
+            _owner->_dds_device_dispatcher.invoke(
+                [this]( dispatcher::cancellable_timer )
                 {
-                    std::lock_guard< std::mutex > lock( _owner->_new_client_mutex ); //TODO - mutxe locking needed here? Dispatcher needed here?
-                    _new_reader_joined = true;
-                    _owner->_trigger_msg_send = true;
-                }
-                _owner->_new_client_cv.notify_all();
-            } );
+                    {
+                        std::lock_guard< std::mutex > lock(
+                            _owner->_new_client_mutex );  // TODO - mutxe locking needed here? Dispatcher needed here?
+                        _new_reader_joined = true;
+                        _owner->_trigger_msg_send = true;
+                    }
+                    _owner->_new_client_cv.notify_all();
+                } );
         }
         else if( info.current_count_change == -1 )
         {
@@ -70,50 +73,55 @@ dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_participant
     , _participant( participant )
     , _publisher( std::make_shared< dds_publisher >( participant ) )
     , _dds_device_dispatcher( 10 )
-    , _new_client_handler( [this]( dispatcher::cancellable_timer ) {
-        // We wait until the new reader callback indicate a new reader has joined or until the active object is stopped
-        if( _active )
-        {
-            std::unique_lock< std::mutex > lock( _new_client_mutex );
-            _new_client_cv.wait( lock, [this]() { return ! _active || _trigger_msg_send.load(); } );
-            if( _active && _trigger_msg_send.load() )
-            {
-                _trigger_msg_send = false;
-                _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                    for( auto const & sn_and_handle : _device_handle_by_sn )
-                    {
-                        if( sn_and_handle.second.client_listener->_new_reader_joined )
-                        {
-                            if( send_device_info_msg( sn_and_handle.second ) )
-                            {
-                                sn_and_handle.second.client_listener->_new_reader_joined = false;
-                            }
-                        }
-                    }
-                } );
-            }
-        }
-    } )
+    , _new_client_handler(
+          [this]( dispatcher::cancellable_timer )
+          {
+              // We wait until the new reader callback indicate a new reader has joined or until the active object is
+              // stopped
+              if( _active )
+              {
+                  std::unique_lock< std::mutex > lock( _new_client_mutex );
+                  _new_client_cv.wait( lock, [this]() { return ! _active || _trigger_msg_send.load(); } );
+                  if( _active && _trigger_msg_send.load() )
+                  {
+                      _trigger_msg_send = false;
+                      _dds_device_dispatcher.invoke(
+                          [this]( dispatcher::cancellable_timer )
+                          {
+                              for( auto const & sn_and_handle : _device_handle_by_sn )
+                              {
+                                  if( sn_and_handle.second.client_listener->_new_reader_joined )
+                                  {
+                                      if( send_device_info_msg( sn_and_handle.second ) )
+                                      {
+                                          sn_and_handle.second.client_listener->_new_reader_joined = false;
+                                      }
+                                  }
+                              }
+                          } );
+                  }
+              }
+          } )
 {
     if( ! _participant )
-        DDS_THROW( runtime_error, "dds_device_broadcaster called with a null participant" );
+        DDS_THROW( runtime_error, "null participant" );
 }
 
 bool dds_device_broadcaster::run()
 {
     if( _active )
-        DDS_THROW( runtime_error, "dds_device_broadcaster::run() called when already-active" );
+        DDS_THROW( runtime_error, "broadcaster is already active" );
 
+    _active = true;
     _dds_device_dispatcher.start();
     _new_client_handler.start();
-    _active = true;
     return true;
 }
 
 void dds_device_broadcaster::add_device( device_info const & dev_info )
 {
     if( ! _active )
-        DDS_THROW( runtime_error, "dds_device_broadcaster::add_device called before run()" );
+        DDS_THROW( runtime_error, "broadcaster is not running" );
     // Post the connected device
     handle_device_changes( {}, { dev_info } );
 }
@@ -121,7 +129,7 @@ void dds_device_broadcaster::add_device( device_info const & dev_info )
 void dds_device_broadcaster::remove_device( device_info const & dev_info )
 {
     if( ! _active )
-        DDS_THROW( runtime_error, "dds_device_broadcaster::remove_device called before run()" );
+        DDS_THROW( runtime_error, "broadcaster is not running" );
     // Post the disconnected device
     handle_device_changes( { dev_info.serial }, {} );
 }
