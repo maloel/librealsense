@@ -80,8 +80,10 @@ dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_participant
               // stopped
               if( _active )
               {
+                  LOG_DEBUG( "broadcaster is waiting" );
                   std::unique_lock< std::mutex > lock( _new_client_mutex );
                   _new_client_cv.wait( lock, [this]() { return ! _active || _trigger_msg_send.load(); } );
+                  LOG_DEBUG( "broadcaster is awake" );
                   if( _active && _trigger_msg_send.load() )
                   {
                       _trigger_msg_send = false;
@@ -101,7 +103,8 @@ dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_participant
                           } );
                   }
               }
-          } )
+              LOG_DEBUG( "broadcaster active function is done" );
+        } )
 {
     if( ! _participant )
         DDS_THROW( runtime_error, "null participant" );
@@ -178,6 +181,7 @@ void dds_device_broadcaster::remove_dds_device( const std::string & serial_numbe
 
 bool dds_device_broadcaster::add_dds_device( const device_info & dev_info )
 {
+    LOG_DEBUG( "device S/N " << dev_info.serial << " is added on " << dev_info.topic_root );
     if( _device_handle_by_sn.find( dev_info.serial ) == _device_handle_by_sn.end() )
     {
         if( ! create_device_writer( dev_info ) )
