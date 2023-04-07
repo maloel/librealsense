@@ -9,7 +9,7 @@ dds.debug( True )
 from time import sleep
 
 p_server = dds.participant()
-p_server.init( 123, "test-metadata-server" )
+p_server.init( 123, "server" )
 
 # set up a server device
 import d435i
@@ -23,7 +23,7 @@ device_server.init( [color_stream], [], {} )
 
 # set up the client device and keep all its streams - this is connected directly and we can get notifications on it!
 p_client = dds.participant()
-p_client.init( 123, "test-metadata-client" )
+p_client.init( 123, "client" )
 device_direct = dds.device( p_client, p_client.create_guid(), d435i.device_info )
 device_direct.run( 1000 )  # this will throw if something's wrong
 test.check( device_direct.is_running(), abort_if_failed=True )
@@ -127,9 +127,7 @@ test.finish()
 #############################################################################################
 #
 test.start( "Broadcast the device" )  # otherwise librs won't see it
-broadcaster = dds.device_broadcaster( p_server )
-broadcaster.run()
-broadcaster.add_device( d435i.device_info )
+device_server.broadcast( d435i.device_info )
 test.finish()
 #
 #############################################################################################
@@ -138,7 +136,7 @@ test.start( "Initialize librs device" )
 import pyrealsense2 as rs
 rs.log_to_console( rs.log_severity.debug )
 from dds import wait_for_devices
-context = rs.context( '{"dds-domain":123,"dds-participant-name":"test-metadata-librs"}' )
+context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 devices = wait_for_devices( context, only_sw_devices )
 test.check( devices is not None, abort_if_failed=True )
