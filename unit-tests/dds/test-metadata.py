@@ -126,17 +126,18 @@ test.finish()
 #
 #############################################################################################
 #
-test.start( "Broadcast the device" )  # otherwise librs won't see it
-device_server.broadcast( d435i.device_info )
-test.finish()
-#
-#############################################################################################
-#
 test.start( "Initialize librs device" )
 import pyrealsense2 as rs
 rs.log_to_console( rs.log_severity.debug )
 from dds import wait_for_devices
 context = rs.context( '{"dds-domain":123,"dds-participant-name":"librs"}' )
+#
+#############################################################################################
+#
+#test.start( "Broadcast the device" )  # otherwise librs won't see it
+sleep( 0.25 )
+device_server.broadcast( d435i.device_info )
+#test.finish()
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
 devices = wait_for_devices( context, only_sw_devices )
 test.check( devices is not None, abort_if_failed=True )
