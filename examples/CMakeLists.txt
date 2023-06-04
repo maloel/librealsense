@@ -37,4 +37,4 @@ add_subdirectory(record-playback)
 add_subdirectory(motion)
 add_subdirectory(gl)
 add_subdirectory(hdr)
-
+add_subdirectory( test_dds )

@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.22.2 -->
+<interface>
+  <requires lib="gtk+" version="3.20"/>
+  <object class="GtkWindow" id="DDSWindow">
+    <property name="width_request">1310</property>
+    <property name="height_request">800</property>
+    <property name="can_focus">False</property>
+    <property name="resizable">False</property>
+    <property name="default_width">1310</property>
+    <property name="default_height">700</property>
+    <child type="titlebar">
+      <placeholder/>
+    </child>
+    <child>
+      <object class="GtkFixed" id="DDSFixed">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <child>
+          <object class="GtkDrawingArea" id="rgbDraw">
+            <property name="width_request">640</property>
+            <property name="height_request">480</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="x">10</property>
+            <property name="y">40</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkDrawingArea" id="depthDraw">
+            <property name="width_request">640</property>
+            <property name="height_request">480</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="x">660</property>
+            <property name="y">40</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator" id="drawSep">
+            <property name="width_request">2</property>
+            <property name="height_request">530</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="x">654</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator" id="controlSep">
+            <property name="width_request">1310</property>
+            <property name="height_request">2</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="y">530</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator" id="rgbControl">
+            <property name="width_request">2</property>
+            <property name="height_request">270</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="x">300</property>
+            <property name="y">530</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator" id="depthControl">
+            <property name="width_request">2</property>
+            <property name="height_request">270</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="x">1010</property>
+            <property name="y">530</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="rgbStart">
+            <property name="label" translatable="yes">Start</property>
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="x">20</property>
+            <property name="y">555</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="rgbStop">
+            <property name="label" translatable="yes">Stop</property>
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="x">180</property>
+            <property name="y">555</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="rgbResolution">
+            <property name="width_request">120</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <items>
+              <item id="Reso1280x720" translatable="yes">1280x720</item>
+              <item id="Reso848x480" translatable="yes">848x480</item>
+              <item id="Reso640x480" translatable="yes">640x480</item>
+              <item id="Reso640x360" translatable="yes">640x360</item>
+            </items>
+          </object>
+          <packing>
+            <property name="x">130</property>
+            <property name="y">630</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="rgbResoLabel">
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">      Resolution:</property>
+          </object>
+          <packing>
+            <property name="x">10</property>
+            <property name="y">632</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="rgbFpsLabel">
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">           FPS:</property>
+          </object>
+          <packing>
+            <property name="x">10</property>
+            <property name="y">702</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="rgbFps">
+            <property name="width_request">120</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <items>
+              <item id="5Fps" translatable="yes">5</item>
+              <item id="15Fps" translatable="yes">15</item>
+              <item id="30Fps" translatable="yes">30</item>
+              <item id="60Fps" translatable="yes">60</item>
+              <item id="90Fps" translatable="yes">90</item>
+            </items>
+          </object>
+          <packing>
+            <property name="x">130</property>
+            <property name="y">700</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="depthStart">
+            <property name="label" translatable="yes">Start</property>
+            <property name="width_request">100</property>
+            <property name="height_request">3</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="x">1030</property>
+            <property name="y">555</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="depthStop">
+            <property name="label" translatable="yes">Stop</property>
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="x">1190</property>
+            <property name="y">555</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="depthResoLabel">
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">      Resolution:</property>
+          </object>
+          <packing>
+            <property name="x">1010</property>
+            <property name="y">632</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="depthResolution">
+            <property name="width_request">120</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <items>
+              <item id="Reso1280x720" translatable="yes">1280x720</item>
+              <item id="Reso848x480" translatable="yes">848x480</item>
+              <item id="Reso640x480" translatable="yes">640x480</item>
+              <item id="Reso640x360" translatable="yes">640x360</item>
+            </items>
+          </object>
+          <packing>
+            <property name="x">1140</property>
+            <property name="y">630</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="depthFpsLabel">
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">            FPS:</property>
+          </object>
+          <packing>
+            <property name="x">1010</property>
+            <property name="y">702</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="depthFps">
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <items>
+              <item id="5Fps" translatable="yes">5</item>
+              <item id="15Fps" translatable="yes">15</item>
+              <item id="30Fps" translatable="yes">30</item>
+              <item id="60Fps" translatable="yes">60</item>
+              <item id="90Fps" translatable="yes">90</item>
+            </items>
+          </object>
+          <packing>
+            <property name="x">1140</property>
+            <property name="y">700</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator" id="TitileSep">
+            <property name="width_request">1310</property>
+            <property name="height_request">2</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="y">35</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="RgbTitle">
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">RGB</property>
+          </object>
+          <packing>
+            <property name="x">320</property>
+            <property name="y">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="DepthTitle">
+            <property name="width_request">100</property>
+            <property name="height_request">30</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">DEPTH</property>
+          </object>
+          <packing>
+            <property name="x">960</property>
+            <property name="y">5</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
