@@ -27,7 +27,9 @@ public:
         auto width = frame.width;
         auto height = frame.height;
         _name = frame.name;
-        //_stream_index = frame.get_profile().stream_index();
+        _frame_num = frame.frameNum;
+        auto duration = realdds::now() - frame.frameTime;
+        _fps = static_cast< float >( 1000000000 ) / static_cast< float >( duration.to_ns() / FPS_FRAME_COUNT );
 
         glBindTexture( GL_TEXTURE_2D, _gl_handle );
 
@@ -80,6 +82,9 @@ public:
         glDisable( GL_TEXTURE_2D );
         glBindTexture( GL_TEXTURE_2D, 0 );
         draw_text( int( 0.05f * r.w ), int( 0.05f * r.h ), _name );
+        char buf[256];
+        sprintf( buf, "frame %d at %.2f fps", _frame_num, _fps );
+        draw_text( int( 0.05f * r.w ), int( 0.05f * r.h ) + 25, buf );
     }
 
     GLuint get_gl_handle() { return _gl_handle; }
@@ -93,6 +98,8 @@ public:
 private:
     GLuint          _gl_handle = 0;
     char const *    _name;
+    int _frame_num;
+    float _fps;
 };
 
 
@@ -119,7 +126,7 @@ int main( int argc, char * argv[] ) try
     ImGui_ImplGlfw_Init( app, false );      // ImGui library intializition
     texture depth_image, color_image;     // Helpers for renderig images
 
-    float       alpha = 0.5f;               // Transparancy coefficient
+    float       alpha = 1.f;               // Transparancy coefficient
     direction   dir = direction::to_depth;  // Alignment direction
 
     he.init( &rgb_cam );

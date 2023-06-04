@@ -8,10 +8,10 @@ include( ${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake )
 
 
 add_executable( ${PROJECT_NAME}
-    Device.cxx
-    Host.cxx
-    Udds.cxx
-    UddsPubSubTypes.cxx
+    Device.cpp
+    Host.cpp
+    Udds.cpp
+    UddsPubSubTypes.cpp
     HostEvent.cpp
     test_dds.cpp
     ../../third-party/imgui/imgui.cpp
