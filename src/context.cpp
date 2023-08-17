@@ -28,7 +28,6 @@
 #include <realdds/topics/device-info-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/os/executable-name.h>
-#include <rsutils/string/slice.h>
 
 // We manage one participant and device-watcher per domain:
 // Two contexts with the same domain-id will share the same participant and watcher, while a third context on a
