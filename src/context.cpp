@@ -1,37 +1,28 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-#ifdef _MSC_VER
-#if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013
-#error( "Librealsense requires MSVC2015 or later to build. Compilation will be aborted" )
-#endif
-#endif
+
+#include "context.h"
 
 #include <array>
 #include <chrono>
 #include "ds/d400/d400-factory.h"
 #include "device.h"
-#include "ds/ds-timestamp.h"
 #include "backend.h"
-#include <media/ros/ros_reader.h>
 #include "types.h"
-#include "stream.h"
 #include "environment.h"
-#include "context.h"
 #include "fw-update/fw-update-factory.h"
-#include "proc/color-formats-converter.h"
 #include "platform-camera.h"
+
+#include <media/ros/ros_reader.h>
 
 
 #ifdef BUILD_WITH_DDS
-#include "dds/rs-dds-device-info.h"
-
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-device.h>
 #include <realdds/topics/device-info-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/os/executable-name.h>
-#include <rsutils/string/slice.h>
 
 // We manage one participant and device-watcher per domain:
 // Two contexts with the same domain-id will share the same participant and watcher, while a third context on a
