@@ -4,6 +4,7 @@
 #pragma once
 
 #include <rsutils/signal.h>
+
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <map>
@@ -13,6 +14,7 @@ namespace librealsense
 {
     class device_factory;
     class device_info;
+    class context_module;
     class processing_block_interface;
 
 
@@ -74,10 +76,11 @@ namespace librealsense
                          std::vector< std::shared_ptr< device_info > > const & /*added*/ >
             _devices_changed;
 
-        nlohmann::json _settings; // Save operation settings
+        nlohmann::json _settings;
         unsigned const _device_mask;
 
-        std::vector< std::shared_ptr< device_factory > > _factories;
+        std::vector< std::shared_ptr< device_factory > > _device_factories;
+        std::vector< std::shared_ptr< context_module > > _modules;
     };
 
 }
