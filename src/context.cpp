@@ -4,10 +4,8 @@
 #include "context.h"
 #include "media/playback/playback-device-info.h"
 
-#include "backend-device-factory.h"
-#ifdef BUILD_WITH_DDS
-#include "dds/rsdds-device-factory.h"
-#endif
+#include <rscore/device-factory-registry.h>
+
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
@@ -28,17 +26,7 @@ namespace librealsense
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_VERSION_STR );
         }
 
-        _factories.push_back( std::make_shared< backend_device_factory >(
-            *this,
-            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
-            { invoke_devices_changed_callbacks( removed, added ); } ) );
-
-#ifdef BUILD_WITH_DDS
-        _factories.push_back( std::make_shared< rsdds_device_factory >(
-            *this,
-            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
-            { invoke_devices_changed_callbacks( removed, added ); } ) );
-#endif
+        auto _device_factories = device_factory_registry::create_all( _settings );
     }
 
 
