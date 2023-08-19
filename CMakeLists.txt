@@ -56,6 +56,7 @@ set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRIN
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
+include(lib/CMakeLists.txt)
 
 include(CMake/external_json.cmake)
 target_include_directories( rsutils
@@ -63,7 +64,7 @@ target_include_directories( rsutils
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/third-party/json/include>
     )
 
-target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
+target_link_libraries( ${LRS_TARGET} PUBLIC rscore )
 
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
@@ -72,7 +73,8 @@ if(BUILD_WITH_DDS)
         include(CMake/external_foonathan_memory.cmake)
         include(CMake/external_fastdds.cmake)
 
-        target_link_libraries( ${LRS_TARGET} PRIVATE realdds )
+        target_link_libraries( ${LRS_TARGET} PRIVATE rsdds )
+        #target_link_libraries( ${LRS_TARGET} PRIVATE rsdds INTERFACE -INCLUDE:rs_dds_registry_entry )
 
     else()
         MESSAGE(STATUS "Turning off `BUILD_WITH_DDS` as it's only supported on Windows & Linux and not on ${CMAKE_SYSTEM}")

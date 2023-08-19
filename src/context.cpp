@@ -15,8 +15,12 @@
 
 #include <media/ros/ros_reader.h>
 
+#include <rscore/device-factory-registry.h>
+
 
 #ifdef BUILD_WITH_DDS
+#include "dds/rs-dds-device-info.h"
+
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-device.h>
@@ -134,6 +138,8 @@ namespace librealsense
         }
 #endif //BUILD_WITH_DDS
 
+        auto _device_factories = device_factory_registry::create_all( _settings );
+
         environment::get_instance().set_time_service(_backend->create_time_service());
 
         _device_watcher = _backend->create_device_watcher();
@@ -145,6 +151,7 @@ namespace librealsense
         : context()
     {
         _settings = settings;
+        auto _device_factories = device_factory_registry::create_all( _settings );
 
         _backend = platform::create_backend();  // standard type
 
