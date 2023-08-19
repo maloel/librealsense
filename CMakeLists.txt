@@ -56,8 +56,9 @@ set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRIN
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
+include(lib/CMakeLists.txt)
 
-target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
+target_link_libraries( ${LRS_TARGET} PUBLIC rscore )
 
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
