@@ -34,7 +34,7 @@ public:
 
     bool initialize_factory( nlohmann::json const & settings ) override
     {
-        LOG_DEBUG( "rs-dds-device-factory::initialize_factor( " << settings << " )" );
+        LOG_DEBUG( "rs-dds-device-factory::initialize_factory( " << settings << " )" );
         return true;
     }
 };
@@ -58,7 +58,7 @@ static std::map< realdds::dds_domain_id, dds_domain_context > dds_domain_context
 #endif
 
 
-extern "C" auto rs_dds_registry_entry = device_factory_registry::add< rs_dds_device_factory >("dds");
+REGISTER_RSCORE_FACTORY( "dds" );
 
 
 }  // namespace librealsense
