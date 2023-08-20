@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-#include <rscore/device-factory-registry.h>
+#include <rscore/factory-registry.h>
 
 #include <rsutils/json.h>
 

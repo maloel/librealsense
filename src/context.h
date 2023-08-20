@@ -8,12 +8,12 @@
 #include "device-info.h"
 #include "platform/device-watcher.h"
 
+#include <rscore/rscore-factory.h>
+#include <rsutils/lazy.h>
+
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <set>
-
-
-#include <rsutils/lazy.h>
 
 
 namespace librealsense
@@ -114,7 +114,8 @@ namespace librealsense
         void start_dds_device_watcher();
 #endif
 
-        nlohmann::json _settings; // Save operation settings
+        nlohmann::json _settings;
+        rscore_factories _factories;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;

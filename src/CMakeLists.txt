@@ -68,7 +68,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/backend.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/context.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/device-info.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
@@ -114,7 +113,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.h"
         "${CMAKE_CURRENT_LIST_DIR}/device.h"
-        "${CMAKE_CURRENT_LIST_DIR}/device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
         "${CMAKE_CURRENT_LIST_DIR}/log.h"
@@ -158,12 +156,3 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"
         "${CMAKE_CURRENT_LIST_DIR}/basics.h"
 )
-
-if(BUILD_WITH_DDS)
-    file( GLOB_RECURSE RS_DDS_SOURCE_FILES
-        LIST_DIRECTORIES false
-        RELATIVE ${PROJECT_SOURCE_DIR}
-        "${CMAKE_CURRENT_LIST_DIR}/dds/*"
-        )
-    target_sources( ${LRS_TARGET} PRIVATE ${RS_DDS_SOURCE_FILES} )
-endif()
