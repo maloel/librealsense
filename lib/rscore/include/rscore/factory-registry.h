@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "device-factory.h"
+#include "rscore-factory.h"
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -19,9 +19,9 @@
 // NOTE: without _RSCORE_EXPAND, the result is _RSCORE_FACTORY_NAME_registry_entry
 //
 #define _RSCORE_EXPAND(X) X
-#define REGISTER_RSCORE_FACTORY( name )                                                                                \
+#define REGISTER_RSCORE_FACTORY( factory, name )                                                                          \
     extern "C" size_t _RSCORE_EXPAND( _RSCORE_FACTORY_NAME )##_registry_entry                                          \
-        = device_factory_registry::add< rs_dds_device_factory >( name )
+        = rscore_factory_registry::add< factory >( name )
 
 
 namespace librealsense {
@@ -30,10 +30,10 @@ namespace librealsense {
 // Registry for all the defined device factories. These are added during initialization, based on active compiler
 // modules, and then created when needed.
 //
-class device_factory_registry
+class rscore_factory_registry
 {
     // Factory creation is delayed until a chosen time; we store a factory-factory function
-    typedef std::function< std::shared_ptr< device_factory >( std::string const & /*name*/ ) > factory_fn;
+    typedef std::function< std::shared_ptr< rscore_factory >( std::string const & /*name*/ ) > factory_fn;
 
     // We use a map to maintain ordering & ensure uniqueness
     typedef std::map< std::string /*name*/, factory_fn > registry_t;
@@ -48,7 +48,7 @@ class device_factory_registry
 
 public:
     // To register a new factory:
-    //      static auto factory_it = device_factory_registry::add< my_factory >( "my-factory" );
+    //      static auto factory_it = factory_registry::add< my_factory >( "my-factory" );
     //
     // The return value has no meaning; it's just there so you can assign it to something so a static variable can be
     // declared and automatically initialized by the compiler (in any order it decides on).
@@ -64,7 +64,7 @@ public:
         auto factory_was_inserted
             = registry
                   .emplace( name,
-                            []( std::string const & name ) -> std::shared_ptr< device_factory >
+                            []( std::string const & name ) -> std::shared_ptr< rscore_factory >
                             {
                                 std::shared_ptr< T > factory;
                                 try
@@ -92,7 +92,7 @@ public:
     // Not all factories may be instantiated: factories may choose to remain inactive, depending on the settings or
     // other factors.
     //
-    static device_factories create_all( nlohmann::json const & settings );
+    static rscore_factories create_all( nlohmann::json const & settings );
 };
 
 
