@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <src/software-device.h>
-#include "sid_index.h"
+#include <rscore/software-device.h>
+#include "sid-index.h"
 
 #include <memory>
 #include <vector>

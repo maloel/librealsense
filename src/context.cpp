@@ -4,7 +4,8 @@
 #include "context.h"
 #include "media/playback/playback-device-info.h"
 
-#include <rscore/device-factory-registry.h>
+#include <rscore/factory-registry.h>
+#include <rscore/device-factory.h>
 
 
 #include <rsutils/string/from.h>
@@ -26,7 +27,7 @@ namespace librealsense
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_VERSION_STR );
         }
 
-        auto _device_factories = device_factory_registry::create_all( _settings );
+        _factories = rscore_factory_registry::create_all( _settings );
     }
 
 
@@ -58,12 +59,22 @@ namespace librealsense
         std::vector< std::shared_ptr< device_info > > list;
         for( auto & factory : _factories )
         {
+            auto d_factory = std::dynamic_pointer_cast< device_factory >( factory );
+            if( ! d_factory )
+                continue;
+            d_factory->query_devices(
+                [&]( std::shared_ptr< device_info > const & dev_info )
+                {
+                    list.push_back( dev_info );
+                    return true;
+                } );
             for( auto & dev_info : factory->query_devices( requested_mask ) )
             {
                 LOG_INFO( "... " << dev_info->get_address() );
                 list.push_back( dev_info );
             }
         }
+
         for( auto & item : _playback_devices )
         {
             if( auto dev_info = item.second.lock() )

@@ -70,7 +70,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/backend-device-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/device-info.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rscore/device-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
@@ -88,7 +87,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/sensor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hid-sensor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/uvc-sensor.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/software-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/source.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/stream.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/sync.cpp"
@@ -120,7 +118,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/platform/uvc-device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.h"
         "${CMAKE_CURRENT_LIST_DIR}/device.h"
-        "${CMAKE_CURRENT_LIST_DIR}/device-info.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
         "${CMAKE_CURRENT_LIST_DIR}/log.h"
@@ -139,7 +136,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/hid-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/uvc-sensor.h"
-        "${CMAKE_CURRENT_LIST_DIR}/software-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/source.h"
         "${CMAKE_CURRENT_LIST_DIR}/stream.h"
         "${CMAKE_CURRENT_LIST_DIR}/sync.h"
@@ -164,12 +160,3 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"
         "${CMAKE_CURRENT_LIST_DIR}/basics.h"
 )
-
-if(BUILD_WITH_DDS)
-    file( GLOB_RECURSE RS_DDS_SOURCE_FILES
-        LIST_DIRECTORIES false
-        RELATIVE ${PROJECT_SOURCE_DIR}
-        "${CMAKE_CURRENT_LIST_DIR}/dds/*"
-        )
-    target_sources( ${LRS_TARGET} PRIVATE ${RS_DDS_SOURCE_FILES} )
-endif()

@@ -3,14 +3,13 @@
 
 #pragma once
 
+#include <rscore/rscore-factory.h>
 #include "types.h"  // devices_changed_callback_ptr
-
 #include <rsutils/lazy.h>
+
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <map>
-
-
 namespace librealsense
 {
     class context;
@@ -84,10 +83,10 @@ namespace librealsense
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 
-        nlohmann::json _settings; // Save operation settings
+        nlohmann::json _settings;
         unsigned const _device_mask;
 
-        std::vector< std::shared_ptr< device_factory > > _factories;
+        rscore_factories _factories;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;

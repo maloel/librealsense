@@ -3,10 +3,7 @@
 
 #pragma once
 
-#include <src/context.h>
-#include <src/device-info.h>
-
-#include <memory>
+#include <rscore/device-info.h>
 
 
 namespace realdds {
@@ -17,7 +14,6 @@ class dds_device;
 namespace librealsense {
 
 
-class dds_device_proxy;
 class device_interface;
 
 
