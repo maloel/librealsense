@@ -14,27 +14,27 @@
 #include <rsutils/os/executable-name.h>
 #endif
 
-#include <rscore/device-factory-registry.h>
+#include <rscore/factory-registry.h>
 #include <rsutils/json.h>
 
 
 namespace librealsense {
 
 
-class rs_dds_device_factory : public device_factory
+class rs_dds_factory : public rscore_factory
 {
-    typedef device_factory super;
+    typedef rscore_factory super;
 
 public:
-    rs_dds_device_factory( std::string const & name )
+    rs_dds_factory( std::string const & name )
         : super( name )
     {
-        LOG_DEBUG( "rs-dds-device-factory( " << name << " )" );
+        LOG_DEBUG( "rs-dds-factory( " << name << " )" );
     }
 
     bool initialize_factory( nlohmann::json const & settings ) override
     {
-        LOG_DEBUG( "rs-dds-device-factory::initialize_factory( " << settings << " )" );
+        LOG_DEBUG( "rs-dds-factory::initialize_factory( " << settings << " )" );
         return true;
     }
 };
@@ -58,7 +58,7 @@ static std::map< realdds::dds_domain_id, dds_domain_context > dds_domain_context
 #endif
 
 
-REGISTER_RSCORE_FACTORY( "dds" );
+REGISTER_RSCORE_FACTORY( rs_dds_factory, "dds" );
 
 
 }  // namespace librealsense

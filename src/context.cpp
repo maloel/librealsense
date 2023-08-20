@@ -15,7 +15,8 @@
 
 #include <media/ros/ros_reader.h>
 
-#include <rscore/device-factory-registry.h>
+#include <rscore/factory-registry.h>
+#include <rscore/device-factory.h>
 
 
 #ifdef BUILD_WITH_DDS
@@ -138,7 +139,7 @@ namespace librealsense
         }
 #endif //BUILD_WITH_DDS
 
-        auto _device_factories = device_factory_registry::create_all( _settings );
+        _factories = rscore_factory_registry::create_all( _settings );
 
         environment::get_instance().set_time_service(_backend->create_time_service());
 
@@ -151,7 +152,7 @@ namespace librealsense
         : context()
     {
         _settings = settings;
-        auto _device_factories = device_factory_registry::create_all( _settings );
+        _factories = rscore_factory_registry::create_all( _settings );
 
         _backend = platform::create_backend();  // standard type
 
@@ -286,6 +287,15 @@ namespace librealsense
         {
             if (auto dev = item.second.lock())
                 list.push_back(dev);
+        }
+
+        for( auto factory : _factories )
+        {
+            auto d_factory = std::dynamic_pointer_cast< device_factory >( factory );
+            if( ! d_factory )
+                continue;
+            auto devices = d_factory->query_devices( mask );
+            std::move( begin( devices ), end( devices ), std::back_inserter( list ) );
         }
 
         if (list.size())
