@@ -13,6 +13,17 @@
 #include <stdexcept>
 
 
+// Use this macro in a .cpp to actually add an entry - see the corresponding register_rscore_factory function in the
+// makefile.
+// 
+// NOTE: without _RSCORE_EXPAND, the result is _RSCORE_FACTORY_NAME_registry_entry
+//
+#define _RSCORE_EXPAND(X) X
+#define REGISTER_RSCORE_FACTORY( name )                                                                                \
+    extern "C" size_t _RSCORE_EXPAND( _RSCORE_FACTORY_NAME )##_registry_entry                                          \
+        = device_factory_registry::add< rs_dds_device_factory >( name )
+
+
 namespace librealsense {
 
 

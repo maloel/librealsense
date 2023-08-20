@@ -44,17 +44,7 @@ source_group(
 
 # Share -------------------------------------------------------------------------------------
 #
-#target_sources( ${PROJECT_NAME} INTERFACE  # cmake 3.11
-#    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/share/rs-dds-registry.cpp>
-#)
-#target_link_options( ${PROJECT_NAME} INTERFACE  # cmake 3.13
-    #/INCLUDE:rs_dds_registry_entry
-#    -Wl,-u,rs_dds_registry_entry
-#)
-target_link_libraries( ${PROJECT_NAME} INTERFACE
-    -INCLUDE:rs_dds_registry_entry
-)
-#endif()
+register_rscore_factory( ${PROJECT_NAME} )
 
 
 # Install -----------------------------------------------------------------------------------

@@ -57,3 +57,53 @@ install( TARGETS ${PROJECT_NAME}
 #    add_subdirectory( py )
 #endif()
 
+
+# Macros ------------------------------------------------------------------------------------
+#
+macro( _register_rscore_factory )
+    #
+    # register_rscore_factory <target>
+    #
+    # Projects that need to register their own factories for use by rscore's context should
+    # call this function. The C++ code should likewise use the REGISTER_RSCORE_FACTORY macro to
+    # properly register the factory in any .cpp file.
+    #
+    function( register_rscore_factory target )
+        # fARGN holds the list of arguments past the last expected argument
+        set( fARGN ARGN )  # otherwise we get the outside macro's ARGN
+        set( fARGC ARGC )
+
+        if( ${${fARGC}} GREATER 1 )
+            message( FATAL_ERROR "too many (${${fARGC}}) arguments; usage: register_rscore_factory <target>" )
+        endif()
+
+        #cmake_parse_arguments( ARG "DEVICE" "" "" ${${fARGN}} )
+        #if( NOT ARG_DEVICE )
+        #    message( FATAL_ERROR "register_rscore_factory <target> <name>" )
+        #endif()
+
+        # The factory name is made available to C++ through a definition RSCORE_FACTORY_NAME:
+        #
+        target_compile_definitions( ${target} PRIVATE _RSCORE_FACTORY_NAME=${target} )
+        #
+        # The registry entry is statically initialized but not usually referenced anywhere, which
+        # means the linker will try to remove it! If it does it will not be included and no factory
+        # will be initialized... so we tell any dependents to not remove the factory entry:
+        #
+        # In Windows (Visual Studio):
+        #       /INCLUDE (Force Symbol References)
+        #       "tells the linker to add a specified symbol to the symbol table ... overrides the
+        #       removal of that symbol by /OPT:REF"
+        #       (NOTE: target_link_libraries requires a '-' and, luckily, the linker accepts it)
+        # Linux:
+        #       "Force symbol to be entered in the output file as an undefined symbol"
+        #       This will cause a particular symbol to be pulled into the link.
+        #
+        if( WIN32 )
+            target_link_libraries( ${target} INTERFACE -INCLUDE:${target}_registry_entry )
+        else()
+            target_link_libraries( ${target} INTERFACE --undefined=${target}_registry_entry )
+        endif()
+    endfunction()
+endmacro()
+_register_rscore_factory()
