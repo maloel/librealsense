@@ -7,7 +7,6 @@
 #include <memory>
 #include <vector>
 
-#include "backend.h"
 #include "archive.h"
 #include "hw-monitor.h"
 #include "option.h"

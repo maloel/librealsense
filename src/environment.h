@@ -6,6 +6,7 @@
 #include "types.h"
 #include <memory>
 #include <mutex>
+#include <set>
 
 namespace librealsense
 {
@@ -87,6 +88,11 @@ namespace librealsense
         std::atomic<int> _locks_count;
 
     };
+
+
+    namespace platform {
+        class time_service;
+    }
 
 
     class environment

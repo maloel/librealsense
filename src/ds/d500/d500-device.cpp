@@ -1,13 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <vector>
-#include <string>
-
 #include "device.h"
 #include "context.h"
 #include "image.h"
 #include "metadata-parser.h"
+#include "metadata.h"
+#include <src/backend.h>
 
 #include "d500-device.h"
 #include "d500-private.h"
@@ -29,6 +28,8 @@
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include <nlohmann/json.hpp>
+#include <vector>
+#include <string>
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
