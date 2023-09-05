@@ -111,12 +111,12 @@ void uvc_sensor::open( const stream_profiles & requests )
             rs2_time_t last_timestamp = 0;
             _device->probe_and_commit(
                 req_profile_base->get_backend_profile(),
-                [this, req_profile_base, req_profile, last_frame_number, last_timestamp](
+                [this, req_profile_base, req_profile, last_frame_number, last_timestamp, ts = _owner->get_context()->get_time_service()](
                     platform::stream_profile p,
                     platform::frame_object f,
                     std::function< void() > continuation ) mutable
                 {
-                    const auto && system_time = environment::get_instance().get_time_service()->get_time();
+                    const auto && system_time = ts->get_time();
 
                     if( ! this->is_streaming() )
                     {
@@ -177,7 +177,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         expected_size,
                         std::move( fr->additional_data ),
                         true );
-                    auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    auto diff = ts->get_time() - system_time;
                     if( diff > 10 )
                         LOG_DEBUG( "!! Frame allocation took " << diff << " msec" );
 
@@ -221,7 +221,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         return;
                     }
 
-                    diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                    diff = ts->get_time() - system_time;
                     if( diff > 10 )
                         LOG_DEBUG( "!! Frame memcpy took " << diff << " msec" );
 
@@ -237,7 +237,7 @@ void uvc_sensor::open( const stream_profiles & requests )
                         auto frame_number = fh->get_frame_number();
 
                         // Invoke first callback
-                        auto callback_start_time = environment::get_instance().get_time_service()->get_time();
+                        auto callback_start_time = ts->get_time();
                         auto callback = fh->get_owner()->begin_callback();
                         _source.invoke_callback( std::move( fh ) );
 

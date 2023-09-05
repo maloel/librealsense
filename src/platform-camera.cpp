@@ -3,7 +3,6 @@
 
 #include "platform-camera.h"
 #include "ds/ds-timestamp.h"
-#include "environment.h"
 #include "stream.h"
 #include "proc/color-formats-converter.h"
 #include "backend.h"
@@ -70,7 +69,7 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
         devs.push_back( dev_info->get_context()->get_backend().create_uvc_device( info ) );
 
     std::unique_ptr< frame_timestamp_reader > host_timestamp_reader_backup(
-        new ds_timestamp_reader( environment::get_instance().get_time_service() ) );
+        new ds_timestamp_reader( dev_info->get_context()->get_time_service() ) );
     auto raw_color_ep = std::make_shared< uvc_sensor >(
         "Raw RGB Camera",
         std::make_shared< platform::multi_pins_uvc_device >( devs ),

@@ -17,18 +17,31 @@
 
 #include "backend.h"
 #include "platform/uvc-device.h"
+#include "environment.h"
 
 
-void librealsense::platform::control_range::populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
+namespace librealsense {
+
+
+void platform::control_range::populate_raw_data(std::vector<uint8_t>& vec, int32_t value)
 {
     vec.resize(sizeof(value));
     auto data = reinterpret_cast<const uint8_t*>(&value);
     std::copy(data, data + sizeof(value), vec.data());
 }
 
-double librealsense::monotonic_to_realtime(double monotonic)
+double monotonic_to_realtime(double monotonic)
 {
     auto realtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     auto time_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     return monotonic + (realtime - time_since_epoch);
 }
+
+
+std::shared_ptr< time_service > platform::backend::create_time_service() const
+{
+    return environment::get_instance().get_time_service();
+}
+
+
+}  // namespace librealsense

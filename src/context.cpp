@@ -10,7 +10,6 @@
 #include "media/playback/playback-device-info.h"
 #include "types.h"
 #include "stream.h"
-#include "environment.h"
 #include "fw-update/fw-update-factory.h"
 #include "proc/color-formats-converter.h"
 #include "platform-camera.h"
@@ -148,7 +147,7 @@ namespace librealsense
         }
 #endif //BUILD_WITH_DDS
 
-        environment::get_instance().set_time_service(_backend->create_time_service());
+        _time_service = _backend->create_time_service();
 
         _device_watcher = _backend->create_device_watcher();
         assert(_device_watcher->is_stopped());
@@ -162,7 +161,7 @@ namespace librealsense
 
         _backend = platform::create_backend();  // standard type
 
-        environment::get_instance().set_time_service( _backend->create_time_service() );
+        _time_service = _backend->create_time_service();
 
         _device_watcher = _backend->create_device_watcher();
         assert( _device_watcher->is_stopped() );

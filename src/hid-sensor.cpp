@@ -164,9 +164,10 @@ void hid_sensor::start( frame_callback_ptr callback )
     raise_on_before_streaming_changes( true );  // Required to be just before actual start allow recording to work
 
     _hid_device->start_capture(
-        [this, last_frame_number, last_timestamp]( const platform::sensor_data & sensor_data ) mutable
+        [this, last_frame_number, last_timestamp, ts = _owner->get_context()->get_time_service()](
+            const platform::sensor_data & sensor_data ) mutable
         {
-            const auto && system_time = environment::get_instance().get_time_service()->get_time();
+            const auto && system_time = ts->get_time();
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
             static const std::string custom_sensor_name = "custom";
             auto && sensor_name = sensor_data.sensor.name;
@@ -240,7 +241,7 @@ void hid_sensor::start( frame_callback_ptr callback )
             auto frame_number = frame->get_frame_number();
 
             // Invoke first callback
-            auto callback_start_time = environment::get_instance().get_time_service()->get_time();
+            auto callback_start_time = ts->get_time();
             auto callback = frame->get_owner()->begin_callback();
             _source.invoke_callback( std::move( frame ) );
 

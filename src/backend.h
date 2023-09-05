@@ -44,7 +44,9 @@ namespace librealsense
             virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const = 0;
             virtual std::vector<hid_device_info> query_hid_devices() const = 0;
 
-            virtual std::shared_ptr<time_service> create_time_service() const = 0;
+            // Return the time-service to use on this backend. Unless overriden, uses the default environment service.
+            // This creates a new one every time and is used by the context - to get the current one, get it from the context!
+            virtual std::shared_ptr< time_service > create_time_service() const;
 
             virtual std::shared_ptr<device_watcher> create_device_watcher() const = 0;
 

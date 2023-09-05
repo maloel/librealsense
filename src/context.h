@@ -54,6 +54,7 @@ namespace librealsense
     class device;
     class context;
     class playback_device_info;
+    class time_service;
 
     enum class backend_type
     {
@@ -78,6 +79,7 @@ namespace librealsense
         ~context();
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
         const platform::backend& get_backend() const { return *_backend; }
+        std::shared_ptr< time_service > const & get_time_service() const { return _time_service; }
 
         uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
         void unregister_internal_device_callback(uint64_t cb_id);
@@ -115,6 +117,7 @@ namespace librealsense
 #endif
 
         nlohmann::json _settings; // Save operation settings
+        std::shared_ptr< time_service > _time_service;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
