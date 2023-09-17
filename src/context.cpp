@@ -3,15 +3,9 @@
 
 #include "context.h"
 
-#include "device.h"
-#include <media/ros/ros_reader.h>
 #include "media/playback/playback-device-info.h"
-#include "types.h"
-#include "stream.h"
 #include "environment.h"
-#include "proc/color-formats-converter.h"
 #include <src/backend.h>
-#include "software-device.h"
 
 
 #ifdef BUILD_WITH_DDS
@@ -386,77 +380,4 @@ namespace librealsense
         }
     }
 
-    std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
-    {
-        std::map<std::string, std::vector<platform::uvc_device_info>> map;
-        for (auto&& info : devices)
-        {
-            map[info.unique_id].push_back(info);
-        }
-        std::vector<std::vector<platform::uvc_device_info>> result;
-        for (auto&& kvp : map)
-        {
-            result.push_back(kvp.second);
-        }
-        return result;
-    }
-
-    // TODO: Sergey
-    // Make template
-    void trim_device_list(std::vector<platform::usb_device_info>& devices, const std::vector<platform::usb_device_info>& chosen)
-    {
-        if (chosen.empty())
-            return;
-
-        auto was_chosen = [&chosen](const platform::usb_device_info& info)
-        {
-            return find(chosen.begin(), chosen.end(), info) != chosen.end();
-        };
-        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-    }
-
-    void trim_device_list(std::vector<platform::uvc_device_info>& devices, const std::vector<platform::uvc_device_info>& chosen)
-    {
-        if (chosen.empty())
-            return;
-
-        auto was_chosen = [&chosen](const platform::uvc_device_info& info)
-        {
-            return find(chosen.begin(), chosen.end(), info) != chosen.end();
-        };
-        devices.erase(std::remove_if(devices.begin(), devices.end(), was_chosen), devices.end());
-    }
-
-    bool mi_present(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                return true;
-        }
-        return false;
-    }
-
-    platform::uvc_device_info get_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                return info;
-        }
-        throw invalid_value_exception("Interface not found!");
-    }
-
-    std::vector<platform::uvc_device_info> filter_by_mi(const std::vector<platform::uvc_device_info>& devices, uint32_t mi)
-    {
-        std::vector<platform::uvc_device_info> results;
-        for (auto&& info : devices)
-        {
-            if (info.mi == mi)
-                results.push_back(info);
-        }
-        return results;
-    }
 }
-
-using namespace librealsense;
