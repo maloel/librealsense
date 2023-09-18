@@ -42,13 +42,13 @@ using json = nlohmann::json;
 namespace librealsense
 {
     context::context( json const & settings )
-        : _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
-        , _backend( platform::create_backend() )
-        , _settings( settings )
+        : _settings( settings )
+        , _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
+        , _backend( backend_device_factory::get_backend() )
         , _backend_device_factory(
-            *this,
-            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
-            { invoke_devices_changed_callbacks( removed, added ); } )
+              *this,
+              [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
+              { invoke_devices_changed_callbacks( removed, added ); } )
     {
         static bool version_logged = false;
         if( ! version_logged )

@@ -12,6 +12,7 @@
 #include "fw-update/fw-update-factory.h"
 #include "platform-camera.h"
 
+#include <rsutils/shared-ptr-singleton.h>
 #include <rsutils/json.h>
 
 
@@ -88,52 +89,80 @@ subtract_sets( const std::vector< std::shared_ptr< librealsense::device_info > >
 namespace librealsense {
 
 
-backend_device_factory::backend_device_factory( context & ctx, callback cb )
-    : _device_watcher( ctx.get_backend().create_device_watcher() )
-    , _device_mask( rsutils::json::get< unsigned >( ctx.get_settings(), "device-mask", RS2_PRODUCT_LINE_ANY ) )
-    , _context( ctx )
-    , _callback( cb )
+/*static*/ std::shared_ptr< platform::backend > backend_device_factory::get_backend()
 {
-    assert( _device_watcher->is_stopped() );
-    _device_watcher->start(
-        [this]( platform::backend_device_group old, platform::backend_device_group curr )
-        {
-            auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
-            auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
+    // There can be only one backend!
+    static auto the_backend = platform::create_backend();
+    return the_backend;
+}
 
-            if( librealsense::list_changed< std::shared_ptr< device_info > >(
-                    old_list,
-                    new_list,
-                    []( std::shared_ptr< device_info > first, std::shared_ptr< device_info > second )
-                    { return first->is_same_as( second ); } ) )
-            {
-                std::vector< rs2_device_info > rs2_devices_info_removed;
 
-                auto devices_info_removed = subtract_sets( old_list, new_list );
-                for( size_t i = 0; i < devices_info_removed.size(); i++ )
-                {
-                    rs2_devices_info_removed.push_back( { _context.shared_from_this(), devices_info_removed[i] } );
-                    LOG_DEBUG( "Device disconnected: " << devices_info_removed[i]->get_address() );
-                }
+class device_watcher_singleton
+{
+    std::shared_ptr< platform::device_watcher > const _device_watcher;
+    signal< device_watcher_singleton, platform::backend_device_group, platform::backend_device_group >
+        _callbacks;
 
-                std::vector< rs2_device_info > rs2_devices_info_added;
-                auto devices_info_added = subtract_sets( new_list, old_list );
-                for( size_t i = 0; i < devices_info_added.size(); i++ )
-                {
-                    rs2_devices_info_added.push_back( { _context.shared_from_this(), devices_info_added[i] } );
-                    LOG_DEBUG( "Device connected: " << devices_info_added[i]->get_address() );
-                }
+public:
+    device_watcher_singleton()
+        : _device_watcher( backend_device_factory::get_backend()->create_device_watcher() )
+    {
+        assert( _device_watcher->is_stopped() );
+        _device_watcher->start( [this]( platform::backend_device_group old, platform::backend_device_group curr )
+                                { _callbacks( old, curr ); } );
+    }
 
-                _callback( rs2_devices_info_removed, rs2_devices_info_added );
-            }
-        } );
+    rsutils::deferred subscribe( platform::device_changed_callback && cb )
+    {
+        auto id = _callbacks.subscribe( cb );
+        return [&, id]() { _callbacks.unsubscribe( id ); };
+    }
+};
+
+
+// We keep the device-watcher alive as long as there's at least one context (therefore backend_device_factory)
+static rsutils::shared_ptr_singleton< device_watcher_singleton > backend_device_watcher;
+
+
+backend_device_factory::backend_device_factory( context & ctx, callback && cb )
+    : _context( ctx )
+    , _device_mask( rsutils::json::get< unsigned >( ctx.get_settings(), "device-mask", RS2_PRODUCT_LINE_ANY ) )
+    , _device_watcher( backend_device_watcher.instance() )
+    , _dtor( _device_watcher->subscribe(
+          [this, cb = std::move( cb )]( platform::backend_device_group old, platform::backend_device_group curr )
+          {
+              auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
+              auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
+
+              if( librealsense::list_changed< std::shared_ptr< device_info > >(
+                      old_list,
+                      new_list,
+                      []( std::shared_ptr< device_info > first, std::shared_ptr< device_info > second )
+                      { return first->is_same_as( second ); } ) )
+              {
+                  std::vector< rs2_device_info > devices_removed;
+                  for( auto & device_removed : subtract_sets( old_list, new_list ) )
+                  {
+                      devices_removed.push_back( { _context.shared_from_this(), device_removed } );
+                      LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
+                  }
+
+                  std::vector< rs2_device_info > devices_added;
+                  for( auto & device_added : subtract_sets( new_list, old_list ) )
+                  {
+                      devices_added.push_back( { _context.shared_from_this(), device_added } );
+                      LOG_DEBUG( "Device connected: " << device_added->get_address() );
+                  }
+
+                  cb( devices_removed, devices_added );
+              }
+          } ) )
+{
 }
 
 
 backend_device_factory::~backend_device_factory()
 {
-    if( _device_watcher )
-        _device_watcher->stop();
 }
 
 
