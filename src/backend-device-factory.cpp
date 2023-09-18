@@ -88,20 +88,6 @@ subtract_sets( const std::vector< std::shared_ptr< librealsense::device_info > >
 namespace librealsense {
 
 
-class still_alive
-{
-    std::shared_ptr< bool > _ptr;
-
-public:
-    still_alive()
-        : _ptr( std::make_shared< bool >( true ) )
-    {
-    }
-
-    std::weak_ptr< bool > get() const { return _ptr; }
-};
-
-
 backend_device_factory::backend_device_factory( context & ctx, callback cb )
     : _device_watcher( ctx.get_backend().create_device_watcher() )
     , _device_mask( rsutils::json::get< unsigned >( ctx.get_settings(), "device-mask", RS2_PRODUCT_LINE_ANY ) )
