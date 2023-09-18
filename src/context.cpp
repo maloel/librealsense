@@ -276,61 +276,6 @@ namespace librealsense
         _devices_changed_callback = std::move(callback);
     }
 
-    std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
-    {
-        std::vector<platform::uvc_device_info> result;
-        for (auto&& info : devices)
-        {
-            if (pid_list.count(info.pid))
-                result.push_back(info);
-        }
-        return result;
-    }
-
-    // TODO: Make template
-    std::vector<platform::usb_device_info> filter_by_product(const std::vector<platform::usb_device_info>& devices, const std::set<uint16_t>& pid_list)
-    {
-        std::vector<platform::usb_device_info> result;
-        for (auto&& info : devices)
-        {
-            if (pid_list.count(info.pid))
-                result.push_back(info);
-        }
-        return result;
-    }
-
-    std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
-        const std::vector<std::vector<platform::uvc_device_info>>& devices,
-        const std::vector<platform::hid_device_info>& hids)
-    {
-        std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> results;
-        uint16_t vid;
-        uint16_t pid;
-
-        for (auto&& dev : devices)
-        {
-            std::vector<platform::hid_device_info> hid_group;
-            auto unique_id = dev.front().unique_id;
-            auto device_serial = dev.front().serial;
-
-            for (auto&& hid : hids)
-            {
-                if( ! hid.unique_id.empty() )
-                {
-                    std::stringstream(hid.vid) >> std::hex >> vid;
-                    std::stringstream(hid.pid) >> std::hex >> pid;
-
-                    if (hid.unique_id == unique_id)
-                    {
-                        hid_group.push_back(hid);
-                    }
-                }
-            }
-            results.push_back(std::make_pair(dev, hid_group));
-        }
-        return results;
-    }
-
     std::shared_ptr<playback_device_info> context::add_device(const std::string& file)
     {
         auto it = _playback_devices.find(file);
