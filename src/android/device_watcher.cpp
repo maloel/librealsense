@@ -41,10 +41,10 @@ void device_watcher_usbhost::notify()
         callback(prev, curr);
 }
 
-void device_watcher_usbhost::start(librealsense::platform::device_changed_callback callback)
+void device_watcher_usbhost::start( librealsense::platform::device_changed_callback && callback )
 {
     std::lock_guard<std::mutex> lk(_mutex);
-    _callback = callback;
+    _callback = std::move( callback );
     _is_stopped = false;
 }
 
@@ -58,4 +58,10 @@ void device_watcher_usbhost::stop()
 bool device_watcher_usbhost::is_stopped() const
 {
     return _is_stopped;
+}
+
+backend_device_group device_watcher_usbhost::get_devices() const
+{
+    std::lock_guard<std::mutex> lk( _mutex );
+    return _prev_group;
 }
