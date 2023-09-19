@@ -185,9 +185,9 @@ namespace librealsense
             }
             ~win_event_device_watcher() { stop(); }
 
-            void start(device_changed_callback callback) override
+            void start( device_changed_callback && callback ) override
             {
-                std::lock_guard<std::mutex> lock(_m);
+                std::lock_guard< std::mutex > lock( _m );
                 if( ! _data._stopped )
                     throw wrong_api_call_sequence_exception(
                         "Cannot start a running device_watcher" );
@@ -200,9 +200,15 @@ namespace librealsense
                 _thread = std::thread([this]() { run(); });
             }
 
+            backend_device_group get_devices() const override
+            {
+                std::lock_guard< std::mutex > lock( _m );
+                return _last;
+            }
+
             void stop() override
             {
-                std::lock_guard<std::mutex> lock(_m);
+                std::lock_guard< std::mutex > lock( _m );
                 if (!_data._stopped)
                 {
                     LOG_DEBUG( "stopping win_event_device_watcher" );
@@ -218,7 +224,7 @@ namespace librealsense
 
         private:
             std::thread _thread;
-            std::mutex _m;
+            mutable std::mutex _m;
             backend_device_group _last;
             device_changed_callback _callback;
             const backend * const _backend;
@@ -267,8 +273,13 @@ namespace librealsense
                                 || list_changed( _last.usb_devices, curr.usb_devices )
                                 || list_changed( _last.hid_devices, curr.hid_devices ) )
                             {
-                                _callback( _last, curr );
-                                _last = curr;
+                                // We want to make the change BEFORE calling the callback, so get_devices() will give the new state
+                                auto prev = _last;
+                                {
+                                    std::lock_guard< std::mutex > lock( _m );
+                                    _last = curr;
+                                }
+                                _callback( prev, curr );
                             }
                             _data._changed = false;
                         }
