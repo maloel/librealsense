@@ -70,8 +70,7 @@ public:
 
     bool is_valid() const override
     {
-        std::lock_guard<std::mutex> lock(_device_changed_mtx);
-        return _is_valid;
+        return _dev_info->is_alive();
     }
 
     void tag_profiles(stream_profiles profiles) const override;
@@ -82,8 +81,6 @@ public:
 
     virtual void stop_activity() const;
 
-    bool device_changed_notifications_on() const { return _device_changed_notifications; }
-
     format_conversion get_format_conversion() const;
 
     uint16_t _pid;
@@ -93,19 +90,15 @@ protected:
     void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
     std::vector<rs2_format> map_supported_color_formats(rs2_format source_format);
 
-    explicit device( std::shared_ptr< const device_info > const &, bool device_changed_notifications = true );
+    explicit device( std::shared_ptr< const device_info > const & );
 
     std::map<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>> _extrinsics;
 
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
     std::shared_ptr< const device_info > _dev_info;
-    bool _is_valid, _device_changed_notifications;
     mutable std::mutex _device_changed_mtx;
-    uint64_t _callback_id;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
-
-    std::shared_ptr< bool > _is_alive; // Ensures object can be accessed
 };
 
 // Helper function that should be used when multiple FW calls needs to be made.

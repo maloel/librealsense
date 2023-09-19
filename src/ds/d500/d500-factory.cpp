@@ -39,7 +39,7 @@ class d555e_device
 {
 public:
     d555e_device( std::shared_ptr< const d500_info > dev_info )
-        : device( dev_info, true )
+        : device( dev_info )
         , d500_device( dev_info )
         , d500_active( dev_info )
         , d500_color( dev_info )

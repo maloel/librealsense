@@ -92,8 +92,7 @@ namespace librealsense
                 this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
             }
 
-            if (_owner->device_changed_notifications_on())
-                LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
+            LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
         }
         catch (std::exception& e)
         {
