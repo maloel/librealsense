@@ -35,7 +35,9 @@ public:
     // context.
     std::shared_ptr< context > const & get_context() const { return _ctx; }
 
-public:
+    // Returns whether there is a live device at this address
+    virtual bool is_alive() const = 0; 
+
     // A one-line identifier that can be used to "point" to this device
     virtual std::string get_address() const = 0;
 

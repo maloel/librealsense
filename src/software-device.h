@@ -63,6 +63,8 @@ namespace librealsense
             _address = rsutils::string::from() << "software-device://" << (unsigned long long)dev.get();
         }
 
+        bool is_alive() const override { return ! _dev.expired(); }
+
         std::string get_address() const override { return _address; }
 
         bool is_same_as( std::shared_ptr< const device_info > const & other ) const override

@@ -32,6 +32,8 @@ public:
     {
     }
 
+    bool is_alive() const override { return false; }  // TODO
+
     std::string get_address() const override
     {
         for( auto & d : _group.uvc_devices )
