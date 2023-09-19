@@ -22,6 +22,7 @@ class device_watcher_singleton;
 namespace platform {
 class backend;
 struct backend_device_group;
+class platform_device_info;
 }  // namespace platform
 
 
@@ -67,8 +68,8 @@ public:
     std::vector< std::shared_ptr< device_info > > query_devices( unsigned mask ) const;
 
 private:
-    std::vector< std::shared_ptr< device_info > > create_devices_from_group( platform::backend_device_group,
-                                                                             int mask ) const;
+    std::vector< std::shared_ptr< platform::platform_device_info > >
+        create_devices_from_group( platform::backend_device_group, int mask ) const;
 };
 
 
