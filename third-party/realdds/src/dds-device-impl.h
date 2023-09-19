@@ -34,13 +34,15 @@ class flexible_msg;
 
 class dds_device::impl
 {
+public:
     enum class state_t
     {
         WAIT_FOR_DEVICE_HEADER,
         WAIT_FOR_DEVICE_OPTIONS,
         WAIT_FOR_STREAM_HEADER,
         WAIT_FOR_STREAM_OPTIONS,
-        READY
+        READY,
+        DEAD                        // Device was disconnected; a new device is needed to continue
     };
     static char const * to_string( state_t );
     void set_state( state_t );
@@ -48,7 +50,6 @@ class dds_device::impl
     state_t _state = state_t::WAIT_FOR_DEVICE_HEADER;
     size_t _n_streams_expected = 0;  // needed only until ready
 
-public:
     topics::device_info const _info;
     dds_guid _server_guid;
     std::shared_ptr< dds_participant > const _participant;
