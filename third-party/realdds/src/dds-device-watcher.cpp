@@ -150,6 +150,7 @@ void dds_device_watcher::remove_device( dds_guid const & guid )
         if( it == _dds_devices.end() )
             return;
         device = it->second;
+        device->set_dead();
         _dds_devices.erase( it );
     }
     // rest must happen outside the mutex
