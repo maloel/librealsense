@@ -17,17 +17,17 @@ namespace librealsense
         class device_watcher_usbhost : public device_watcher
         {
         public:
-            virtual void start(device_changed_callback callback) override;
+            virtual void start( device_changed_callback && callback ) override;
             virtual void stop() override;
             virtual bool is_stopped() const override;
+            backend_device_group get_devices() const override;
             void notify();
             static std::shared_ptr<device_watcher_usbhost> instance();
 
         private:
-            std::mutex _mutex;
+            mutable std::mutex _mutex;
             device_changed_callback _callback = nullptr;
             backend_device_group _prev_group;
-            std::vector<platform::uvc_device_info> update_uvc_devices();
             bool _is_stopped = true;
         };
     }
