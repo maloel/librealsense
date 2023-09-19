@@ -27,6 +27,16 @@ void dds_device::wait_until_ready( size_t timeout_ns )
     _impl->wait_until_ready( timeout_ns );
 }
 
+bool dds_device::is_alive() const
+{
+    return _impl->_state != impl::state_t::DEAD;
+}
+
+void dds_device::set_dead()
+{
+    _impl->set_state( impl::state_t::DEAD );
+}
+
 std::shared_ptr< dds_participant > const& dds_device::participant() const
 {
     return _impl->_participant;
