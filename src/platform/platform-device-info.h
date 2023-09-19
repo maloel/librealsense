@@ -7,12 +7,14 @@
 #include <src/device-info.h>
 
 #include <memory>
+#include <set>
 
 
 namespace librealsense {
 
 
 class context;
+class backend_device_factory;
 
 
 namespace platform {
@@ -22,6 +24,10 @@ namespace platform {
 //
 class platform_device_info : public device_info
 {
+    // This flag is maintained by the backend_device_factory, responsible for the device-callback etc.
+    bool _is_alive = false;
+    friend class backend_device_factory;
+
 protected:
     platform::backend_device_group _group;
 
@@ -31,6 +37,8 @@ public:
         , _group( std::move( bdg ) )
     {
     }
+
+    bool is_alive() const override;
 
     std::string get_address() const override
     {
@@ -56,6 +64,21 @@ public:
         return false;
     }
 };
+
+
+inline bool operator<( std::shared_ptr< platform_device_info > const & left, std::shared_ptr< platform_device_info > const & right )
+{
+    auto const & left_uvc = left->get_group().uvc_devices;
+    auto const & right_uvc = right->get_group().uvc_devices;
+    if( left_uvc.empty() )
+        return ! right_uvc.empty();
+    if( right_uvc.empty() )
+        return false;
+    return left_uvc.front() < right_uvc.front();
+}
+
+
+typedef std::set< std::shared_ptr< platform_device_info > > backend_device_set;
 
 
 }  // namespace platform
