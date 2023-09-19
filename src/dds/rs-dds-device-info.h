@@ -37,6 +37,8 @@ public:
     {
     }
 
+    bool is_alive() const override;
+
     std::string get_address() const override;
     void to_stream( std::ostream & ) const override;
 

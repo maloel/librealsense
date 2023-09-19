@@ -46,6 +46,12 @@ public:
     // Wait until ready. Will throw if not ready within the timeout!
     void wait_until_ready( size_t timeout_ns = 5000 );
 
+    // A device dies when its server is lost; it must be re-created
+    bool is_alive() const;
+
+    // Called by the device-watcher on disconnection
+    void set_dead();
+
     //----------- below this line, a device must be running!
 
     size_t number_of_streams() const;

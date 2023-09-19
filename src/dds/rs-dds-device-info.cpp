@@ -19,6 +19,12 @@ std::shared_ptr< device_interface > dds_device_info::create_device()
 }
 
 
+bool dds_device_info::is_alive() const
+{
+    return _dev->is_alive();
+}
+
+
 std::string dds_device_info::get_address() const
 {
     auto const domain_id = _dev->participant()->get()->get_domain_id();
