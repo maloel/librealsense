@@ -117,6 +117,8 @@ public:
         auto id = _callbacks.subscribe( cb );
         return [&, id]() { _callbacks.unsubscribe( id ); };
     }
+
+    platform::backend_device_group get_devices() const { return _device_watcher->get_devices(); }
 };
 
 
