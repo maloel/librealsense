@@ -22,7 +22,6 @@ public:
         , _active_object( [this]( dispatcher::cancellable_timer cancellable_timer ) { polling( cancellable_timer ); } )
         , _devices_data()
     {
-        _devices_data = { _backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices() };
     }
 
     ~polling_device_watcher() { stop(); }
@@ -39,19 +38,24 @@ public:
                 || list_changed( _devices_data.hid_devices, curr.hid_devices ) )
             {
                 callback_invocation_holder callback = { _callback_inflight.allocate(), &_callback_inflight };
-                if( callback )
+                // We want to make the change BEFORE calling the callback, so get_devices() will give the new state
+                auto prev = _devices_data;
                 {
-                    _callback( _devices_data, curr );
+                    std::lock_guard< std::mutex > lock( _mutex );
                     _devices_data = curr;
                 }
+                if( callback )
+                    _callback( prev, curr );
             }
         }
     }
 
-    void start( platform::device_changed_callback callback ) override
+    void start( platform::device_changed_callback && callback ) override
     {
         stop();
         _callback = std::move( callback );
+        std::lock_guard< std::mutex > lock( _mutex );
+        _devices_data = { _backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices() };
         _active_object.start();
     }
 
@@ -64,12 +68,19 @@ public:
 
     bool is_stopped() const override { return ! _active_object.is_active(); }
 
+    platform::backend_device_group get_devices() const
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+        return _devices_data;
+    }
+
 private:
     active_object<> _active_object;
 
     callbacks_heap _callback_inflight;
     const platform::backend * _backend;
 
+    mutable std::mutex _mutex;
     platform::backend_device_group _devices_data;
     platform::device_changed_callback _callback;
 };

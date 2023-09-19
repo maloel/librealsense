@@ -21,6 +21,7 @@ class udev_device_watcher : public librealsense::platform::device_watcher
     callbacks_heap _callback_inflight;
     platform::backend const * _backend;
 
+    mutable std::mutex _mutex;
     platform::backend_device_group _devices_data;
     platform::device_changed_callback _callback;
 
@@ -35,18 +36,11 @@ public:
 
     // device_watcher
 public:
-    void start( platform::device_changed_callback callback ) override
-    {
-        stop();
-        _callback = std::move( callback );
-        _active_object.start();
-    }
+    void start( platform::device_changed_callback && callback ) override;
 
-    void stop() override
-    {
-        _active_object.stop();
-        _callback_inflight.wait_until_empty();
-    }
+    void stop() override;
+
+    platform::backend_device_group get_devices() const override;
 
     bool is_stopped() const override { return ! _active_object.is_active(); }
 

@@ -131,9 +131,14 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
             {
                 LOG_DEBUG( "[udev] changed!" );
                 callback_invocation_holder callback = { _callback_inflight.allocate(), &_callback_inflight };
+                // We want to make the change BEFORE calling the callback, so get_devices() will give the new state
+                auto prev = _devices_data;
+                {
+                    std::lock_guard< std::mutex > lock( _mutex );
+                    _devices_data = curr;
+                }
                 if( callback )
-                    _callback( _devices_data, curr );
-                _devices_data = curr;
+                    _callback( prev, curr );
             }
             _changed = false;
         }
@@ -172,8 +177,6 @@ udev_device_watcher::udev_device_watcher( const platform::backend * backend )
         _udev_ctx = nullptr;
         throw runtime_error( "failed to enable the udev monitor" );
     }
-
-    _devices_data = { _backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices() };
 }
 
 
@@ -217,6 +220,30 @@ void udev_device_watcher::foreach_device( std::function< void( struct udev_devic
     }
 
     udev_enumerate_unref( enumerator );
+}
+
+
+void udev_device_watcher::start( platform::device_changed_callback && callback )
+{
+    stop();
+    _callback = std::move( callback );
+    std::lock_guard< std::mutex > lock( _mutex );
+    _devices_data = { _backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices() };
+    _active_object.start();
+}
+
+
+void udev_device_watcher::stop()
+{
+    _active_object.stop();
+    _callback_inflight.wait_until_empty();
+}
+
+
+platform::backend_device_group udev_device_watcher::get_devices() const
+{
+    std::lock_guard< std::mutex > lock( _mutex );
+    return _devices_data;
 }
 
 
