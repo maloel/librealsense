@@ -14,8 +14,7 @@ class platform_camera : public backend_device
 {
 public:
     platform_camera( std::shared_ptr< const device_info > const & dev_info,
-                     const std::vector< platform::uvc_device_info > & uvc_infos,
-                     bool register_device_notifications );
+                     const std::vector< platform::uvc_device_info > & uvc_infos );
 
     virtual rs2_intrinsics get_intrinsics( unsigned int, const stream_profile & ) const { return rs2_intrinsics{}; }
 
@@ -34,10 +33,8 @@ public:
 
     std::shared_ptr< device_interface > create_device() override
     {
-        bool const register_device_notifications = true;
         return std::make_shared< platform_camera >( shared_from_this(),
-                                                    get_group().uvc_devices,
-                                                    register_device_notifications );
+                                                    get_group().uvc_devices );
     }
 
     static std::vector< std::shared_ptr< platform_camera_info > >
