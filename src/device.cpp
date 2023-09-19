@@ -31,52 +31,14 @@ librealsense::find_profile( rs2_stream stream, int index, std::vector< stream_in
 }
 
 
-device::device( std::shared_ptr< const device_info > const & dev_info,
-                bool device_changed_notifications )
+device::device( std::shared_ptr< const device_info > const & dev_info )
     : _dev_info( dev_info )
-    , _is_valid( true )
-    , _is_alive( std::make_shared< bool >( true ) )
     , _profiles_tags( [this]() { return get_profiles_tags(); } )
 {
-    if( device_changed_notifications )
-    {
-        std::weak_ptr< bool > weak = _is_alive;
-        auto cb = new devices_changed_callback_internal([this, weak](rs2_device_list* removed, rs2_device_list* added)
-        {
-            // The callback can be called from one thread while the object is being destroyed by another.
-            // Check if members can still be accessed.
-            auto alive = weak.lock();
-            if( ! alive || ! *alive )
-                return;
-
-            // Update is_valid variable when device is invalid
-            std::lock_guard<std::mutex> lock(_device_changed_mtx);
-            for (auto& dev_info : removed->list)
-            {
-                if( dev_info.info->is_same_as( _dev_info ) )
-                {
-                    _is_valid = false;
-                    return;
-                }
-            }
-        });
-
-        _device_changed_callback_id
-            = get_context()->register_internal_device_callback( { cb,
-                                                                  []( rs2_devices_changed_callback * p )
-                                                                  {
-                                                                      p->release();
-                                                                  } } );
-    }
 }
 
 device::~device()
 {
-    *_is_alive = false;
-
-    if( _device_changed_callback_id )
-        get_context()->unregister_internal_device_callback( _device_changed_callback_id );
-
     _sensors.clear();
 }
 

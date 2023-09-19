@@ -41,9 +41,9 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs400_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs400_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -80,9 +80,9 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs405u_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device(dev_info, register_device_notifications),
-            backend_device( dev_info, register_device_notifications ),
+        rs405u_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device(dev_info),
+            backend_device( dev_info ),
             ds5u_device(dev_info),
             ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(dev_info, d400_device::_hw_monitor,
@@ -131,9 +131,9 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs410_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs410_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -170,9 +170,9 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs415_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs415_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -211,9 +211,9 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs416_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs416_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -265,9 +265,9 @@ namespace librealsense
 
     {
     public:
-        rs416_rgb_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs416_rgb_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -319,9 +319,9 @@ namespace librealsense
                             public firmware_logger_device
     {
     public:
-        rs420_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs420_mm_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -367,9 +367,9 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs420_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs420_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , firmware_logger_device(
@@ -405,9 +405,9 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs430_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs430_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -444,9 +444,9 @@ namespace librealsense
                           public firmware_logger_device
     {
     public:
-        rs430i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs430i_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -488,9 +488,9 @@ namespace librealsense
                             public firmware_logger_device
     {
     public:
-        rs430_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs430_mm_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_motion( dev_info )
@@ -539,9 +539,9 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs435_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs435_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -581,9 +581,9 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs457_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs457_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -615,9 +615,9 @@ namespace librealsense
                                 public firmware_logger_device
     {
     public:
-        rs430_rgb_mm_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs430_rgb_mm_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -658,9 +658,9 @@ namespace librealsense
                                 public firmware_logger_device
     {
     public:
-        rs435i_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs435i_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -876,9 +876,9 @@ namespace librealsense
                          public firmware_logger_device
     {
     public:
-        rs465_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs465_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
@@ -917,9 +917,9 @@ namespace librealsense
                                 public firmware_logger_device
     {
     public:
-        rs400_imu_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs400_imu_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
@@ -947,9 +947,9 @@ namespace librealsense
                           public firmware_logger_device
     {
     public:
-        rs405_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs405_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_color( dev_info )
             , d400_nonmonochrome( dev_info )
@@ -1034,9 +1034,9 @@ namespace librealsense
                                public d400_thermal_tracking
     {
     public:
-        rs455_device( std::shared_ptr< const d400_info > const & dev_info, bool register_device_notifications )
-            : device( dev_info, register_device_notifications )
-            , backend_device( dev_info, register_device_notifications )
+        rs455_device( std::shared_ptr< const d400_info > const & dev_info )
+            : device( dev_info )
+            , backend_device( dev_info )
             , d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
@@ -1085,52 +1085,51 @@ namespace librealsense
             throw std::runtime_error("Depth Camera not found!");
 
         auto const dev_info = std::dynamic_pointer_cast< const d400_info >( shared_from_this() );
-        bool const register_device_notifications = true;
 
         auto pid = _group.uvc_devices.front().pid;
         switch(pid)
         {
         case RS400_PID:
-            return std::make_shared< rs400_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs400_device >( dev_info );
         case RS405U_PID:
-            return std::make_shared< rs405u_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs405u_device >( dev_info );
         case RS410_PID:
         case RS460_PID:
-            return std::make_shared< rs410_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs410_device >( dev_info );
         case RS415_PID:
-            return std::make_shared< rs415_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs415_device >( dev_info );
         case RS416_PID:
-            return std::make_shared< rs416_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs416_device >( dev_info );
         case RS416_RGB_PID:
-            return std::make_shared< rs416_rgb_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs416_rgb_device >( dev_info );
         case RS420_PID:
-            return std::make_shared< rs420_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs420_device >( dev_info );
         case RS420_MM_PID:
-            return std::make_shared< rs420_mm_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs420_mm_device >( dev_info );
         case RS430_PID:
-            return std::make_shared< rs430_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs430_device >( dev_info );
         case RS430I_PID:
-            return std::make_shared< rs430i_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs430i_device >( dev_info );
         case RS430_MM_PID:
-            return std::make_shared< rs430_mm_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs430_mm_device >( dev_info );
         case RS430_MM_RGB_PID:
-            return std::make_shared< rs430_rgb_mm_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs430_rgb_mm_device >( dev_info );
         case RS435_RGB_PID:
-            return std::make_shared< rs435_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs435_device >( dev_info );
         case RS435I_PID:
-            return std::make_shared< rs435i_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs435i_device >( dev_info );
         case RS465_PID:
-            return std::make_shared< rs465_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs465_device >( dev_info );
         case RS_USB2_PID:
-            return std::make_shared< rs410_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs410_device >( dev_info );
         case RS400_IMU_PID:
-            return std::make_shared< rs400_imu_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs400_imu_device >( dev_info );
         case RS405_PID:
-            return std::make_shared< rs405_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs405_device >( dev_info );
         case RS455_PID:
-            return std::make_shared< rs455_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs455_device >( dev_info );
         case RS457_PID:
-            return std::make_shared< rs457_device >( dev_info, register_device_notifications );
+            return std::make_shared< rs457_device >( dev_info );
         default:
             throw std::runtime_error( rsutils::string::from() << "Unsupported RS400 model! 0x" << std::hex
                                                               << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );

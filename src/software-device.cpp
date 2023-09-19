@@ -17,7 +17,7 @@ using rsutils::deferred;
 namespace librealsense
 {
     software_device::software_device( std::shared_ptr< const device_info > const & dev_info )
-        : device( dev_info, false )
+        : device( dev_info )
     {
     }
 

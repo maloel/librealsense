@@ -22,8 +22,8 @@ class backend_device : public virtual device
     typedef device super;
 
 protected:
-    backend_device( std::shared_ptr< const device_info > const & dev_info, bool device_changed_notifications = true )
-        : super( dev_info, device_changed_notifications )
+    backend_device( std::shared_ptr< const device_info > const & dev_info )
+        : super( dev_info )
     {
     }
 

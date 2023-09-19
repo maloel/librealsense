@@ -62,10 +62,9 @@ private:
 
 
 platform_camera::platform_camera( std::shared_ptr< const device_info > const & dev_info,
-                                  const std::vector< platform::uvc_device_info > & uvc_infos,
-                                  bool register_device_notifications )
-    : device( dev_info, register_device_notifications )
-    , backend_device( dev_info, register_device_notifications )
+                                  const std::vector< platform::uvc_device_info > & uvc_infos )
+    : device( dev_info )
+    , backend_device( dev_info )
 {
     std::vector< std::shared_ptr< platform::uvc_device > > devs;
     auto backend = get_backend();
