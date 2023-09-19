@@ -22,6 +22,8 @@ public:
 
     std::string const & get_filename() const { return _filename; }
 
+    bool is_alive() const override { return true; }
+
     std::string get_address() const override { return "file://" + _filename; }
 
     std::shared_ptr< device_interface > create_device() override;
