@@ -39,9 +39,8 @@ class platform_device_info;
 class backend_device_factory
 {
     context & _context;
-    unsigned const _device_mask;
     std::shared_ptr< device_watcher_singleton > const _device_watcher;
-    rsutils::deferred const _dtor;
+    rsutils::deferred const _dtor;  // raii generic code, used to automatically unsubscribe our callback
 
 public:
     using callback = std::function< void( std::vector< rs2_device_info > & rs2_devices_info_removed,
@@ -53,14 +52,6 @@ public:
     // We own the backend and control its instantiation; this returns a pointer to the singleton
     //
     std::shared_ptr< platform::backend > get_backend() const;
-
-    // The device-mask is specified in the context settings, and governs which devices will be matched by us
-    //
-    unsigned device_mask() const { return _device_mask; }
-
-    // Given the requested mask, returns the final mask when combined with the device-mask
-    //
-    unsigned calc_mask( unsigned requested_mask ) const;
 
     // Query any subset of available devices and return them as device-info objects
     // Devices will match both the requested mask and the device-mask from the context settings

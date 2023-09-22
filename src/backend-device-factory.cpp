@@ -143,7 +143,6 @@ bool platform::platform_device_info::is_alive() const
 
 backend_device_factory::backend_device_factory( context & ctx, callback && cb )
     : _context( ctx )
-    , _device_mask( rsutils::json::get< unsigned >( ctx.get_settings(), "device-mask", RS2_PRODUCT_LINE_ANY ) )
     , _device_watcher( backend_device_watcher.instance() )
     , _dtor( _device_watcher->subscribe(
           [this, cb = std::move( cb )]( platform::backend_device_group const & old,
@@ -186,21 +185,9 @@ std::shared_ptr< platform::backend > backend_device_factory::get_backend() const
 }
 
 
-unsigned backend_device_factory::calc_mask( unsigned requested_mask ) const
-{
-    unsigned mask = requested_mask;
-    // The normal bits enable, so enable only those that are on
-    mask &= _device_mask & ~RS2_PRODUCT_LINE_SW_ONLY;
-    // But the above turned off the SW-only bits, so turn them back on again
-    if( ( _device_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) )
-        mask |= RS2_PRODUCT_LINE_SW_ONLY;
-    return mask;
-}
-
-
 std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devices( unsigned requested_mask ) const
 {
-    if( ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( _device_mask & RS2_PRODUCT_LINE_SW_ONLY ) )
+    if( ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( _context.get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY ) )
         return {};  // We don't carry any software devices
 
     auto & backend = _context.get_backend();
@@ -216,7 +203,7 @@ std::vector< std::shared_ptr< platform::platform_device_info > >
 backend_device_factory::create_devices_from_group( platform::backend_device_group devices, int requested_mask ) const
 {
     std::vector< std::shared_ptr< platform::platform_device_info > > list;
-    unsigned const mask = calc_mask( requested_mask );
+    unsigned const mask = context::combine_device_masks( requested_mask, _context.get_device_mask() );
     if( ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
     {
         if( mask & RS2_PRODUCT_LINE_D400 )
