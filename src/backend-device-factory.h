@@ -52,7 +52,7 @@ public:
 
     // We own the backend and control its instantiation; this returns a pointer to the singleton
     //
-    static std::shared_ptr< platform::backend > get_backend();
+    std::shared_ptr< platform::backend > get_backend() const;
 
     // The device-mask is specified in the context settings, and governs which devices will be matched by us
     //

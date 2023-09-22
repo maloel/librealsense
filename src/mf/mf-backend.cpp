@@ -85,9 +85,6 @@ namespace librealsense
 
         wmf_backend::~wmf_backend()
         {
-            // Now that the backend is a singleton, the dtor is called only by the C++ subsystem, very late before
-            // process termination, when the following actually crashes. Re-enable if not a singleton:
-#if 0
             try {
                 MFShutdown();
                 CoUninitialize();
@@ -96,7 +93,6 @@ namespace librealsense
             {
                 // TODO: Write to log
             }
-#endif
         }
 
         std::shared_ptr<uvc_device> wmf_backend::create_uvc_device(uvc_device_info info) const

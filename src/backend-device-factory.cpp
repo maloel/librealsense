@@ -78,23 +78,36 @@ subtract_sets( const std::vector< std::shared_ptr< librealsense::platform::platf
 namespace librealsense {
 
 
-/*static*/ std::shared_ptr< platform::backend > backend_device_factory::get_backend()
+class backend_singleton
 {
-    // There can be only one backend!
-    static auto the_backend = platform::create_backend();
-    return the_backend;
-}
+    std::shared_ptr< platform::backend > const _backend;
+
+public:
+    backend_singleton()
+        : _backend( platform::create_backend() )
+    {
+    }
+
+    std::shared_ptr< platform::backend > get() const { return _backend; }
+};
+
+
+// We keep the backend alive as long as there's at least one context (therefore backend_device_factory)
+static rsutils::shared_ptr_singleton< backend_singleton > the_backend;
 
 
 class device_watcher_singleton
 {
+    // The device-watcher keeps a direct pointer to the backend instance, so we have to make sure it stays alive!
+    std::shared_ptr< backend_singleton > const _backend;
     std::shared_ptr< platform::device_watcher > const _device_watcher;
     signal< device_watcher_singleton, platform::backend_device_group const &, platform::backend_device_group const & >
         _callbacks;
 
 public:
     device_watcher_singleton()
-        : _device_watcher( backend_device_factory::get_backend()->create_device_watcher() )
+        : _backend( the_backend.instance() )
+        , _device_watcher( _backend->get()->create_device_watcher() )
     {
         assert( _device_watcher->is_stopped() );
         _device_watcher->start( [this]( platform::backend_device_group const & old,
@@ -108,6 +121,7 @@ public:
     }
 
     platform::backend_device_group get_devices() const { return _device_watcher->get_devices(); }
+    std::shared_ptr< platform::backend > const get_backend() const { return _backend->get(); }
 };
 
 
@@ -163,6 +177,12 @@ backend_device_factory::backend_device_factory( context & ctx, callback && cb )
 
 backend_device_factory::~backend_device_factory()
 {
+}
+
+
+std::shared_ptr< platform::backend > backend_device_factory::get_backend() const
+{
+    return _device_watcher->get_backend();
 }
 
 

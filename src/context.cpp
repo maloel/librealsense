@@ -44,7 +44,6 @@ namespace librealsense
     context::context( json const & settings )
         : _settings( settings )
         , _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
-        , _backend( backend_device_factory::get_backend() )
         , _backend_device_factory(
               *this,
               [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
@@ -57,7 +56,7 @@ namespace librealsense
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_VERSION_STR );
         }
 
-        environment::get_instance().set_time_service( _backend->create_time_service() );
+        environment::get_instance().set_time_service( get_backend().create_time_service() );
 
 
 #ifdef BUILD_WITH_DDS
