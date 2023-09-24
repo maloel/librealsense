@@ -129,6 +129,18 @@ public:
 static rsutils::shared_ptr_singleton< device_watcher_singleton > backend_device_watcher;
 
 
+bool platform::platform_device_info::is_alive() const 
+{
+    auto watcher = backend_device_watcher.get();
+    if( ! watcher )
+        // No watcher -> no context -> why are we here?!
+        return false;
+    // If our device-group is entirely contained inside the all-devices-group from the watcher, we're still alive...
+    auto all_devices = watcher->get_devices();
+    return group_contained_in( get_group(), all_devices );
+}
+
+
 backend_device_factory::backend_device_factory( context & ctx, callback && cb )
     : _context( ctx )
     , _device_watcher( backend_device_watcher.instance() )
