@@ -42,14 +42,13 @@ using json = nlohmann::json;
 namespace librealsense
 {
     context::context( json const & settings )
-        : _backend( platform::create_backend() )
-        , _settings( settings )
+        : _settings( settings )
         , _device_mask( rsutils::json::get< unsigned >( settings, "device-mask", RS2_PRODUCT_LINE_ANY ) )
         , _devices_changed_callback( nullptr, []( rs2_devices_changed_callback * ) {} )
         , _backend_device_factory(
-            *this,
-            [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
-            { invoke_devices_changed_callbacks( removed, added ); } )
+              *this,
+              [this]( std::vector< rs2_device_info > & removed, std::vector< rs2_device_info > & added )
+              { invoke_devices_changed_callbacks( removed, added ); } )
     {
         static bool version_logged = false;
         if( ! version_logged )
@@ -58,7 +57,7 @@ namespace librealsense
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_VERSION_STR );
         }
 
-        environment::get_instance().set_time_service( _backend->create_time_service() );
+        environment::get_instance().set_time_service( get_backend().create_time_service() );
 
 
 #ifdef BUILD_WITH_DDS
@@ -118,7 +117,7 @@ namespace librealsense
         // The normal bits enable, so enable only those that are on
         mask &= mask_in_settings & ~RS2_PRODUCT_LINE_SW_ONLY;
         // But the above turned off the SW-only bits, so turn them back on again
-        if( (mask_in_settings & RS2_PRODUCT_LINE_SW_ONLY) || (requested_mask & RS2_PRODUCT_LINE_SW_ONLY) )
+        if( ( mask_in_settings & RS2_PRODUCT_LINE_SW_ONLY ) || ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) )
             mask |= RS2_PRODUCT_LINE_SW_ONLY;
         return mask;
     }

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <functional>
+#include <rsutils/deferred.h>
 #include <memory>
 #include <vector>
 
@@ -16,10 +16,11 @@ namespace librealsense {
 
 class device_info;
 class context;
+class device_watcher_singleton;
 
 
 namespace platform {
-class device_watcher;
+class backend;
 struct backend_device_group;
 class platform_device_info;
 }  // namespace platform
@@ -38,14 +39,19 @@ class platform_device_info;
 class backend_device_factory
 {
     context & _context;
-    std::shared_ptr< platform::device_watcher > const _device_watcher;
+    std::shared_ptr< device_watcher_singleton > const _device_watcher;
+    rsutils::deferred const _dtor;  // raii generic code, used to automatically unsubscribe our callback
 
+public:
     using callback = std::function< void( std::vector< rs2_device_info > & rs2_devices_info_removed,
                                           std::vector< rs2_device_info > & rs2_devices_info_added ) >;
 
-public:
     backend_device_factory( context &, callback && );
     ~backend_device_factory();
+
+    // We own the backend and control its instantiation; this returns a pointer to the singleton
+    //
+    std::shared_ptr< platform::backend > get_backend() const;
 
     // Query any subset of available devices and return them as device-info objects
     // Devices will match both the requested mask and the device-mask from the context settings
