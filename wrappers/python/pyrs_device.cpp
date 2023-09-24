@@ -27,6 +27,14 @@ void init_device(py::module &m) {
              "like versions of various internal components", "info"_a)
         .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
         .def(py::init<>())
+        .def( "is_valid",
+              []( rs2::device const & self )
+              {
+                  rs2_error * e = nullptr;
+                  bool is_valid = rs2_is_device_extendable_to( self.get().get(), RS2_EXTENSION_SEQUENCE_ID_FILTER, &e );
+                  rs2::error::handle( e );
+                  return is_valid;
+              } )
         .def("__nonzero__", &rs2::device::operator bool) // Called to implement truth value testing in Python 2
         .def("__bool__", &rs2::device::operator bool) // Called to implement truth value testing in Python 3
         .def(BIND_DOWNCAST(device, debug_protocol))
