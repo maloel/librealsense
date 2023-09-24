@@ -33,7 +33,7 @@ public:
     {
     }
 
-    bool is_alive() const override { return false; }  // TODO
+    bool is_alive() const override;
 
     std::string get_address() const override
     {
