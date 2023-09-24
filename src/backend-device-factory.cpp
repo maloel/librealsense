@@ -138,6 +138,7 @@ public:
         return _callbacks.subscribe( std::move( cb ) );
     }
 
+    platform::backend_device_group get_devices() const { return _device_watcher->get_devices(); }
     std::shared_ptr< platform::backend > const get_backend() const { return _backend->get(); }
 };
 
@@ -153,6 +154,18 @@ std::shared_ptr< platform::backend > backend_device::get_backend()
         throw std::runtime_error( "backend not created yet!" );
 
     return singleton->get();
+}
+
+
+bool platform::platform_device_info::is_alive() const 
+{
+    auto watcher = backend_device_watcher.get();
+    if( ! watcher )
+        // No watcher -> no context -> why are we here?!
+        return false;
+    // If our device-group is entirely contained inside the all-devices-group from the watcher, we're still alive...
+    auto all_devices = watcher->get_devices();
+    return group_contained_in( get_group(), all_devices );
 }
 
 
