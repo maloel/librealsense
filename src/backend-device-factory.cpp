@@ -12,6 +12,8 @@
 #include "fw-update/fw-update-factory.h"
 #include "platform-camera.h"
 
+#include <rsutils/shared-ptr-singleton.h>
+#include <rsutils/signal.h>
 #include <rsutils/json.h>
 
 
@@ -77,50 +79,103 @@ subtract_sets( const std::vector< std::shared_ptr< librealsense::platform::platf
 namespace librealsense {
 
 
-backend_device_factory::backend_device_factory( context & ctx, callback && cb )
-    : _device_watcher( ctx.get_backend().create_device_watcher() )
-    , _context( ctx )
+class backend_singleton
 {
-    assert( _device_watcher->is_stopped() );
-    _device_watcher->start(
-        [this, cb = std::move( cb )]( platform::backend_device_group const & old,
-                                      platform::backend_device_group const & curr )
-        {
-            auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
-            auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
+    std::shared_ptr< platform::backend > const _backend;
 
-            std::vector< rs2_device_info > devices_removed;
-            for( auto & device_removed : subtract_sets( old_list, new_list ) )
-            {
-                devices_removed.push_back( { _context.shared_from_this(), device_removed } );
-                LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
-            }
+public:
+    backend_singleton()
+        : _backend( platform::create_backend() )
+    {
+    }
 
-            std::vector< rs2_device_info > devices_added;
-            for( auto & device_added : subtract_sets( new_list, old_list ) )
-            {
-                devices_added.push_back( { _context.shared_from_this(), device_added } );
-                LOG_DEBUG( "Device connected: " << device_added->get_address() );
-            }
+    std::shared_ptr< platform::backend > get() const { return _backend; }
+};
 
-            if( devices_removed.size() + devices_added.size() )
-            {
-                cb( devices_removed, devices_added );
-            }
-        } );
+
+// We keep the backend alive as long as there's at least one context (therefore backend_device_factory)
+static rsutils::shared_ptr_singleton< backend_singleton > the_backend;
+
+
+class device_watcher_singleton
+{
+    // The device-watcher keeps a direct pointer to the backend instance, so we have to make sure it stays alive!
+    std::shared_ptr< backend_singleton > const _backend;
+    std::shared_ptr< platform::device_watcher > const _device_watcher;
+    rsutils::signal< platform::backend_device_group const &, platform::backend_device_group const & > _callbacks;
+
+public:
+    device_watcher_singleton()
+        : _backend( the_backend.instance() )
+        , _device_watcher( _backend->get()->create_device_watcher() )
+    {
+        assert( _device_watcher->is_stopped() );
+        _device_watcher->start(
+            [this]( platform::backend_device_group const & old, platform::backend_device_group const & curr )
+            { _callbacks.raise( old, curr ); } );
+    }
+
+    rsutils::subscription subscribe( platform::device_changed_callback && cb )
+    {
+        return _callbacks.subscribe( std::move( cb ) );
+    }
+
+    platform::backend_device_group get_devices() const { return _device_watcher->get_devices(); }
+    std::shared_ptr< platform::backend > const get_backend() const { return _backend->get(); }
+};
+
+
+// We keep the device-watcher alive as long as there's at least one context (therefore backend_device_factory)
+static rsutils::shared_ptr_singleton< device_watcher_singleton > backend_device_watcher;
+
+
+backend_device_factory::backend_device_factory( context & ctx, callback && cb )
+    : _context( ctx )
+    , _device_watcher( backend_device_watcher.instance() )
+    , _dtor( _device_watcher->subscribe(
+          [this, cb = std::move( cb )]( platform::backend_device_group const & old,
+                                        platform::backend_device_group const & curr )
+          {
+              auto old_list = create_devices_from_group( old, RS2_PRODUCT_LINE_ANY );
+              auto new_list = create_devices_from_group( curr, RS2_PRODUCT_LINE_ANY );
+
+              std::vector< rs2_device_info > devices_removed;
+              for( auto & device_removed : subtract_sets( old_list, new_list ) )
+              {
+                  devices_removed.push_back( { _context.shared_from_this(), device_removed } );
+                  LOG_DEBUG( "Device disconnected: " << device_removed->get_address() );
+              }
+
+              std::vector< rs2_device_info > devices_added;
+              for( auto & device_added : subtract_sets( new_list, old_list ) )
+              {
+                  devices_added.push_back( { _context.shared_from_this(), device_added } );
+                  LOG_DEBUG( "Device connected: " << device_added->get_address() );
+              }
+
+              if( devices_removed.size() + devices_added.size() )
+              {
+                  cb( devices_removed, devices_added );
+              }
+          } ) )
+{
 }
 
 
 backend_device_factory::~backend_device_factory()
 {
-    if( _device_watcher )
-        _device_watcher->stop();
+}
+
+
+std::shared_ptr< platform::backend > backend_device_factory::get_backend() const
+{
+    return _device_watcher->get_backend();
 }
 
 
 std::vector< std::shared_ptr< device_info > > backend_device_factory::query_devices( unsigned requested_mask ) const
 {
-    if( (requested_mask & RS2_PRODUCT_LINE_SW_ONLY) || (_context.get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY) )
+    if( ( requested_mask & RS2_PRODUCT_LINE_SW_ONLY ) || ( _context.get_device_mask() & RS2_PRODUCT_LINE_SW_ONLY ) )
         return {};  // We don't carry any software devices
 
     auto & backend = _context.get_backend();
@@ -151,7 +206,6 @@ backend_device_factory::create_devices_from_group( platform::backend_device_grou
             std::copy( begin( d500_devices ), end( d500_devices ), std::back_inserter( list ) );
         }
 
-        // Supported recovery devices
         {
             auto recovery_devices
                 = fw_update_info::pick_recovery_devices( _context.shared_from_this(), devices.usb_devices, mask );
