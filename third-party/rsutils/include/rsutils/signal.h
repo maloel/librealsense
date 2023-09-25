@@ -6,7 +6,6 @@
 #include <map>
 #include <mutex>
 #include <functional>
-#include <stdexcept>
 
 
 namespace rsutils {
@@ -56,31 +55,17 @@ public:
     signal_slot subscribe( const callback && func )
     {
         std::lock_guard< std::mutex > locker( _mutex );
-        for( signal_slot i = 0; i < ( std::numeric_limits< signal_slot >::max )(); i++ )
-        {
-            if( _subscribers.find( i ) == _subscribers.end() )
-            {
-                _subscribers.emplace( i, std::move( func ) );
-                return i;
-            }
-        }
-
-        throw std::runtime_error( "no available space in signal" );
+        // NOTE: we should maintain ordering of subscribers: later subscriptions should be called after earlier ones, so
+        // the key should keep increasing in value
+        auto key = _subscribers.empty() ? 0 : ( _subscribers.rbegin()->first + 1 );
+        _subscribers.emplace( key, std::move( func ) );
+        return key;
     }
 
     bool unsubscribe( signal_slot token )
     {
         std::lock_guard< std::mutex > locker( _mutex );
-
-        bool retVal = false;
-        auto it = _subscribers.find( token );
-        if( it != _subscribers.end() )
-        {
-            _subscribers.erase( token );
-            retVal = true;
-        }
-
-        return retVal;
+        return _subscribers.erase( token );
     }
 
     void raise( Args... args )
@@ -100,6 +85,9 @@ public:
         for( auto const & func : functions )
             func( /*std::forward< Args >(*/ args /*)*/... );
     }
+
+    // How many subscriptions are active
+    size_t size() const { return _subscribers.size(); }
 };
 
 
