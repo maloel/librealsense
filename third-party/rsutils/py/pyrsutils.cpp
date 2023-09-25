@@ -11,6 +11,8 @@
 #include <rsutils/number/stabilized-value.h>
 #include <rsutils/os/executable-name.h>
 
+#include "test-signal.h"
+
 
 #define NAME pyrsutils
 #define SNAME "pyrsutils"
@@ -139,4 +141,6 @@ PYBIND11_MODULE(NAME, m) {
         .def( "clear", &stabilized_value::clear )
         .def( "to_string", to_string )
         .def( "__str__", to_string );
+
+    m.def( "test_signal", test_signal );
 }
