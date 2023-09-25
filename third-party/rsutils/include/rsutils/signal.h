@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <map>
+#include <vector>
 #include <mutex>
 #include <functional>
 
@@ -31,7 +31,9 @@ class signal
     using callback = std::function< void( Args... ) >;
 
     std::mutex _mutex;
-    std::map< signal_slot, callback > _subscribers;
+    std::vector< callback > _subscribers;
+    signal_slot _free_slot = -1;
+    size_t _size = 0;
 
     signal( const signal & other ) = delete;
     signal & operator=( const signal & ) = delete;
@@ -43,29 +45,58 @@ public:
     {
         std::lock_guard< std::mutex > locker( other._mutex );
         _subscribers = std::move( other._subscribers );
+        _free_slot = other._free_slot;
+        _size = other._size;
     }
 
     signal & operator=( signal && other )
     {
         std::lock_guard< std::mutex > locker( other._mutex );
         _subscribers = std::move( other._subscribers );
+        _free_slot = other._free_slot;
+        _size = other._size;
         return *this;
     }
 
     signal_slot subscribe( const callback && func )
     {
+        if( ! func )
+            return -1;
         std::lock_guard< std::mutex > locker( _mutex );
-        // NOTE: we should maintain ordering of subscribers: later subscriptions should be called after earlier ones, so
-        // the key should keep increasing in value
-        auto key = _subscribers.empty() ? 0 : ( _subscribers.rbegin()->first + 1 );
-        _subscribers.emplace( key, std::move( func ) );
-        return key;
+        signal_slot slot_id = _free_slot;
+        if( slot_id >= 0 )
+        {
+            _subscribers[_free_slot] = std::move( func );
+            _free_slot = -1;
+        }
+        else
+        {
+            slot_id = int( _subscribers.size() );
+            _subscribers.emplace_back( std::move( func ) );
+        }
+        ++_size;
+        return slot_id;
     }
 
     bool unsubscribe( signal_slot token )
     {
         std::lock_guard< std::mutex > locker( _mutex );
-        return _subscribers.erase( token );
+        if( token < 0 || token >= _subscribers.size() )
+            return false;  // Bad slot
+        auto & slot = _subscribers[token];
+        if( ! slot )
+            return false;  // Unsubscribed...
+        if( ! --_size )
+        {
+            _subscribers.clear();
+            _free_slot = -1;
+        }
+        else
+        {
+            slot = {};           // empty function -> no subscriber
+            _free_slot = token;  // Next insert can go in this slot...
+        }
+        return true;
     }
 
     void raise( Args... args )
@@ -74,9 +105,15 @@ public:
 
         {
             std::lock_guard< std::mutex > locker( _mutex );
-            functions.reserve( _subscribers.size() );
-            for( auto const & s : _subscribers )
-                functions.push_back( s.second );
+            functions.reserve( _size );
+            for( auto i = 0; i < _subscribers.size(); ++i )
+            {
+                auto const & slot = _subscribers[i];
+                if( slot )
+                    functions.push_back( slot );
+                else if( _free_slot < 0 )
+                    _free_slot = i;
+            }
         }
 
         // NOTE: when calling our subscribers, we do not perfectly forward on purpose to avoid the situation where the
@@ -87,7 +124,7 @@ public:
     }
 
     // How many subscriptions are active
-    size_t size() const { return _subscribers.size(); }
+    size_t size() const { return _size; }
 };
 
 
