@@ -393,7 +393,7 @@ bool test_signal()
                           } );
                   } );
 #endif
-    constexpr size_t N = 10000;
+    constexpr size_t N = 100000;
     describe( std::to_string( N ),
               [N]
               {
@@ -409,30 +409,30 @@ bool test_signal()
                                       test_that( i, ==, expected );
                                       ++i;
                                   } );
-                          test_that( signal.allocated_size(), ==, N );
+                          test_that( signal.size(), ==, N );
                           int i = 0;
                           auto before = std::chrono::high_resolution_clock::now();
                           signal.raise( i );
                           auto after = std::chrono::high_resolution_clock::now();
                           auto delta = after - before;
-                          std::cout << "-I-         took " << delta.count() / 1000. << " milliseconds total" << std::endl;
+                          std::cout << "-I-       took " << delta.count() / 1000. << " milliseconds total" << std::endl;
                       } );
-                  it( "- 999",
+                  it( "remove all but last",
                       [&signal, N]
                       {
                           for( int pos = 0; pos < N-1; ++pos )
                               test_that( signal.unsubscribe( pos ), ==, true );
-                          test_that( signal.allocated_size(), ==, N );
                           test_that( signal.size(), ==, 1 );
                           int i = int(N)-1;  // the only one left
                           signal.raise( i );
                       } );
-                  it( "+ 1 -> should take a position in the beginning",
+                  it( "add one -> should iterate AFTER the last",
                       [&signal, N]
                       {
-                          auto slot_id = signal.subscribe( []( int & ) {} );
-                          test_that( signal.allocated_size(), ==, N );
-                          test_that( slot_id, <, N );
+                          auto slot_id = signal.subscribe( []( int & i ) { i = -25; } );
+                          int i = int( N ) - 1;  // the only one left
+                          signal.raise( i );
+                          test_that( i, ==, -25 );
                       } );
               } );
     return ! _failed_signal;
