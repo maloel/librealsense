@@ -41,15 +41,12 @@ class d555e_device
 {
 public:
     d555e_device( std::shared_ptr< const d500_info > dev_info )
-        : device( dev_info )
-        , backend_device( dev_info )
-        , d500_device( dev_info )
+        : d500_device( dev_info )
         , d500_active( dev_info )
         , d500_color( dev_info )
         , d500_motion( dev_info )
         , ds_advanced_mode_base( d500_device::_hw_monitor, get_depth_sensor() )
-        , firmware_logger_device(
-              dev_info, d500_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        , firmware_logger_device( d500_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
     {
     }
 

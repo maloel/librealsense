@@ -39,6 +39,8 @@ namespace librealsense
         , public global_time_interface
         , public updatable
     {
+        std::shared_ptr< const d500_info > const _dev_info;
+
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);
@@ -55,6 +57,8 @@ namespace librealsense
         }
 
         d500_device( std::shared_ptr< const d500_info > const & );
+
+        std::shared_ptr< const device_info > get_device_info() const override;
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 

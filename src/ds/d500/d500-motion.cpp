@@ -37,8 +37,7 @@ namespace librealsense
     }
 
     d500_motion::d500_motion( std::shared_ptr< const d500_info > const & dev_info )
-        : device( dev_info )
-        , d500_device( dev_info )
+        : d500_device( dev_info )
     {
         using namespace ds;
 

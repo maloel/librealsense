@@ -23,7 +23,7 @@
 namespace librealsense
 {
     d400_nonmonochrome::d400_nonmonochrome( std::shared_ptr< const d400_info > const & dev_info )
-        : device(dev_info), d400_device(dev_info)
+        : d400_device(dev_info)
     {
         using namespace ds;
 

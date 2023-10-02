@@ -16,8 +16,8 @@ using rsutils::deferred;
 
 namespace librealsense
 {
-    software_device::software_device( std::shared_ptr< const device_info > const & dev_info )
-        : device( dev_info )
+    software_device::software_device( std::shared_ptr< const software_device_info > const & dev_info )
+        : _dev_info( dev_info )
     {
     }
 
@@ -25,6 +25,11 @@ namespace librealsense
     {
         if (_user_destruction_callback)
             _user_destruction_callback->on_destruction();
+    }
+
+    std::shared_ptr< const device_info > software_device::get_device_info() const
+    {
+        return _dev_info;
     }
 
     software_sensor& software_device::add_software_sensor(const std::string& name)
