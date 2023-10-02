@@ -22,6 +22,7 @@ namespace librealsense
 {
     class hdr_config;
     class d400_thermal_monitor;
+    class d400_info;
 
     class d400_device
         : public virtual backend_device
@@ -30,7 +31,11 @@ namespace librealsense
         , public updatable
         , public auto_calibrated
     {
+        std::shared_ptr< const d400_info > const _dev_info;
+
     public:
+        std::shared_ptr< const device_info > get_device_info() const override;
+
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
                                                         const std::vector<platform::uvc_device_info>& all_device_infos);
 

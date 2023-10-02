@@ -6,17 +6,18 @@
 
 namespace librealsense
 {
-    firmware_logger_device::firmware_logger_device( std::shared_ptr< const device_info > const & dev_info,
-        std::shared_ptr<hw_monitor> hardware_monitor,
-        const command& fw_logs_command, const command& flash_logs_command) :
-        device(dev_info),
-        _hw_monitor(hardware_monitor),
-        _fw_logs(),
-        _flash_logs(),
-        _flash_logs_initialized(false),
-        _parser(nullptr),
-        _fw_logs_command(fw_logs_command),
-        _flash_logs_command(flash_logs_command) { }
+    firmware_logger_device::firmware_logger_device( std::shared_ptr< hw_monitor > hardware_monitor,
+                                                    const command & fw_logs_command,
+                                                    const command & flash_logs_command )
+        : _hw_monitor( hardware_monitor )
+        , _fw_logs()
+        , _flash_logs()
+        , _flash_logs_initialized( false )
+        , _parser( nullptr )
+        , _fw_logs_command( fw_logs_command )
+        , _flash_logs_command( flash_logs_command )
+    {
+    }
 
     bool firmware_logger_device::get_fw_log(fw_logs::fw_logs_binary_data& binary_data)
     {

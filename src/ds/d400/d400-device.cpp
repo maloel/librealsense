@@ -497,16 +497,20 @@ namespace librealsense
     }
 
     d400_device::d400_device( std::shared_ptr< const d400_info > const & dev_info )
-        : backend_device(dev_info), global_time_interface(),
-          auto_calibrated(),
-          _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
-          _depth_stream(new stream(RS2_STREAM_DEPTH)),
-          _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
-          _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _color_stream(nullptr)
+        : _dev_info( dev_info )
+        , _device_capabilities( ds::ds_caps::CAP_UNDEFINED )
+        , _depth_stream( new stream( RS2_STREAM_DEPTH ) )
+        , _left_ir_stream( new stream( RS2_STREAM_INFRARED, 1 ) )
+        , _right_ir_stream( new stream( RS2_STREAM_INFRARED, 2 ) )
+        , _color_stream( nullptr )
     {
         _depth_device_idx = add_sensor( create_depth_device( dev_info->get_context(), dev_info->get_group().uvc_devices ) );
         init( dev_info->get_context(), dev_info->get_group() );
+    }
+
+    std::shared_ptr< const device_info > d400_device::get_device_info() const
+    {
+        return _dev_info;
     }
 
     void d400_device::init(std::shared_ptr<context> ctx,
@@ -1234,7 +1238,7 @@ namespace librealsense
     }
 
     ds5u_device::ds5u_device( std::shared_ptr< const d400_info > const & dev_info )
-        : d400_device(dev_info), device(dev_info)
+        : d400_device(dev_info)
     {
         using namespace ds;
 

@@ -42,13 +42,10 @@ namespace librealsense
     {
     public:
         rs400_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -81,13 +78,11 @@ namespace librealsense
     {
     public:
         rs405u_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device(dev_info),
-            backend_device( dev_info ),
-            ds5u_device(dev_info),
-            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(dev_info, d400_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command()) {}
+            : ds5u_device( dev_info )
+            , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+        {
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -132,14 +127,11 @@ namespace librealsense
     {
     public:
         rs410_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -171,15 +163,12 @@ namespace librealsense
     {
     public:
         rs415_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -212,14 +201,11 @@ namespace librealsense
     {
     public:
         rs416_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -266,15 +252,12 @@ namespace librealsense
     {
     public:
         rs416_rgb_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -320,13 +303,10 @@ namespace librealsense
     {
     public:
         rs420_mm_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -368,12 +348,9 @@ namespace librealsense
     {
     public:
         rs420_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -406,13 +383,10 @@ namespace librealsense
     {
     public:
         rs430_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -445,14 +419,11 @@ namespace librealsense
     {
     public:
         rs430i_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
             , d400_motion( dev_info )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -489,14 +460,11 @@ namespace librealsense
     {
     public:
         rs430_mm_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -540,14 +508,11 @@ namespace librealsense
     {
     public:
         rs435_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -582,15 +547,12 @@ namespace librealsense
     {
     public:
         rs457_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , d400_motion_uvc( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -616,15 +578,12 @@ namespace librealsense
     {
     public:
         rs430_rgb_mm_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -659,15 +618,12 @@ namespace librealsense
     {
     public:
         rs435i_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
             check_and_restore_rgb_stream_extrinsic();
         }
@@ -877,16 +833,13 @@ namespace librealsense
     {
     public:
         rs465_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , d400_motion( dev_info )
             , d400_nonmonochrome( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -918,13 +871,10 @@ namespace librealsense
     {
     public:
         rs400_imu_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -948,14 +898,11 @@ namespace librealsense
     {
     public:
         rs405_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_color( dev_info )
             , d400_nonmonochrome( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
         {
         }
 
@@ -1035,16 +982,13 @@ namespace librealsense
     {
     public:
         rs455_device( std::shared_ptr< const d400_info > const & dev_info )
-            : device( dev_info )
-            , backend_device( dev_info )
-            , d400_device( dev_info )
+            : d400_device( dev_info )
             , d400_nonmonochrome( dev_info )
             , d400_active( dev_info )
             , d400_color( dev_info )
             , d400_motion( dev_info )
             , ds_advanced_mode_base( d400_device::_hw_monitor, get_depth_sensor() )
-            , firmware_logger_device(
-                  dev_info, d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
+            , firmware_logger_device( d400_device::_hw_monitor, get_firmware_logs_command(), get_flash_logs_command() )
             , d400_thermal_tracking( d400_device::_thermal_monitor )
         {
         }

@@ -61,10 +61,9 @@ private:
 }  // namespace
 
 
-platform_camera::platform_camera( std::shared_ptr< const device_info > const & dev_info,
+platform_camera::platform_camera( std::shared_ptr< const platform_camera_info > const & dev_info,
                                   const std::vector< platform::uvc_device_info > & uvc_infos )
-    : device( dev_info )
-    , backend_device( dev_info )
+    : _dev_info( dev_info )
 {
     std::vector< std::shared_ptr< platform::uvc_device > > devs;
     auto backend = get_backend();
@@ -123,6 +122,14 @@ platform_camera::platform_camera( std::shared_ptr< const device_info > const & d
     color_ep->try_register_pu( RS2_OPTION_WHITE_BALANCE );
     color_ep->try_register_pu( RS2_OPTION_ENABLE_AUTO_EXPOSURE );
     color_ep->try_register_pu( RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE );
+}
+
+
+std::shared_ptr< device_interface > platform_camera_info::create_device()
+{
+    return std::make_shared< platform_camera >(
+        std::dynamic_pointer_cast< const platform_camera_info >( shared_from_this() ),
+        get_group().uvc_devices );
 }
 
 
