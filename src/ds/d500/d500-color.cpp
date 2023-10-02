@@ -32,7 +32,7 @@ namespace librealsense
     };
 
     d500_color::d500_color( std::shared_ptr< const d500_info > const & dev_info )
-        : d500_device(dev_info), device(dev_info),
+        : d500_device(dev_info),
           _color_stream(new stream(RS2_STREAM_COLOR)),
           _separate_color(true)
     {

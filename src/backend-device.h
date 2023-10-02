@@ -21,12 +21,6 @@ class backend_device : public virtual device
 {
     typedef device super;
 
-protected:
-    backend_device( std::shared_ptr< const device_info > const & dev_info )
-        : super( dev_info )
-    {
-    }
-
 public:
     uint16_t get_pid() const { return _pid; }
     std::shared_ptr< platform::backend > get_backend();

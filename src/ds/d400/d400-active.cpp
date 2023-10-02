@@ -21,7 +21,7 @@
 namespace librealsense
 {
     d400_active::d400_active( std::shared_ptr< const d400_info > const & dev_info )
-        : device(dev_info), d400_device(dev_info)
+        : d400_device(dev_info)
     {
         using namespace ds;
 

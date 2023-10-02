@@ -96,19 +96,17 @@ namespace librealsense
     }
 
     d400_motion_base::d400_motion_base( std::shared_ptr< const d400_info > const & dev_info )
-        : device(dev_info),
-        d400_device(dev_info),
-        _accel_stream(new stream(RS2_STREAM_ACCEL)),
-        _gyro_stream(new stream(RS2_STREAM_GYRO))
+        : d400_device( dev_info )
+        , _accel_stream( new stream( RS2_STREAM_ACCEL ) )
+        , _gyro_stream( new stream( RS2_STREAM_GYRO ) )
     {
         _ds_motion_common = std::make_shared<ds_motion_common>(this, _fw_version,
             _device_capabilities, _hw_monitor);
     }
 
     d400_motion::d400_motion( std::shared_ptr< const d400_info > const & dev_info )
-        : device(dev_info), 
-        d400_device(dev_info),
-        d400_motion_base(dev_info)
+        : d400_device( dev_info )
+        , d400_motion_base( dev_info )
     {
         using namespace ds;
 
@@ -130,9 +128,8 @@ namespace librealsense
     }
 
     d400_motion_uvc::d400_motion_uvc( std::shared_ptr< const d400_info > const & dev_info )
-        : device(dev_info),
-          d400_device(dev_info),
-          d400_motion_base(dev_info)
+        : d400_device( dev_info )
+        , d400_motion_base( dev_info )
     {
         using namespace ds;
 

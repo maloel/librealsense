@@ -46,15 +46,13 @@ public:
 
     size_t find_sensor_idx(const sensor_interface& s) const;
 
-    std::shared_ptr< context > get_context() const override { return _dev_info->get_context(); }
-
-    std::shared_ptr< const device_info > get_device_info() const override { return _dev_info; }
+    std::shared_ptr< context > get_context() const override { return get_device_info()->get_context(); }
 
     std::pair<uint32_t, rs2_extrinsics> get_extrinsics(const stream_interface& stream) const override;
 
     bool is_valid() const override
     {
-        return _dev_info->is_alive();
+        return get_device_info()->is_alive();
     }
 
     void tag_profiles(stream_profiles profiles) const override;
@@ -73,13 +71,12 @@ protected:
     void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
     std::vector<rs2_format> map_supported_color_formats(rs2_format source_format);
 
-    explicit device( std::shared_ptr< const device_info > const & );
+    device();
 
     std::map<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>> _extrinsics;
 
 private:
     std::vector<std::shared_ptr<sensor_interface>> _sensors;
-    std::shared_ptr< const device_info > _dev_info;
     mutable std::mutex _device_changed_mtx;
     rsutils::lazy< std::vector< tagged_profile > > _profiles_tags;
 };

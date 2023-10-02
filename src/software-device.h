@@ -16,9 +16,13 @@ namespace librealsense
 
     class software_device : public device
     {
+        std::shared_ptr< const software_device_info > const _dev_info;
+
     public:
-        software_device( std::shared_ptr< const device_info > const & );
+        software_device( std::shared_ptr< const software_device_info > const & );
         virtual ~software_device();
+
+        std::shared_ptr< const device_info > get_device_info() const override;
 
         software_sensor& add_software_sensor(const std::string& name);
 

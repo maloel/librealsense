@@ -31,9 +31,8 @@ librealsense::find_profile( rs2_stream stream, int index, std::vector< stream_in
 }
 
 
-device::device( std::shared_ptr< const device_info > const & dev_info )
-    : _dev_info( dev_info )
-    , _profiles_tags( [this]() { return get_profiles_tags(); } )
+device::device()
+    : _profiles_tags( [this]() { return get_profiles_tags(); } )
 {
 }
 
