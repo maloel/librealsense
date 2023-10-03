@@ -288,10 +288,10 @@ void test_option( rs2::sensor & device,
 
 rs2::stream_profile get_profile_by_resolution_type( rs2::sensor & s, res_type res );
 
-std::shared_ptr< rs2::device > do_with_waiting_for_camera_connection( rs2::context ctx,
-                                                                      std::shared_ptr< rs2::device > dev,
-                                                                      std::string serial,
-                                                                      std::function< void() > operation );
+rs2::device do_with_waiting_for_camera_connection( rs2::context ctx,
+                                                   rs2::device dev,
+                                                   std::string const & serial,
+                                                   std::function< void() > const & operation );
 
 rs2::depth_sensor restart_first_device_and_return_depth_sensor( const rs2::context & ctx,
                                                                 const rs2::device_list & devices_list );

@@ -142,7 +142,7 @@ void disable_sensitive_options_for( rs2::device & dev )
 }
 
 
-bool wait_for_reset( std::function< bool( void ) > func, std::shared_ptr< rs2::device > dev )
+bool wait_for_reset( std::function< bool( void ) > func, rs2::device dev )
 {
     if( func() )
         return true;
@@ -151,7 +151,7 @@ bool wait_for_reset( std::function< bool( void ) > func, std::shared_ptr< rs2::d
 
     try
     {
-        dev->hardware_reset();
+        dev.hardware_reset();
     }
     catch( ... )
     {
@@ -535,42 +535,40 @@ rs2::stream_profile get_profile_by_resolution_type( rs2::sensor & s, res_type re
 }
 
 
-std::shared_ptr< rs2::device > do_with_waiting_for_camera_connection( rs2::context ctx,
-                                                                      std::shared_ptr< rs2::device > dev,
-                                                                      std::string serial,
-                                                                      std::function< void() > operation )
+rs2::device do_with_waiting_for_camera_connection( rs2::context ctx,
+                                                   rs2::device dev,
+                                                   std::string const & serial,
+                                                   std::function< void() > const & operation )
 {
     std::mutex m;
     bool disconnected = false;
     bool connected = false;
-    std::shared_ptr< rs2::device > result;
+    rs2::device result;
     std::condition_variable cv;
 
-    ctx.set_devices_changed_callback( [&]( rs2::event_information info ) mutable {
-        if( info.was_removed( *dev ) )
+    ctx.set_devices_changed_callback(
+        [&]( rs2::event_information const & info )
         {
-            std::unique_lock< std::mutex > lock( m );
-            disconnected = true;
-            cv.notify_all();
-        }
-        auto list = info.get_new_devices();
-        if( list.size() > 0 )
-        {
+            if( info.was_removed( dev ) )
+            {
+                std::unique_lock< std::mutex > lock( m );
+                disconnected = true;
+                cv.notify_all();
+            }
+            auto list = info.get_new_devices();
             for( auto cam : list )
             {
-                if( serial == cam.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+                if( cam.supports( RS2_CAMERA_INFO_SERIAL_NUMBER )
+                    && serial == cam.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
                 {
                     std::unique_lock< std::mutex > lock( m );
                     connected = true;
-                    result = std::make_shared< rs2::device >( cam );
-
-                    disable_sensitive_options_for( *result );
+                    result = cam;
                     cv.notify_all();
                     break;
                 }
             }
-        }
-    } );
+        } );
 
     operation();
 
@@ -581,7 +579,8 @@ std::shared_ptr< rs2::device > do_with_waiting_for_camera_connection( rs2::conte
     REQUIRE( cv.wait_for( lock, std::chrono::seconds( 20 ), [&]() { return connected; } ) );
     REQUIRE( result );
     ctx.set_devices_changed_callback( []( rs2::event_information info ) {} );  // reset callback
-
+    
+    disable_sensitive_options_for( result );
     return result;
 }
 
@@ -593,9 +592,7 @@ rs2::depth_sensor restart_first_device_and_return_depth_sensor( const rs2::conte
     std::string serial;
     REQUIRE_NOTHROW( serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
     // forcing hardware reset to simulate device disconnection
-    auto shared_dev = std::make_shared< rs2::device >( devices_list.front() );
-    shared_dev
-        = do_with_waiting_for_camera_connection( ctx, shared_dev, serial, [&]() { shared_dev->hardware_reset(); } );
+    dev = do_with_waiting_for_camera_connection( ctx, dev, serial, [&]() { dev.hardware_reset(); } );
     rs2::depth_sensor depth_sensor = dev.query_sensors().front();
     return depth_sensor;
 }
