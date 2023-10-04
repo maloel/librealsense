@@ -25,6 +25,7 @@ namespace librealsense {
 class stream;
 class dds_sensor_proxy;
 class stream_profile_interface;
+class dds_device_info;
 
 
 // This is the rs2 device; it proxies to an actual DDS device that does all the actual
@@ -50,7 +51,7 @@ class dds_device_proxy : public software_device
                                        std::shared_ptr< realdds::dds_motion_stream > stream ) const;
 
 public:
-    dds_device_proxy( std::shared_ptr< const device_info > const &, std::shared_ptr< realdds::dds_device > const & dev );
+    dds_device_proxy( std::shared_ptr< const dds_device_info > const &, std::shared_ptr< realdds::dds_device > const & dev );
 
     void tag_default_profile_of_stream( const std::shared_ptr< stream_profile_interface > & profile,
                                         const std::shared_ptr< const realdds::dds_stream > & stream ) const;

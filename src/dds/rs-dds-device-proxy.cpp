@@ -5,6 +5,7 @@
 #include "rs-dds-color-sensor-proxy.h"
 #include "rs-dds-depth-sensor-proxy.h"
 #include "rs-dds-motion-sensor-proxy.h"
+#include "rs-dds-device-info.h"
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
@@ -113,7 +114,7 @@ static rs2_extrinsics to_rs2_extrinsics( const std::shared_ptr< realdds::extrins
 }
 
 
-dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const & dev_info,
+dds_device_proxy::dds_device_proxy( std::shared_ptr< const dds_device_info > const & dev_info,
                                     std::shared_ptr< realdds::dds_device > const & dev )
     : software_device( dev_info )
     , _dds_dev( dev )

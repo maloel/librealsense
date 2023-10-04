@@ -15,7 +15,8 @@ namespace librealsense {
 
 std::shared_ptr< device_interface > dds_device_info::create_device()
 {
-    return std::make_shared< dds_device_proxy >( shared_from_this(), _dev );
+    auto dev_info = std::dynamic_pointer_cast< dds_device_info >( shared_from_this() );
+    return std::make_shared< dds_device_proxy >( dev_info, _dev );
 }
 
 
