@@ -132,7 +132,7 @@ bool platform::platform_device_info::is_alive() const
         return false;
     // If our device-group is entirely contained inside the all-devices-group from the watcher, we're still alive...
     auto all_devices = watcher->get_devices();
-    return group_contained_in( get_group(), all_devices );
+    return get_group().contained_in( all_devices );
 }
 
 
