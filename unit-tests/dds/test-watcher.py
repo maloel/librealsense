@@ -16,9 +16,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
         test.check( participant.is_valid() )
 
         publisher = dds.publisher( participant )
-
         broadcasters = []
-
 
         def broadcast( props ):
             global broadcasters, publisher
@@ -29,11 +27,9 @@ with test.remote.fork( nested_indent='  S' ) as remote:
             di.topic_root = props.get( 'topic_root', f'path/to/{di.name}' )
             broadcasters.append( dds.device_broadcaster( publisher, di ) )
 
-
         def unbroadcast_all():
             global broadcasters
             broadcasters = []
-
 
         # From here down, we're in "interactive" mode (see test-watcher.py)
         # ...
@@ -45,6 +41,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     log.nested = 'C  '
 
     import threading
+    from rspy.stopwatch import Stopwatch
 
 
     participant = dds.participant()
@@ -75,7 +72,6 @@ with test.remote.fork( nested_indent='  S' ) as remote:
         broadcast_received.clear()
         broadcast_devices = []
 
-    from rspy.stopwatch import Stopwatch
     def wait_for_broadcast( count=1, timeout=1 ):
         while timeout > 0:
             sw = Stopwatch()
@@ -101,18 +97,55 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
 
     # Start a watcher, too...
+    change_received = threading.Event()
+    n_changes = 0
     devices_added = 0
-    def on_device_added( watcher, dev ):
-        global devices_added
-        devices_added += 1
-        log.d( 'watcher detected device added', dev )
-        watcher.foreach_device( lambda dev: log.d( dev ) )
-
     devices_removed = 0
+    devices = dict()
+
+    def on_device_added( watcher, dev ):
+        global devices_added, n_changes, devices
+        devices_added += 1
+        n_changes += 1
+        log.d( '+++-> device added', dev )
+        devices[dev.device_info().topic_root] = dev
+        change_received.set()
+
     def on_device_removed( watcher, dev ):
-        global devices_removed
+        global devices_removed, n_changes, devices
         devices_removed += 1
-        log.d( 'watcher detected device removed', dev )
+        n_changes += 1
+        log.d( '<---- device removed', dev )
+        del devices[dev.device_info().topic_root]
+        change_received.set()
+
+    def detect_change():
+        global n_changes
+        change_received.clear()
+        n_changes = 0
+
+    def wait_for_change( count=1, timeout=3 ):
+        global n_changes
+        while timeout > 0:
+            sw = Stopwatch()
+            if not change_received.wait( timeout ):
+                raise TimeoutError( 'timeout waiting for add/remove' )
+            change_received.clear()
+            if count <= n_changes:
+                return
+            timeout -= sw.get_elapsed()
+        raise TimeoutError( f'timeout waiting for {count} add/removes; {n_changes} received' )
+
+    class change_expected:
+        def __init__( self, n_expected=1, timeout=3 ):
+            self._timeout = timeout
+            self._n_expected = n_expected
+        def __enter__( self ):
+            detect_change()
+        def __exit__( self, type, value, traceback ):
+            if type is None:  # If an exception is thrown, don't do anything
+                wait_for_change( count=self._n_expected, timeout=self._timeout )
+
 
     watcher = dds.device_watcher( participant )
     watcher.on_device_added( on_device_added )
@@ -122,18 +155,24 @@ with test.remote.fork( nested_indent='  S' ) as remote:
 
     #############################################################################################
     with test.closure( "Broadcast first; expect 1" ):
-        with broadcast_expected():
-            remote.run( 'broadcast({ "serial" : "123" })', timeout=5 )
+        with change_expected():
+            remote.run( 'broadcast({ "serial" : "123" })' )
         test.check_equal( len(broadcast_devices), 1 )
+        test.check_equal( devices_added, 1 )
+        test.check_equal( len(devices), 1 )
+        device123 = devices[f'path/to/device123']  # remember it -- we'll re-add it later and want to test it's the same!
 
     #############################################################################################
     with test.closure( "Broadcast second; expect 1" ):
-        with broadcast_expected():
-            remote.run( 'broadcast({ "serial" : "456" })', timeout=5 )
-        test.check_equal( len(broadcast_devices), 1 )
+        with change_expected():
+            remote.run( 'broadcast({ "serial" : "456" })' )
+        test.check_equal( len(broadcast_devices), 3 )  # each broadcast is of ALL the devices
+        test.check_equal( devices_added, 2 )
+        test.check_equal( len(devices), 2 )
+        device456guid = devices[f'path/to/device456'].guid()
 
     #############################################################################################
-    with test.closure( "Add another client; expect 2!" ):
+    with test.closure( "Add another client; expect rebroadcast of all" ):
         with broadcast_expected( 2 ):
             reader_2 = dds.topic_reader( device_info_topic )
             reader_2.run( dds.topic_reader.qos() )
@@ -143,13 +182,39 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     #############################################################################################
     with test.closure( "We should see both in the watcher" ):
         test.check_equal( devices_added, 2 )
+        test.check_equal( len(devices), 2 )
 
     #############################################################################################
-    with test.closure( "Get both removals" ):
-        remote.run( 'unbroadcast_all()', timeout=5 )
-        from time import sleep
-        sleep(1)
+    with test.closure( "Remove both; this should actually stop the broadcaster thread" ):
+        test.check_equal( devices_removed, 0 )
+        with change_expected( 2 ):
+            remote.run( 'unbroadcast_all()' )
         test.check_equal( devices_removed, 2 )
+        test.check_equal( len(watcher.devices()), 0 )
+
+    #############################################################################################
+    with test.closure( "Add one back" ):
+        with change_expected():
+            remote.run( 'broadcast({ "serial" : "123" })' )
+        test.check_equal( len(devices), 1 )
+        test.check_equal( len(watcher.devices()), 1 )
+
+    #############################################################################################
+    with test.closure( "Should be same device object as the first one!" ):
+        for dev in watcher.devices():
+            test.check_equal( dev.guid(), device123.guid() )
+
+    #############################################################################################
+    with test.closure( "Add the second" ):
+        with change_expected():
+            remote.run( 'broadcast({ "serial" : "456" })' )
+        test.check_equal( len(devices), 2 )
+        test.check_equal( len(watcher.devices()), 2 )
+
+    #############################################################################################
+    with test.closure( "Should NOT be same device object (because we didn't keep it)" ):
+        device456 = devices[f'path/to/device456']
+        test.check( device456.guid() != device456guid )
 
 
     del watcher
