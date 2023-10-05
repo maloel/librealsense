@@ -6,12 +6,12 @@
 #include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-device.h>
 #include <realdds/dds-utilities.h>
-#include <realdds/dds-guid.h>
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/topics/device-info-msg.h>
 
 #include <rsutils/json.h>
+using rsutils::json;
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -37,46 +37,80 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                     continue;
 
                 // NOTE: the GUID we get here is the writer on the device-info, used nowhere again in the system, which
-                // can therefore be confusing. It is not the "server GUID", but can still be used to uniquely identify
-                // the device instance since there should be one writer per device.
+                // can therefore be confusing. It is not the "server GUID" that's stored in the device!
                 dds_guid guid;
                 eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
-                std::shared_ptr< dds_device > device;
+                auto const j = msg.json_data();
+
+                std::string root;
+                if( ! j.nested( "topic-root", &json::is_string ).get_ex( root ) )
+                {
+                    // A topic-root is required, as it uniquely identifies the device across GUIDs, participants, etc.
+                    LOG_DEBUG( "device-info from " << _participant->print( guid ) << " is missing a topic-root; ignoring: " << j );
+                    continue;
+                }
+                bool const stopping = j.nested( "stopping", &json::is_boolean ).default_value( false );
+
                 {
                     std::lock_guard< std::mutex > lock( _devices_mutex );
-                    auto it = _dds_devices.find( guid );
-                    if( it != _dds_devices.end() )
-                        device = it->second;
+                    auto it = _root_liveliness.find( root );
+                    if( it != _root_liveliness.end() )
+                    {
+                        auto & is = it->second;
+                        is.last_seen = now();
+                        if( stopping )
+                        {
+                            // We marked last-seen; nothing else to do with it
+                        }
+                        else if( is.alive )
+                        {
+                            // We already know about this device; likely this was a broadcast meant for someone else
+                            continue;
+                        }
+                        else if( is.alive = is.in_use.lock() )
+                        {
+                            // Old device coming back to life
+                            is.writer_guid = guid;
+                            LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") back to life: " << j.dump( 4 ) );
+                            if( _on_device_added )
+                            {
+                                std::thread( [device = is.alive, on_device_added = _on_device_added]()
+                                             { on_device_added( device ); } )
+                                    .detach();
+                            }
+                            continue;
+                        }
+                        else
+                        {
+                            // Old device that's popped back up; recreate it
+                        }
+                    }
                 }
 
-                auto j = msg.json_data();
-                if( j.nested( "stopping" ) )
+                if( stopping )
                 {
                     // This device is stopping for whatever reason (e.g., HW reset); remove it
-                    LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") is stopping" );
+                    LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") is stopping: " << root );
                     // TODO notify the device?
-                    remove_device( guid );
+                    remove_device( root );
                     continue;
                 }
-
-                if( device )
-                    // We already know about this device; likely this was a broadcast meant for someone else
-                    continue;
-
-                topics::device_info device_info = topics::device_info::from_json( j );
 
                 LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") detected: " << j.dump( 4 ) );
+                topics::device_info device_info = topics::device_info::from_json( j );
 
                 // Add a new device record into our dds devices map
-                device = std::make_shared< dds_device >( _participant, device_info );
+                std::shared_ptr< dds_device > device = std::make_shared< dds_device >( _participant, device_info );
                 {
                     std::lock_guard< std::mutex > lock( _devices_mutex );
-                    _dds_devices[guid] = device;
+                    auto & is = _root_liveliness[root];
+                    is.alive = device;
+                    is.writer_guid = guid;
+                    is.last_seen = now();
                 }
 
-                // NOTE: device removals are handled via the writer-removed notification; see the
-                // listener callback in init().
+                // NOTE: device removals are handled via the writer-removed notification; see on_subscription_matched() below
                 if( _on_device_added )
                 {
                     std::thread(
@@ -85,6 +119,29 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                         } )
                         .detach();
                 }
+            }
+        } );
+
+    _device_info_topic->on_subscription_matched(
+        [this]( eprosima::fastdds::dds::SubscriptionMatchedStatus const & status )
+        {
+            if( status.current_count_change == -1 )
+            {
+                dds_guid const guid
+                    = status.last_publication_handle.operator const eprosima::fastrtps::rtps::GUID_t &();
+                liveliness_map::const_iterator it;
+                {
+                    std::lock_guard< std::mutex > lock( _devices_mutex );
+                    it = std::find_if( _root_liveliness.begin(),
+                                       _root_liveliness.end(),
+                                       [guid]( liveliness_map::value_type const & it )
+                                       { return it.second.writer_guid == guid; } );
+                    if( it == _root_liveliness.end() )
+                        // This is OK, and is likely the broadcaster's writer itself; ignore
+                        return;
+                }
+                LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") disconnected: " << it->first );
+                remove_device( it->first );
             }
         } );
 
@@ -103,12 +160,7 @@ void dds_device_watcher::start()
 {
     stop();
     if( ! _device_info_topic->is_running() )
-    {
-        // Get all sensors & profiles data
-        // TODO: not sure we want to do it here in the C'tor, 
-        // it takes time and keeps the 'dds_device_server' busy
         init();
-    }
     LOG_DEBUG( "DDS device watcher started on '" << _participant->get()->get_qos().name() << "' "
                                                  << realdds::print_guid( _participant->guid() ) );
 }
@@ -132,25 +184,25 @@ dds_device_watcher::~dds_device_watcher()
 
 void dds_device_watcher::init()
 {
-    if( ! _listener )
-        _participant->create_listener( &_listener )
-            ->on_writer_removed( [this]( dds_guid guid, char const * ) { remove_device( guid ); } );
-
     if( ! _device_info_topic->is_running() )
         _device_info_topic->run( dds_topic_reader::qos() );
 }
 
 
-void dds_device_watcher::remove_device( dds_guid const & guid )
+void dds_device_watcher::remove_device( std::string const & root )
 {
     std::shared_ptr< dds_device > device;
     {
         std::lock_guard< std::mutex > lock( _devices_mutex );
-        auto it = _dds_devices.find( guid );
-        if( it == _dds_devices.end() )
+        auto it = _root_liveliness.find( root );
+        if( it == _root_liveliness.end() )
             return;
-        device = it->second;
-        _dds_devices.erase( it );
+        auto & is = it->second;
+        device = is.alive;
+        if( ! device )
+            return;
+        is.in_use = is.alive;
+        is.alive.reset();  // no longer alive; in_use will track whether it's being used
     }
     // rest must happen outside the mutex
     std::thread(
@@ -172,10 +224,12 @@ bool dds_device_watcher::foreach_device(
     std::function< bool( std::shared_ptr< dds_device > const & ) > fn ) const
 {
     std::lock_guard< std::mutex > lock( _devices_mutex );
-    for( auto && guid_to_dev_info : _dds_devices )
+    for( auto & root_liveliness : _root_liveliness )
     {
-        if( ! fn( guid_to_dev_info.second ) )
-            return false;
+        auto & is = root_liveliness.second;
+        if( is.alive )
+            if( ! fn( is.alive ) )
+                return false;
     }
     return true;
 }
