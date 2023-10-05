@@ -881,8 +881,13 @@ PYBIND11_MODULE(NAME, m) {
         .def( "server_guid", &dds_device::server_guid )
         .def( "guid", &dds_device::guid )
         .def( "is_ready", &dds_device::is_ready )
+        .def( "is_online", &dds_device::is_online )
         .def( "wait_until_ready",
               &dds_device::wait_until_ready,
+              py::call_guard< py::gil_scoped_release >(),
+              "timeout-ms"_a = 5000 )
+        .def( "wait_until_online",
+              &dds_device::wait_until_online,
               py::call_guard< py::gil_scoped_release >(),
               "timeout-ms"_a = 5000 )
         .def( "on_metadata_available",
@@ -960,12 +965,19 @@ PYBIND11_MODULE(NAME, m) {
                       ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
                       callback( self, dev ); ) )
-        .def( "foreach_device",
-              []( dds_device_watcher const & self,
-                  std::function< bool( std::shared_ptr< dds_device > const & ) > callback ) {
+        .def( "devices",
+              []( dds_device_watcher const & self )
+              {
+                  std::vector< std::shared_ptr< dds_device > > devices;
                   self.foreach_device(
-                      [callback]( std::shared_ptr< dds_device > const & dev ) { return callback( dev ); } );
-              }, py::call_guard< py::gil_scoped_release >() );
+                      [&]( std::shared_ptr< dds_device > const & dev )
+                      {
+                          devices.push_back( dev );
+                          return true;
+                      } );
+                  return devices;
+              } )
+        .def( "is_device_broadcast", &dds_device_watcher::is_device_broadcast );
 
     using realdds::dds_stream_sensor_bridge;
     py::class_< dds_stream_sensor_bridge >( m, "stream_sensor_bridge" )

@@ -53,7 +53,7 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     , _topic_root( topic_root )
     , _control_dispatcher( QUEUE_MAX_SIZE )
 {
-    LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
+    LOG_DEBUG( "[" << _topic_root << "] device server created" );
     _control_dispatcher.start();
 }
 
@@ -68,7 +68,7 @@ dds_guid const & dds_device_server::guid() const
 dds_device_server::~dds_device_server()
 {
     _stream_name_to_server.clear();
-    LOG_DEBUG( "device server deleted @ '" << _topic_root << "'" );
+    LOG_DEBUG( "[" << _topic_root << "] device server deleted" );
 }
 
 
@@ -237,9 +237,12 @@ void dds_device_server::broadcast( topics::device_info const & device_info )
 {
     if( _broadcaster )
         DDS_THROW( runtime_error, "device server was already broadcast" );
+    if( ! _notification_server )
+        DDS_THROW( runtime_error, "not initialized" );
     if( device_info.topic_root() != _topic_root )
         DDS_THROW( runtime_error, "topic roots do not match" );
     _broadcaster = std::make_shared< dds_device_broadcaster >( _publisher, device_info );
+    _notification_server->trigger_discovery_notifications();
 }
 
 
