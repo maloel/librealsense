@@ -4,6 +4,8 @@
 #pragma once
 
 #include "dds-participant.h"
+#include "dds-guid.h"
+#include "dds-time.h"
 
 #include <map>
 #include <memory>
@@ -47,22 +49,25 @@ public:
     bool foreach_device( std::function< bool( std::shared_ptr< dds_device > const & ) > ) const;
 
 private:
-    // The device exists - we know about it - but is unusable until we get details (sensors, profiles, etc.) and
-    // initialization is complete. This initialization depends on several messages from the server,
-    // and may take some time.
-    // Returns true if initialization was successful.
-    // Restrictions: May throw
     void init();  
 
-    void remove_device( dds_guid const & );
+    void remove_device( std::string const & root );
 
     std::shared_ptr< dds_participant > _participant;
-    std::shared_ptr< dds_participant::listener > _listener;
     std::shared_ptr< dds_topic_reader > _device_info_topic;
 
     on_device_change_callback _on_device_added;
     on_device_change_callback _on_device_removed;
-    std::map< dds_guid, std::shared_ptr< dds_device > > _dds_devices;
+
+    struct device_liveliness
+    {
+        std::shared_ptr< dds_device > alive;  // reset in remove_device()
+        std::weak_ptr< dds_device > in_use;   // kept around to detect if it's still being used, to recreate alive
+        dds_guid writer_guid;
+        dds_time last_seen;
+    };
+    using liveliness_map = std::map< std::string /*root*/, device_liveliness >;
+    liveliness_map _root_liveliness;
     mutable std::mutex _devices_mutex;
 };
 

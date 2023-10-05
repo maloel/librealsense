@@ -954,12 +954,18 @@ PYBIND11_MODULE(NAME, m) {
                       ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
                       callback( self, dev ); ) )
-        .def( "foreach_device",
-              []( dds_device_watcher const & self,
-                  std::function< bool( std::shared_ptr< dds_device > const & ) > callback ) {
+        .def( "devices",
+              []( dds_device_watcher const & self )
+              {
+                  std::vector< std::shared_ptr< dds_device > > devices;
                   self.foreach_device(
-                      [callback]( std::shared_ptr< dds_device > const & dev ) { return callback( dev ); } );
-              }, py::call_guard< py::gil_scoped_release >() );
+                      [&]( std::shared_ptr< dds_device > const & dev )
+                      {
+                          devices.push_back( dev );
+                          return true;
+                      } );
+                  return devices;
+              } );
 
     using realdds::dds_stream_sensor_bridge;
     py::class_< dds_stream_sensor_bridge >( m, "stream_sensor_bridge" )
