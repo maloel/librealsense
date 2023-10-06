@@ -182,6 +182,9 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     with test.closure( "We should see both in the watcher" ):
         test.check_equal( devices_added, 2 )
         test.check_equal( len(devices), 2 )
+        for dev in devices.values():
+            test.info( 'device', dev )
+            test.check( watcher.is_device_broadcast( dev ) )
 
     #############################################################################################
     with test.closure( "Remove both; this should actually stop the broadcaster thread" ):
@@ -190,6 +193,10 @@ with test.remote.fork( nested_indent='  S' ) as remote:
             remote.run( 'unbroadcast_all()' )
         test.check_equal( devices_removed, 2 )
         test.check_equal( len(watcher.devices()), 0 )
+
+    #############################################################################################
+    with test.closure( "The devices should no longer be broadcasting" ):
+        test.check_false( watcher.is_device_broadcast( device123 ) )
 
     #############################################################################################
     with test.closure( "Add one back" ):
@@ -202,6 +209,7 @@ with test.remote.fork( nested_indent='  S' ) as remote:
     with test.closure( "Should be same device object as the first one!" ):
         for dev in watcher.devices():
             test.check_equal( dev.guid(), device123.guid() )
+        test.check( watcher.is_device_broadcast( device123 ) )
 
     #############################################################################################
     with test.closure( "Add the second" ):

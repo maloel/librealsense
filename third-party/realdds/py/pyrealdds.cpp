@@ -965,7 +965,8 @@ PYBIND11_MODULE(NAME, m) {
                           return true;
                       } );
                   return devices;
-              } );
+              } )
+        .def( "is_device_broadcast", &dds_device_watcher::is_device_broadcast );
 
     using realdds::dds_stream_sensor_bridge;
     py::class_< dds_stream_sensor_bridge >( m, "stream_sensor_bridge" )
