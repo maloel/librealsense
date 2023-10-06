@@ -23,11 +23,13 @@ class dds_device;
 class dds_topic_reader;
 
 
-// Watches the device_info.TOPIC_NAME topic and sends out notifications of additions/removals.
+// Client-side device discovery service:
+//      See docs/discovery.md
 // 
-// Using this class means that devices are kept track of and an actual database of dds_device objects is maintained: you
-// can use foreach_device() to enumerate them. By default they do not get initialized and only contain the device-info
-// data.
+// Watches topics::DEVICE_INFO_TOPIC_NAME and sends out notifications of additions/removals.
+// 
+// Devices are kept track of and an actual database of dds_device objects is maintained. Devices get created as soon as
+// they're discovered and held as long as they're being broadcast. Only devices that are broadcast are managed.
 //
 class dds_device_watcher
 {
@@ -46,11 +48,21 @@ public:
     void stop();
     bool is_stopped() const;
 
+    // Iterate over devices until the callback returns false; returns true if all devices were iterated over and this
+    // never happened.
+    //
     bool foreach_device( std::function< bool( std::shared_ptr< dds_device > const & ) > ) const;
+
+    // Returns true if the device is currently being broadcast. Custom devices that do not go through discovery will
+    // return false.
+    // 
+    // Devices whose server is offline should return false but this can be unreliable if the server has crashed and DDS
+    // liveliness has not yet removed it from the system.
+    //
+    bool is_device_broadcast( std::shared_ptr< dds_device > const & ) const;
 
 private:
     void init();  
-
     void remove_device( std::string const & root );
 
     std::shared_ptr< dds_participant > _participant;
