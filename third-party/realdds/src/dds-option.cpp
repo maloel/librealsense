@@ -33,14 +33,14 @@ dds_option::dds_option( nlohmann::json const & j )
     _description         = rsutils::json::get< std::string >( j, index++ );
 
     if( index != j.size() )
-        DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
+        DDS_THROW( runtime_error, "expected end of json at index " << index );
 }
 
 
 void dds_option::init_stream( std::shared_ptr< dds_stream_base > const & stream )
 {
     if( _stream.lock() )
-        DDS_THROW( runtime_error, "option '" + get_name() + "' already has a stream" );
+        DDS_THROW( runtime_error, "option '" << get_name() << "' already has a stream" );
     if( ! stream )
         DDS_THROW( runtime_error, "null stream" );
     _stream = stream;

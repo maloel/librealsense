@@ -3,8 +3,11 @@
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-participant.h>
+#include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
 #include "dds-device-impl.h"
+
+#include <rsutils/time/timer.h>
 
 
 namespace realdds {
@@ -22,10 +25,87 @@ bool dds_device::is_ready() const
     return _impl->is_ready();
 }
 
-void dds_device::wait_until_ready( size_t timeout_ns )
+
+void dds_device::wait_until_ready( size_t timeout_ms )
 {
-    _impl->wait_until_ready( timeout_ns );
+    if( is_ready() )
+        return;
+
+    LOG_DEBUG( "waiting for '" << device_info().debug_name() << "' ..." );
+    rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
+    bool was_online = is_online();
+    do
+    {
+        if( timer.has_expired() )
+            DDS_THROW( runtime_error, "timeout waiting for '" << device_info().debug_name() << "'" );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+        if( was_online )
+        {
+            if( ! is_online() )
+                DDS_THROW( runtime_error, "device went offline '" << device_info().debug_name() << "'" );
+        }
+        else
+            was_online = is_online();
+    }
+    while( ! is_ready() );
 }
+
+
+bool dds_device::is_online() const
+{
+    if( _impl->_lost_discovery )
+        return false;
+    if( ! _impl->_notifications_reader->has_writers() )
+        return false;
+    if( ! _impl->_control_writer->has_readers() )
+        return false;
+    return true;
+}
+
+
+void dds_device::wait_until_online( size_t timeout_ms )
+{
+    if( is_online() )
+        return;
+
+    LOG_DEBUG( "waiting for '" << device_info().debug_name() << "' to come online ..." );
+    rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
+    do
+    {
+        if( timer.has_expired() )
+            DDS_THROW( runtime_error, "timeout waiting for '" << device_info().debug_name() << "' to come online" );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+    }
+    while( ! is_online() );
+}
+
+
+void dds_device::on_discovery_lost()
+{
+    // Called when the device-watcher has lost connection with the device
+    // Only devices that are discovered by the device-watcher get called with this!
+    _impl->_lost_discovery = true;
+    _impl->set_state( impl::state_t::WAIT_FOR_DEVICE_HEADER );
+}
+
+
+void dds_device::on_discovery_restored( topics::device_info const & new_info )
+{
+    // Called when the device-watcher has re-connected with a device that was lost before
+    // Only devices that are discovered by the device-watcher get called with this!
+    if( new_info.name != device_info().name )
+        DDS_THROW( runtime_error, "device name cannot change" );
+    if( new_info.topic_root != device_info().topic_root )
+        DDS_THROW( runtime_error, "topic root cannot change" );
+    if( new_info.serial != device_info().serial )
+        DDS_THROW( runtime_error, "device serial number cannot change" );
+    if( new_info.product_line != device_info().product_line )
+        DDS_THROW( runtime_error, "product line cannot change" );
+
+    _impl->_info = new_info;
+    _impl->_lost_discovery = false;
+}
+
 
 std::shared_ptr< dds_participant > const& dds_device::participant() const
 {
@@ -79,21 +159,25 @@ size_t dds_device::foreach_option( std::function< void( std::shared_ptr< dds_opt
 
 void dds_device::open( const dds_stream_profiles & profiles )
 {
+    wait_until_online();
     _impl->open( profiles );
 }
 
 void dds_device::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
 {
+    wait_until_online();
     _impl->set_option_value( option, new_value );
 }
 
 float dds_device::query_option_value( const std::shared_ptr< dds_option > & option )
 {
+    wait_until_online();
     return _impl->query_option_value( option );
 }
 
 void dds_device::send_control( topics::flexible_msg && msg, nlohmann::json * reply )
 {
+    wait_until_online();
     _impl->write_control_message( std::move( msg ), reply );
 }
 

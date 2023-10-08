@@ -146,26 +146,28 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
 }
 
 
-dds_guid const & dds_device::impl::guid() const
+void dds_device::impl::reset()
 {
-    return _control_writer->guid();
+    // _info should already be up-to-date
+    // _participant doesn't change
+    // _subscriber can stay the same
+    // _reply_timeout_ms is using same settings
+
+    // notifications/control/metadata topic, since the topic root hasn't changed, are still valid
+
+    // Streams need to be reset
+    _server_guid = {};
+    _n_streams_expected = 0;
+    _streams.clear();
+    _options.clear();
+    _extrinsics_map.clear();
+    _metadata_reader.reset();
 }
 
 
-void dds_device::impl::wait_until_ready( size_t timeout_ms )
+dds_guid const & dds_device::impl::guid() const
 {
-    if( is_ready() )
-        return;
-
-    LOG_DEBUG( "waiting for '" << _info.debug_name() << "' ..." );
-    rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
-    do
-    {
-        if( timer.has_expired() )
-            DDS_THROW( runtime_error, "timeout waiting for '" << _info.debug_name() << "'" );
-        std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-    }
-    while( ! is_ready() );
+    return _control_writer->guid();
 }
 
 
@@ -536,6 +538,9 @@ void dds_device::impl::on_device_header( nlohmann::json const & j, eprosima::fas
 {
     if( _state != state_t::WAIT_FOR_DEVICE_HEADER )
         return;
+
+    // We can get here when we regain connectivity - reset everything, just as if we're freshly constructed
+    reset();
 
     // The server GUID is the server's notification writer's GUID -- that way, we can easily associate all notifications
     // with a server.
