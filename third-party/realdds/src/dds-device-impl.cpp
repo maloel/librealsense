@@ -139,8 +139,27 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     , _reply_timeout_ms(
           _device_settings.nested( "control", "reply-timeout-ms" ).default_value< size_t >( 2000 ) )
 {
-    create_notifications_reader();
     create_control_writer();
+    create_notifications_reader();
+}
+
+
+void dds_device::impl::reset()
+{
+    // _info should already be up-to-date
+    // _participant doesn't change
+    // _subscriber can stay the same
+    // _reply_timeout_ms is using same settings
+
+    // notifications/control/metadata topic, since the topic root hasn't changed, are still valid
+
+    // Streams need to be reset
+    _server_guid = {};
+    _n_streams_expected = 0;
+    _streams.clear();
+    _options.clear();
+    _extrinsics_map.clear();
+    _metadata_reader.reset();
 }
 
 
@@ -153,22 +172,6 @@ dds_guid const & dds_device::impl::guid() const
 std::string dds_device::impl::debug_name() const
 {
     return rsutils::string::from() << _info.debug_name() << _participant->print( guid() );
-}
-
-
-void dds_device::impl::wait_until_ready( size_t timeout_ms )
-{
-    if( is_ready() )
-        return;
-
-    rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
-    do
-    {
-        if( timer.has_expired() )
-            DDS_THROW( runtime_error, "timeout waiting for '" << debug_name() << "'" );
-        std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-    }
-    while( ! is_ready() );
 }
 
 
@@ -203,7 +206,7 @@ void dds_device::impl::handle_notification( rsutils::json const & j,
             {
                 // We have to be the ones who sent the control!
                 auto const reply_guid = guid_from_string( sample[0].get< std::string >() );
-                auto const control_guid = _control_writer->get()->guid();
+                auto const control_guid = _control_writer->guid();
                 if( reply_guid == control_guid )
                 {
                     auto const sequence_number = sample[1].get< uint64_t >();
@@ -561,6 +564,9 @@ void dds_device::impl::on_device_header( rsutils::json const & j, eprosima::fast
 {
     if( _state != state_t::WAIT_FOR_DEVICE_HEADER )
         return;
+
+    // We can get here when we regain connectivity - reset everything, just as if we're freshly constructed
+    reset();
 
     // The server GUID is the server's notification writer's GUID -- that way, we can easily associate all notifications
     // with a server.

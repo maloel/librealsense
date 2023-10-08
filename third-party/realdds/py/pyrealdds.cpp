@@ -881,8 +881,13 @@ PYBIND11_MODULE(NAME, m) {
         .def( "server_guid", &dds_device::server_guid )
         .def( "guid", &dds_device::guid )
         .def( "is_ready", &dds_device::is_ready )
+        .def( "is_online", &dds_device::is_online )
         .def( "wait_until_ready",
               &dds_device::wait_until_ready,
+              py::call_guard< py::gil_scoped_release >(),
+              "timeout-ms"_a = 5000 )
+        .def( "wait_until_online",
+              &dds_device::wait_until_online,
               py::call_guard< py::gil_scoped_release >(),
               "timeout-ms"_a = 5000 )
         .def( "on_metadata_available",

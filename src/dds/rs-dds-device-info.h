@@ -37,6 +37,10 @@ public:
     {
     }
 
+    std::shared_ptr< realdds::dds_device > get_dds_device() const { return _dev; }
+
+    bool is_alive() const;
+
     std::string get_address() const override;
     void to_stream( std::ostream & ) const override;
 
