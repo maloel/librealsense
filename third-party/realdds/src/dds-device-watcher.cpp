@@ -73,6 +73,8 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                             // Old device coming back to life
                             is.writer_guid = guid;
                             LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") back to life: " << j.dump( 4 ) );
+                            topics::device_info device_info = topics::device_info::from_json( j );
+                            static_cast< dds_discovery_sink * >( is.alive.get() )->on_discovery_restored( device_info );
                             if( _on_device_added )
                             {
                                 std::thread( [device = is.alive, on_device_added = _on_device_added]()
@@ -201,6 +203,7 @@ void dds_device_watcher::remove_device( std::string const & root )
         device = is.alive;
         if( ! device )
             return;
+        static_cast< dds_discovery_sink * >( device.get() )->on_discovery_lost();
         is.in_use = is.alive;
         is.alive.reset();  // no longer alive; in_use will track whether it's being used
     }

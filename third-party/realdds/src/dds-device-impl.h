@@ -35,6 +35,7 @@ class flexible_msg;
 
 class dds_device::impl
 {
+public:
     enum class state_t
     {
         WAIT_FOR_DEVICE_HEADER,
@@ -47,10 +48,10 @@ class dds_device::impl
     void set_state( state_t );
 
     state_t _state = state_t::WAIT_FOR_DEVICE_HEADER;
+    bool _lost_discovery = false;
     size_t _n_streams_expected = 0;  // needed only until ready
 
-public:
-    topics::device_info const _info;
+    topics::device_info _info;
     rsutils::json const _device_settings;
     dds_guid _server_guid;
     std::shared_ptr< dds_participant > const _participant;
@@ -61,7 +62,7 @@ public:
     std::mutex _replies_mutex;
     std::condition_variable _replies_cv;
     std::map< dds_sequence_number, rsutils::json > _replies;
-    size_t _reply_timeout_ms;
+    size_t const _reply_timeout_ms;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
     std::shared_ptr< dds_topic_reader > _metadata_reader;
@@ -74,10 +75,11 @@ public:
     impl( std::shared_ptr< dds_participant > const & participant,
           topics::device_info const & info );
 
+    void reset();
+
     dds_guid const & guid() const;
     std::string debug_name() const;
 
-    void wait_until_ready( size_t timeout_ms );
     bool is_ready() const { return state_t::READY == _state; }
 
     void open( const dds_stream_profiles & profiles );
