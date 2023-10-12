@@ -6,7 +6,6 @@
 
 #include <src/core/depth-frame.h>
 #include "proc/synthetic-stream.h"
-#include "context.h"
 #include "environment.h"
 #include "option.h"
 #include "threshold.h"
