@@ -8,7 +8,6 @@
 #include "core/motion.h"
 #include "core/stream-profile.h"
 #include "core/tagged-profile.h"
-#include "context.h"
 #include "image.h"
 #include "environment.h"
 
