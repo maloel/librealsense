@@ -6,7 +6,6 @@
 #include "core/video.h"
 #include "core/motion.h"
 #include "core/stream-profile.h"
-#include "context.h"
 #include "image.h"
 #include "environment.h"
 #include "platform/stream-profile.h"

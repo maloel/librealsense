@@ -8,7 +8,7 @@
 #include "core/motion.h"
 #include "core/frame-holder.h"
 #include "sync.h"
-#include "context.h"  // rs2_device_info
+#include <rscore/context.h>  // rs2_device_info
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
