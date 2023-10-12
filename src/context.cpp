@@ -53,9 +53,10 @@ namespace librealsense
         _modules = module_registry::create_context_modules( *this );
         for( auto & m : _modules )
         {
-            auto d_factory = m->create_device_factory(
-                [this]( std::vector< rs2_device_info > const & removed, std::vector< rs2_device_info > const & added )
-                { invoke_devices_changed_callbacks( removed, added ); } );
+            auto d_factory
+                = m->create_device_factory( [this]( std::vector< std::shared_ptr< device_info > > const & removed,
+                                                    std::vector< std::shared_ptr< device_info > > const & added )
+                                            { invoke_devices_changed_callbacks( removed, added ); } );
             if( d_factory )
                 _device_factories.push_back( d_factory );
         }
