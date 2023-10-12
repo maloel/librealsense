@@ -92,7 +92,7 @@ _using_easyloggingpp( ${UTILITIES_INCLUDE_DIR} )
 #
 install( TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    EXCLUDE_FROM_ALL
     )
 
 
