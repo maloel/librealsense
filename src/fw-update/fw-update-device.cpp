@@ -3,7 +3,6 @@
 
 #include "fw-update-device.h"
 #include "../types.h"
-#include "../context.h"
 #include "../device-info.h"
 #include "ds/d400/d400-private.h"
 

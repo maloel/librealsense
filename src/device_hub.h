@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "context.h"
 #include "device.h"
 #include <librealsense2/h/rs_context.h>  // RS2_PRODUCT_LINE_...
 
@@ -16,6 +15,8 @@
 
 namespace librealsense
 {
+    class context;
+
     /**
     * device_hub class - encapsulate the handling of connect and disconnect events
     */

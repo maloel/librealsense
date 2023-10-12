@@ -3,9 +3,8 @@
 
 #include "rotation-transform.h"
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "context.h"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 #include "image.h"
 #include "stream.h"
 
