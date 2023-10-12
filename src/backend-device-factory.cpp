@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "backend-device-factory.h"
-#include "context.h"
+#include <rscore/context.h>
 #include "backend.h"
 #include "platform/platform-device-info.h"
 #include "platform/device-watcher.h"
