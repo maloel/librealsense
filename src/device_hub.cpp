@@ -6,6 +6,8 @@
 #include "core/processing.h"
 #include "proc/synthetic-stream.h"
 #include "device_hub.h"
+#include <rscore/context.h>
+
 
 namespace librealsense
 {
