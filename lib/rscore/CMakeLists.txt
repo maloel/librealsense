@@ -47,7 +47,7 @@ source_group(
 #
 install( TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    EXCLUDE_FROM_ALL
     )
 
 
