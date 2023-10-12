@@ -5,7 +5,7 @@
 
 #include "api.h"
 #include "log.h"
-#include "context.h"
+#include <rscore/context.h>
 #include "device.h"
 #include "algo.h"
 #include "core/debug.h"

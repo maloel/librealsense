@@ -20,6 +20,7 @@ namespace librealsense
     class options_container;
     class processing_block_interface;
     class recommended_proccesing_blocks_snapshot;
+    class context;
 
     class ros_reader: public device_serializer::reader
     {

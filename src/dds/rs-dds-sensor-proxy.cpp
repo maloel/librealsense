@@ -16,6 +16,7 @@
 #include <src/core/options-registry.h>
 #include <src/core/frame-callback.h>
 #include <src/stream.h>
+#include <rscore/context.h>
 
 #include <src/proc/color-formats-converter.h>
 

@@ -10,6 +10,7 @@
 #include <src/core/motion-frame.h>
 #include <src/core/video-frame.h>
 #include <src/color-sensor.h>
+#include <rscore/context.h>
 
 #include <rsutils/string/from.h>
 #include <cstring>
