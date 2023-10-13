@@ -5,9 +5,6 @@
 #include "device-info.h"
 
 #include "backend-device-factory.h"
-#ifdef BUILD_WITH_DDS
-#include "dds/rsdds-device-factory.h"
-#endif
 
 #include <rscore/module-registry.h>
 #include <rscore/context-module.h>
@@ -42,13 +39,6 @@ namespace librealsense
                     std::vector< std::shared_ptr< device_info > > const & added )
             { invoke_devices_changed_callbacks( removed, added ); } ) );
 
-#ifdef BUILD_WITH_DDS
-        _device_factories.push_back( std::make_shared< rsdds_device_factory >(
-            *this,
-            [this]( std::vector< std::shared_ptr< device_info > > const & removed,
-                    std::vector< std::shared_ptr< device_info > > const & added )
-            { invoke_devices_changed_callbacks( removed, added ); } ) );
-#endif
 
         _modules = module_registry::create_context_modules( *this );
         for( auto & m : _modules )
