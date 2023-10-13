@@ -90,7 +90,7 @@ configure_file(../../config/librealsense-gl.pc.in ../../config/realsense2-gl.pc 
 
 target_link_libraries( ${PROJECT_NAME}
     PRIVATE
-        ${DEPENDENCIES}
+        ${DEPENDENCIES} rsutils
     )
 
 # CMake prior to 3.13 cannot install targets located in sub-directories.
