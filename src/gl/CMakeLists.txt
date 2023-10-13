@@ -42,6 +42,7 @@ set(REALSENSE_GL_PUBLIC_HEADERS
 
 set(CMAKECONFIG_GL_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${LRS_GL_TARGET}")
 
+set( DEPENDENCIES realsense2 rsutils )
 include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
 
 if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
@@ -88,10 +89,7 @@ configure_package_config_file(../../CMake/realsense2-glConfig.cmake.in realsense
 
 configure_file(../../config/librealsense-gl.pc.in ../../config/realsense2-gl.pc @ONLY)
 
-target_link_libraries( ${PROJECT_NAME}
-    PRIVATE
-        ${DEPENDENCIES}
-    )
+target_link_libraries( ${PROJECT_NAME} PRIVATE ${DEPENDENCIES} )
 
 # CMake prior to 3.13 cannot install targets located in sub-directories.
 #https://gitlab.kitware.com/cmake/cmake/merge_requests/2152

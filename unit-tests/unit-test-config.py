@@ -256,7 +256,7 @@ def process_cpp( dir, builddir ):
             shared = False
             static = False
             custom_main = False
-            dependencies = 'realsense2'
+            dependencies = 'realsense2 rsutils'
             for cmake_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
                 m = cmake_directive['match']
                 index = cmake_directive['index']

@@ -63,7 +63,7 @@ target_include_directories( rsutils
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/third-party/json/include>
     )
 
-target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
+target_link_libraries( ${LRS_TARGET} PRIVATE rsutils )
 
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
