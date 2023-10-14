@@ -3,7 +3,7 @@
 
 #include "rsdds-device-factory.h"
 #include <rscore/context.h>
-#include "rs-dds-device-info.h"
+#include <src/dds/rs-dds-device-info.h>
 
 #include <librealsense2/h/rs_context.h>  // RS2_PRODUCT_LINE_...
 
