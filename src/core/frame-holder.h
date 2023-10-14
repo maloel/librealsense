@@ -12,7 +12,7 @@
 namespace librealsense {
 
 
-class LRS_EXTENSION_API frame_holder
+class frame_holder
 {
 public:
     frame_interface * frame = nullptr;

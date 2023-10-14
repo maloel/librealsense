@@ -15,7 +15,7 @@ namespace librealsense {
 
 // Simple implementation of info_interface
 //
-class LRS_EXTENSION_API info_container
+class info_container
     : public virtual info_interface
     , public extension_snapshot
 {
