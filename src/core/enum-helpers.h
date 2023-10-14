@@ -18,7 +18,7 @@ constexpr static char const * UNKNOWN_VALUE = "UNKNOWN";
 
 // This macro can be used directly if needed to support enumerators with no RS2_#####_COUNT last value
 #define RS2_ENUM_HELPERS_CUSTOMIZED( TYPE, FIRST, LAST, STRTYPE )                                                      \
-    LRS_EXTENSION_API STRTYPE get_string( TYPE value );                                                                \
+    STRTYPE get_string( TYPE value );                                                                                  \
     inline bool is_valid( TYPE value ) { return value >= FIRST && value <= LAST; }                                     \
     inline std::ostream & operator<<( std::ostream & out, TYPE value )                                                 \
     {                                                                                                                  \
@@ -42,7 +42,7 @@ constexpr static char const * UNKNOWN_VALUE = "UNKNOWN";
     }
 
 // For rs2_option, these make use of the registry
-LRS_EXTENSION_API std::string const & get_string( rs2_option value );
+std::string const & get_string( rs2_option value );
 bool is_valid( rs2_option value );
 std::ostream & operator<<( std::ostream & out, rs2_option option );
 bool try_parse( const std::string & option_name, rs2_option & result );

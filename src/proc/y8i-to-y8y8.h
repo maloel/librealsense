@@ -7,7 +7,7 @@
 
 namespace librealsense
 {
-    class LRS_EXTENSION_API y8i_to_y8y8 : public interleaved_functional_processing_block
+    class y8i_to_y8y8 : public interleaved_functional_processing_block
     {
     public:
         y8i_to_y8y8(int left_idx = 1, int right_idx = 2);

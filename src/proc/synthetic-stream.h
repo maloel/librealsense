@@ -45,7 +45,7 @@ namespace librealsense
         std::shared_ptr<rs2_source> _c_wrapper;
     };
 
-    class LRS_EXTENSION_API processing_block : public processing_block_interface, public options_container, public info_container
+    class processing_block : public processing_block_interface, public options_container, public info_container
     {
     public:
         processing_block(const char* name);
@@ -63,7 +63,7 @@ namespace librealsense
         synthetic_source _source_wrapper;
     };
 
-    class LRS_EXTENSION_API generic_processing_block : public processing_block
+    class generic_processing_block : public processing_block
     {
     public:
         generic_processing_block(const char* name);
@@ -126,7 +126,7 @@ namespace librealsense
         }
     };
 
-    class LRS_EXTENSION_API stream_filter_processing_block : public generic_processing_block
+    class stream_filter_processing_block : public generic_processing_block
     {
     public:
         stream_filter_processing_block(const char* name);
@@ -139,7 +139,7 @@ namespace librealsense
     };
 
     // process frames with a given function
-    class LRS_EXTENSION_API functional_processing_block : public stream_filter_processing_block
+    class functional_processing_block : public stream_filter_processing_block
     {
     public:
         functional_processing_block(const char* name, rs2_format target_format, rs2_stream target_stream = RS2_STREAM_ANY, rs2_extension extension_type = RS2_EXTENSION_VIDEO_FRAME);
@@ -206,7 +206,7 @@ namespace librealsense
 
     // Sequential chained processing blocks
     // The order of the processing blocks defines the execution flow.
-    class LRS_EXTENSION_API composite_processing_block : public processing_block
+    class composite_processing_block : public processing_block
     {
     public:
         class bypass_option : public option

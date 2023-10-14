@@ -17,7 +17,7 @@
 
 namespace librealsense
 {
-    struct LRS_EXTENSION_API option_range
+    struct option_range
     {
         float min;
         float max;
@@ -25,7 +25,7 @@ namespace librealsense
         float def;
     };
 
-    class LRS_EXTENSION_API option : public recordable<option>
+    class option : public recordable<option>
     {
     public:
         virtual void set(float value) = 0;
@@ -53,7 +53,7 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_OPTIONS, librealsense::options_interface);
 
-    class LRS_EXTENSION_API options_container : public virtual options_interface, public extension_snapshot
+    class options_container : public virtual options_interface, public extension_snapshot
     {
     public:
         bool supports_option(rs2_option id) const override
