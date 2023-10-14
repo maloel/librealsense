@@ -16,7 +16,7 @@ namespace librealsense {
 
 
 // Define a movable but explicitly noncopyable buffer type to hold our frame data
-class LRS_EXTENSION_API frame : public frame_interface
+class frame : public frame_interface
 {
 public:
     std::vector< uint8_t > data;

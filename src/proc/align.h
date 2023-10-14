@@ -12,7 +12,7 @@
 
 namespace librealsense
 {
-    class LRS_EXTENSION_API align : public generic_processing_block
+    class align : public generic_processing_block
     {
     public:
         align(rs2_stream to_stream);
