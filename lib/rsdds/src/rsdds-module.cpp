@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include <rscore/module-registry.h>
-#include <src/dds/rsdds-device-factory.h>
+#include "rsdds-device-factory.h"
 
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
