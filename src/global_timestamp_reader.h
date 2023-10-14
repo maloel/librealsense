@@ -9,7 +9,7 @@
 
 namespace librealsense
 {
-    class LRS_EXTENSION_API global_time_option : public bool_option
+    class global_time_option : public bool_option
     {
     public:
         global_time_option() {}

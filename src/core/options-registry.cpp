@@ -12,7 +12,7 @@
 namespace librealsense {
 
 
-LRS_EXTENSION_API std::string const & get_string( rs2_option );
+std::string const & get_string( rs2_option );
 
 
 namespace by_name {

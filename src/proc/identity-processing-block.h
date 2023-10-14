@@ -7,7 +7,7 @@
 
 namespace librealsense
 {
-    class LRS_EXTENSION_API identity_processing_block : public stream_filter_processing_block
+    class identity_processing_block : public stream_filter_processing_block
     {
     public:
         identity_processing_block();

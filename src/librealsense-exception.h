@@ -5,7 +5,6 @@
 
 #include <librealsense2/h/rs_types.h>
 #include <rsutils/easylogging/easyloggingpp.h>
-#include "basics.h"  // LRS_EXTENSION_API
 
 #include <exception>
 #include <string>
@@ -36,7 +35,7 @@ private:
 };
 
 
-class LRS_EXTENSION_API recoverable_exception : public librealsense_exception
+class recoverable_exception : public librealsense_exception
 {
 public:
     recoverable_exception( const std::string & msg, rs2_exception_type exception_type ) noexcept;
