@@ -47,6 +47,11 @@ global_set_flags()
 
 # If no type is given explicitly the type is STATIC or SHARED based on whether the current value of the variable [BUILD_SHARED_LIBS](https://cmake.org/cmake/help/v3.10/variable/BUILD_SHARED_LIBS.html#variable:BUILD_SHARED_LIBS) is ON
 add_library(${LRS_TARGET})
+if( BUILD_SHARED_LIBS AND WIN32 )
+    #include( GenerateExportHeader )
+    #generate_export_header( ${LRS_TARGET} )
+    set_target_properties( ${LRS_TARGET} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON )
+endif()
 
 config_cxx_flags()
 
