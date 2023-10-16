@@ -1,0 +1,90 @@
+; This file defines DLL function exports out of realsense2 for use in realsense2-gl.
+; Only the -gl library abuses the DLL boundaries maintained by the regular realsense2.def file.
+;
+; This is one of a few possible solutions:
+;     1. We can define LRS_EXTENSION_API and use it wherever needed in the code. This pollutes the
+;        code and is annoying.
+;     2. We can catch unsolved external linker errors and generate this file (see below)
+;     3. We can use:
+;            set_target_properties( ${LRS_TARGET} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON )
+;        this will export ALL symbols, and mostly works but with some exceptions (mixing of static
+;        libraries like realdds, and therefore EasyLogging, with the realsense2 DLL) - Linux does
+;        it better...
+;
+; This is #2 above. To generate this file:
+;     - erase the contents here, relink realsense2 then realsense2-gl
+;     - copy the uneresolved external errors into a text file
+;     - remove anything not in parenthesis, e.g.:
+;           2>camera-shader.obj : error LNK2001: unresolved external symbol "..." (?update@info_container@librealsense@@UEAAXV?$shared_ptr@Vextension_snapshot@librealsense@@@std@@@Z)
+;       will become:
+;           ?update@info_container@librealsense@@UEAAXV?$shared_ptr@Vextension_snapshot@librealsense@@@std@@@Z
+;     - remove function references, too:
+;           2>align-gl.obj : error LNK2019: unresolved external symbol "..." (??0generic_processing_block@librealsense@@QEAA@PEBD@Z) referenced in function "..." (...)
+;       will become:
+;           ??0generic_processing_block@librealsense@@QEAA@PEBD@Z
+;     - remove duplicate lines
+;     - copy and replace everything after "EXPORTS"
+; Doesn't take too much time and doesn't need doing too often. ¯\_(ツ)_/¯
+;
+
+EXPORTS
+
+      ?get_string@librealsense@@YAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4rs2_option@@@Z
+      ?get_string@librealsense@@YAPEBDW4rs2_distortion@@@Z
+      ??0recoverable_exception@librealsense@@QEAA@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4rs2_exception_type@@@Z
+      ?create_snapshot@option@librealsense@@UEBAXAEAV?$shared_ptr@Voption@librealsense@@@std@@@Z
+      ?get_supported_options@options_container@librealsense@@UEBA?AV?$vector@W4rs2_option@@V?$allocator@W4rs2_option@@@std@@@std@@XZ
+      ?get_info@info_container@librealsense@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4rs2_camera_info@@@Z
+      ?supports_info@info_container@librealsense@@UEBA_NW4rs2_camera_info@@@Z
+      ?create_snapshot@info_container@librealsense@@UEBAXAEAV?$shared_ptr@Vinfo_interface@librealsense@@@std@@@Z
+      ?enable_recording@info_container@librealsense@@UEAAXV?$function@$$A6AXAEBVinfo_interface@librealsense@@@Z@std@@@Z
+      ?update@info_container@librealsense@@UEAAXV?$shared_ptr@Vextension_snapshot@librealsense@@@std@@@Z
+      ??0frame@librealsense@@QEAA@$$QEAV01@@Z
+      ??4frame@librealsense@@QEAAAEAV01@$$QEAV01@@Z
+      ?get_frame_metadata@frame@librealsense@@UEBA_JAEBW4rs2_frame_metadata_value@@@Z
+      ?supports_frame_metadata@frame@librealsense@@UEBA_NAEBW4rs2_frame_metadata_value@@@Z
+      ?get_frame_data_size@frame@librealsense@@UEBAHXZ
+      ?get_frame_data@frame@librealsense@@UEBAPEBEXZ
+      ?get_frame_timestamp@frame@librealsense@@UEBANXZ
+      ?get_frame_timestamp_domain@frame@librealsense@@UEBA?AW4rs2_timestamp_domain@@XZ
+      ?get_frame_number@frame@librealsense@@UEBA_KXZ
+      ?get_frame_system_time@frame@librealsense@@UEBANXZ
+      ?release@frame@librealsense@@UEAAXXZ
+      ?keep@frame@librealsense@@UEAAXXZ
+      ?publish@frame@librealsense@@UEAAPEAVframe_interface@2@V?$shared_ptr@Varchive_interface@librealsense@@@std@@@Z
+      ?get_owner@frame@librealsense@@UEBAPEAVarchive_interface@2@XZ
+      ?get_sensor@frame@librealsense@@UEBA?AV?$shared_ptr@Vsensor_interface@librealsense@@@std@@XZ
+      ?set_sensor@frame@librealsense@@UEAAXV?$shared_ptr@Vsensor_interface@librealsense@@@std@@@Z
+      ?flush@frame_source@librealsense@@QEBAXXZ
+      ?set_processing_callback@processing_block@librealsense@@UEAAXV?$shared_ptr@Urs2_frame_processor_callback@@@std@@@Z
+      ?set_output_callback@processing_block@librealsense@@UEAAXV?$shared_ptr@Urs2_frame_callback@@@std@@@Z
+      ?invoke@processing_block@librealsense@@UEAAXVframe_holder@2@@Z
+      ?prepare_output@generic_processing_block@librealsense@@MEAA?AVframe@rs2@@AEBVframe_source@4@V34@V?$vector@Vframe@rs2@@V?$allocator@Vframe@rs2@@@std@@@std@@@Z
+      ??0stream_filter_processing_block@librealsense@@QEAA@PEBD@Z
+      ?should_process@stream_filter_processing_block@librealsense@@MEAA_NAEBVframe@rs2@@@Z
+      ?get_range@option_base@librealsense@@UEBA?AUoption_range@2@XZ
+      ?enable_recording@option_base@librealsense@@UEAAXV?$function@$$A6AXAEBVoption@librealsense@@@Z@std@@@Z
+      ??0pointcloud@librealsense@@IEAA@PEBD@Z
+      ?should_process@pointcloud@librealsense@@MEAA_NAEBVframe@rs2@@@Z
+      ?process_frame@pointcloud@librealsense@@MEAA?AVframe@rs2@@AEBVframe_source@4@AEBV34@@Z
+      ?get_string@librealsense@@YAPEBDW4rs2_log_severity@@@Z
+      ?update_info@info_container@librealsense@@QEAAXW4rs2_camera_info@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z
+      ??0processing_block@librealsense@@QEAA@PEBD@Z
+      ??0functional_processing_block@librealsense@@QEAA@PEBDW4rs2_format@@W4rs2_stream@@W4rs2_extension@@@Z
+      ?init_profiles_info@functional_processing_block@librealsense@@MEAAXPEBVframe@rs2@@@Z
+      ?process_frame@functional_processing_block@librealsense@@MEAA?AVframe@rs2@@AEBVframe_source@4@AEBV34@@Z
+      ?prepare_frame@functional_processing_block@librealsense@@MEAA?AVframe@rs2@@AEBVframe_source@4@AEBV34@@Z
+      ??0align@librealsense@@QEAA@W4rs2_stream@@@Z
+      ?create@pointcloud@librealsense@@SA?AV?$shared_ptr@Vpointcloud@librealsense@@@std@@XZ
+      ??0colorizer@librealsense@@QEAA@XZ
+      ?process_function@yuy2_converter@librealsense@@MEAAXQEBQEAEPEBEHHHH@Z
+      ?process_function@y411_converter@librealsense@@MEAAXQEBQEAEPEBEHHHH@Z
+      ?set@float_option@librealsense@@UEAAXM@Z
+      ??0colorizer@librealsense@@IEAA@PEBD@Z
+      ?should_process@colorizer@librealsense@@MEAA_NAEBVframe@rs2@@@Z
+      ??0generic_processing_block@librealsense@@QEAA@PEBD@Z
+      ?should_process@align@librealsense@@MEAA_NAEBVframe@rs2@@@Z
+      ?process_frame@align@librealsense@@MEAA?AVframe@rs2@@AEBVframe_source@4@AEBV34@@Z
+      ?align_z_to_other@align@librealsense@@MEAAXAEAVvideo_frame@rs2@@AEBV34@AEBVvideo_stream_profile@4@M@Z
+      ?align_other_to_z@align@librealsense@@MEAAXAEAVvideo_frame@rs2@@AEBV34@1M@Z
+      ?select_extension@align@librealsense@@MEAA?AW4rs2_extension@@AEBVframe@rs2@@@Z

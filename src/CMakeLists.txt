@@ -58,7 +58,10 @@ if(LRS_TRY_USE_AVX)
 endif()
 
 if(BUILD_SHARED_LIBS)
-    target_sources(${LRS_TARGET} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/realsense.def")
+    target_sources(${LRS_TARGET} PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/realsense.def"
+        "${CMAKE_CURRENT_LIST_DIR}/gl/exports.def"  # for realsense2-gl!
+        )
 endif()
 
 target_sources(${LRS_TARGET}
