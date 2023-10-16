@@ -13,7 +13,9 @@ target_include_directories( ${PROJECT_NAME}
 
 # We, and all our dependents, need these:
 target_link_libraries( ${PROJECT_NAME}
-    PUBLIC rsutils dds )  # dds=FastDDS
+    PRIVATE rsutils
+    PUBLIC dds  # =FastDDS
+)
 
 
 # Headers -----------------------------------------------------------------------------------
