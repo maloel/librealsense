@@ -83,19 +83,14 @@ with test.closure( "Sync D1748 & C1737" ):
     sw.generate_depth_frame( frame_number=1749, timestamp=63448.13 )
     sw.expect_nothing()  # should be waiting for next color
     sw.generate_color_frame( frame_number=1737, timestamp=63430.32, next_expected=63464.801758 )
-    sw.expect( depth_frame=1748, color_frame=1737 )
+    sw.expect( depth_frame=1748, color_frame=1737, nothing_else=True )
 
 #############################################################################################
-with test.closure( "LONE D1749!" ):
-    sw.expect( depth_frame=1749, nothing_else=True )
-
-#############################################################################################
-with test.closure( "No sync on D1750 & C1738" ):
+with test.closure( "No sync on D1749 & C1738" ):
     sw.generate_depth_frame( frame_number=1750, timestamp=63481.48 )
     sw.expect_nothing()  # should be waiting for next color
     sw.generate_color_frame( frame_number=1738, timestamp=63463.67, next_expected=63498.152758 )
-    sw.expect( color_frame=1738 )
-    sw.expect( depth_frame=1750 )
+    sw.expect( depth_frame=1749, color_frame=1738, nothing_else=True )
 
 #############################################################################################
 test.print_results_and_exit()
