@@ -683,14 +683,16 @@ namespace librealsense
         // 
         // The threshold is a function of the FPS, but note we can't keep more frames than
         // our queue size and per-stream archive size allow.
-        auto const fps = get_fps( waiting_to_be_released );
+        auto const waiting_fps = get_fps( waiting_to_be_released );
+        auto const missing_fps = next_expected.fps;
+        auto const min_fps = std::min( waiting_fps, missing_fps );
 
         rs2_time_t now = last_arrived.timestamp;
         if( now > next_expected.value )
         {
             // Wait for the missing stream frame to arrive -- up to a cutout: anything more and we
             // let the frameset be ready without it...
-            auto gap = 1000. / fps;
+            auto gap = 1000. / min_fps;
             // NOTE: the threshold is a function of the gap; the bigger it is, the more latency
             // between the streams we're willing to live with. Each gap is a frame so we are limited
             // by the number of frames we're willing to keep (which is our queue limit)
@@ -718,7 +720,7 @@ namespace librealsense
 
         return ! are_equivalent( waiting_to_be_released->get_frame_timestamp(),
                                  next_expected.value,
-                                 fps );
+                                 min_fps );
     }
 
     bool timestamp_composite_matcher::are_equivalent( double a, double b, double fps )
