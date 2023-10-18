@@ -71,40 +71,14 @@ with test.closure( "Sync D1748 & C1737" ):
     sw.generate_depth_frame( frame_number=1749, timestamp=63448.13 )
     sw.expect_nothing()  # should be waiting for next color
     sw.generate_color_frame( frame_number=1737, timestamp=63430.32, next_expected=63464.801758 )
-    sw.expect( depth_frame=1748, color_frame=1737 )
+    sw.expect( depth_frame=1748, color_frame=1737, nothing_else=True )
 
 #############################################################################################
-with test.closure( "LONE D1749!" ):
-    sw.expect( depth_frame=1749, nothing_else=True )
-
-
-#ing-block.cpp:55) --> syncing [Depth/63 #1750 @63481.48]
-#<-- [Depth/63 #1750 @63481.48]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Depth/63 #1750 @63481.48]
-#... missing Color/66, next expected 63464.801758
-#...     waiting for it
-#ing-block.cpp:55) --> syncing [Color/66 #1738 @63463.67]
-#<-- [Color/66 #1738 @63463.67]  (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71)
-#... have [Color/66 #1738 @63463.67]
-#... have [Depth/63 #1750 @63481.48]
-#  - [Depth/63 #1750 @63481.48] is not in sync; won't be released
-#<-- [[Color/66 #1738 @63463.67]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Color/66 #1738 @63463.67]]
-#... have [Depth/63 #1750 @63481.48]
-#... missing Color/66, next expected 63498.152758
-#...     ignoring it
-#<-- [[Depth/63 #1750 @63481.48]]  (CI: (TS: Depth/63 Infrared/64 Infrared/65 Color/66 Accel/70 Gyro/71))
-#ing-block.cpp:20) <-- queueing [[Depth/63 #1750 @63481.48]]
-#ing-block.cpp:76) --> frame ready: [[Color/66 #1738 @63463.67]]
-#ing-block.cpp:76) --> frame ready: [[Depth/63 #1750 @63481.48]]
-
-#############################################################################################
-with test.closure( "No sync on D1750 & C1738" ):
+with test.closure( "No sync on D1749 & C1738" ):
     sw.generate_depth_frame( frame_number=1750, timestamp=63481.48 )
     sw.expect_nothing()  # should be waiting for next color
     sw.generate_color_frame( frame_number=1738, timestamp=63463.67, next_expected=63498.152758 )
-    sw.expect( color_frame=1738 )
-    sw.expect( depth_frame=1750 )
+    sw.expect( depth_frame=1749, color_frame=1738, nothing_else=True )
 
 
 #ing-block.cpp:55) --> syncing [Depth/63 #1751 @63514.82]
