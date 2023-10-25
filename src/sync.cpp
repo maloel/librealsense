@@ -626,22 +626,17 @@ namespace librealsense
 
     void timestamp_composite_matcher::update_last_arrived(frame_holder& f, matcher* m)
     {
-        if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
-            _fps[m] = (uint32_t)f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
-        else
-            _fps[m] = f->get_stream()->get_framerate();
-
         auto const now = time_service::get_time();
         //LOG_DEBUG( _name << ": _last_arrived[" << m->get_name() << "] = " << now );
         _last_arrived[m] = now;
     }
 
-    unsigned int timestamp_composite_matcher::get_fps( frame_interface const * f )
+    double timestamp_composite_matcher::get_fps( frame_interface const * f )
     {
-        uint32_t fps = 0;
+        double fps = 0.;
         if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
         {
-            fps = (uint32_t)f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+            fps = f->get_frame_metadata( RS2_FRAME_METADATA_ACTUAL_FPS ) / 1000.;
         }
         if( fps )
         {
@@ -660,7 +655,7 @@ namespace librealsense
                                                        const frame_holder & f )
     {
         auto fps = get_fps( f );
-        auto gap = 1000.f / (float)fps;
+        auto gap = 1000. / fps;
 
         auto ts = f.frame->get_frame_timestamp();
         auto ne = ts + gap;
@@ -750,7 +745,7 @@ namespace librealsense
         {
             // Wait for the missing stream frame to arrive -- up to a cutout: anything more and we
             // let the frameset be ready without it...
-            auto gap = 1000.f / min_fps;
+            auto gap = 1000. / min_fps;
             // NOTE: the threshold is a function of the gap; the bigger it is, the more latency
             // between the streams we're willing to live with. Each gap is a frame so we are limited
             // by the number of frames we're willing to keep (which is our queue limit)
@@ -777,9 +772,9 @@ namespace librealsense
         return ! are_equivalent( waiting_to_be_released->get_frame_timestamp(), next_expected.value, min_fps );
     }
 
-    bool timestamp_composite_matcher::are_equivalent( double a, double b, unsigned int fps )
+    bool timestamp_composite_matcher::are_equivalent( double a, double b, double fps )
     {
-        float gap = 1000.f / fps;
+        auto gap = 1000. / fps;
         if( abs( a - b ) < (gap / 2) )
         {
             //LOG_DEBUG( "...     " << a << " == " << b << "  {diff}" << abs( a - b ) << " < " << (gap / 2) << "{gap/2}" );

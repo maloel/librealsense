@@ -912,10 +912,21 @@ namespace rs2
             {
                 auto val = (rs2_frame_metadata_value)i;
                 std::string name = rs2_frame_metadata_to_string( val );
-                std::string desc = "";
+                std::string desc;
                 if( descriptions.find( val ) != descriptions.end() )
                     desc = descriptions[val];
-                stream_details.push_back( { name, rsutils::string::from() << kvp.second, desc } );
+                rs2_metadata_type value = kvp.second;
+                std::string value_s;
+                switch( i )
+                {
+                case RS2_FRAME_METADATA_ACTUAL_FPS:
+                    value_s = rsutils::string::from( value / 1000. );
+                    break;
+                default:
+                    value_s = rsutils::string::from( value );
+                    break;
+                }
+                stream_details.push_back( { name, value_s, desc } );
             }
         }
 

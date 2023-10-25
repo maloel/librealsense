@@ -198,9 +198,12 @@ def generate_depth_frame( frame_number, timestamp, next_expected=None ):
     depth_frame.domain = domain
     depth_frame.profile = depth_profile
     #
-    log.d( "-->", depth_frame )
     if next_expected is not None:
-        depth_sensor.set_metadata( rs.frame_metadata_value.actual_fps, round( 1000 / ( next_expected - timestamp ) ) )
+        actual_fps = round( 1000000 / ( next_expected - timestamp ) )
+        depth_sensor.set_metadata( rs.frame_metadata_value.actual_fps, actual_fps )
+        log.d( "-->", depth_frame, "with actual FPS", actual_fps )
+    else:
+        log.d( "-->", depth_frame )
     depth_sensor.on_video_frame( depth_frame )
 
 def generate_color_frame( frame_number, timestamp, next_expected=None ):
@@ -220,9 +223,12 @@ def generate_color_frame( frame_number, timestamp, next_expected=None ):
     color_frame.domain = domain
     color_frame.profile = color_profile
     #
-    log.d( "-->", color_frame )
     if next_expected is not None:
-        color_sensor.set_metadata( rs.frame_metadata_value.actual_fps, round( 1000 / ( next_expected - timestamp ) ) )
+        actual_fps = round( 1000000 / ( next_expected - timestamp ) )
+        color_sensor.set_metadata( rs.frame_metadata_value.actual_fps, actual_fps )
+        log.d( "-->", color_frame, "with actual FPS", actual_fps )
+    else:
+        log.d( "-->", color_frame )
     color_sensor.on_video_frame( color_frame )
 
 def generate_depth_and_color( frame_number, timestamp ):

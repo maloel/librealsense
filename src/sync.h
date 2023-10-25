@@ -116,7 +116,7 @@ namespace librealsense
         struct next_expected_t
         {
             double value;  // timestamp/frame-number/etc.
-            unsigned int fps;
+            double fps;
             rs2_timestamp_domain domain;
         };
         std::map< matcher *, next_expected_t > _next_expected;
@@ -189,10 +189,8 @@ namespace librealsense
                                    const frame_holder & f ) override;
 
     private:
-        unsigned int get_fps( frame_interface const * f );
-        bool are_equivalent( double a, double b, unsigned int fps );
+        double get_fps( frame_interface const * f );
+        bool are_equivalent( double a, double b, double fps );
         std::map<matcher*, double> _last_arrived;
-        std::map<matcher*, unsigned int> _fps;
-
     };
 }

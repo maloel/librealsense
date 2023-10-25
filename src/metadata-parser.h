@@ -349,15 +349,23 @@ namespace librealsense
         {
             // A computation involving unsigned operands can never overflow (ISO/IEC 9899:1999 (E) \A76.2.5/9)
             // In case of frame counter reset fallback use fps from the stream configuration
-            auto num_of_frames = (frm.additional_data.frame_number) ? frm.additional_data.frame_number - frm.additional_data.last_frame_number : 0;
+            auto num_of_frames = frm.additional_data.frame_number
+                                   ? frm.additional_data.frame_number - frm.additional_data.last_frame_number
+                                   : 0;
 
             if (num_of_frames == 0)
             {
                 LOG_INFO("Frame counter reset");
             }
+            else
+            {
+                auto diff
+                    = ( frm.additional_data.timestamp - frm.additional_data.last_timestamp ) / (double)num_of_frames;
+                if( diff > 0 )
+                    return std::max( 1000. / std::ceil( diff ), (double) 1 );
+            }
 
-            auto diff = num_of_frames ? (double)(frm.additional_data.timestamp - frm.additional_data.last_timestamp) / (double)num_of_frames : 0;
-            return diff > 0 ? std::max(1000.f / std::ceil(diff), (double)1) : frm.get_stream()->get_framerate();
+            return frm.get_stream()->get_framerate();
         }
     };
 
@@ -409,12 +417,11 @@ namespace librealsense
                             }
                         }
                     }
-                    return std::min((int)fps, (int)frm.get_stream()->get_framerate());
+                    return std::min( (int) fps, (int) frm.get_stream()->get_framerate() ) * 1000;
                 }
             }
 
-            return (rs2_metadata_type)_fps_calculator.get_fps(frm);
-
+            return rs2_metadata_type( _fps_calculator.get_fps( frm ) * 1000 );
         }
 
         bool supports(const librealsense::frame & frm) const override
