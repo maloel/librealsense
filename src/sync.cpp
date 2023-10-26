@@ -137,6 +137,17 @@ namespace librealsense
         _name = create_composite_name(matchers, name);
     }
 
+    composite_matcher::matcher_queue::matcher_queue()
+        : q( QUEUE_MAX_SIZE,
+             []( frame_holder const & fh )
+             {
+                 // If queues are overrun, we'll get here
+                 LOG_ERROR( "DROPPED frame " << fh );
+             } )
+    {
+    }
+
+
     void composite_matcher::dispatch(frame_holder f, const syncronization_environment& env)
     {
         clean_inactive_streams(f);
@@ -172,7 +183,7 @@ namespace librealsense
                 if( ! matcher->get_active() )
                 {
                     matcher->set_active( true );
-                    _frames_queue[matcher.get()].start();
+                    _frames_queue[matcher.get()].q.start();
                 }
                 return matcher;
             }
@@ -266,7 +277,7 @@ namespace librealsense
 
         // Stop all our queues to wake up anyone waiting on them
         for( auto & fq : _frames_queue )
-            fq.second.stop();
+            fq.second.q.stop();
 
         // Trickle the stop down to any children
         for( auto m : _matchers )
@@ -289,7 +300,7 @@ namespace librealsense
         os << '[';
         for( auto m : matchers )
         {
-            auto const & q = _frames_queue[m];
+            auto const & q = _frames_queue[m].q;
             q.peek( [&os]( frame_holder const & fh ) {
                 os << fh;
                 } );
@@ -313,7 +324,7 @@ namespace librealsense
         // latest timestamp/frame-number/etc. that we can compare to.
         auto const last_arrived = f->get_header();
 
-        if( ! _frames_queue[matcher.get()].enqueue( std::move( f ) ) )
+        if( ! _frames_queue[matcher.get()].q.enqueue( std::move( f ) ) )
             // If we get stopped, nothing to do!
             return;
 
@@ -344,7 +355,7 @@ namespace librealsense
                 for( auto s = _frames_queue.begin(); s != _frames_queue.end(); s++ )
                 {
                     librealsense::matcher * const m = s->first;
-                    if( ! s->second.peek( [&]( frame_holder & fh ) {
+                    if( ! s->second.q.peek( [&]( frame_holder & fh ) {
                             LOG_IF_ENABLE( "... have " << *fh.frame, env );
                             frames_arrived.push_back( &fh );
                             frames_arrived_matchers.push_back( m );
@@ -423,7 +434,7 @@ namespace librealsense
                             for( auto index : synced_frames )
                             {
                                 librealsense::matcher * m = frames_arrived_matchers[index];
-                                if( ! _frames_queue[m].peek(
+                                if( ! _frames_queue[m].q.peek(
                                         [&]( frame_holder & fh )
                                         {
                                             if( is_smaller_than( i, fh ) )
@@ -476,7 +487,7 @@ namespace librealsense
                     frame_holder frame;
                     int const timeout_ms = 5000;
                     librealsense::matcher * m = frames_arrived_matchers[index];
-                    _frames_queue[m].dequeue( &frame, timeout_ms );
+                    _frames_queue[m].q.dequeue( &frame, timeout_ms );
                     match.push_back( std::move( frame ) );
                 }
             }
@@ -549,7 +560,7 @@ namespace librealsense
 
         for(auto id: inactive_matchers)
         {
-            _frames_queue[_matchers[id].get()].clear();
+            _frames_queue[_matchers[id].get()].q.clear();
         }
     }
 
@@ -762,7 +773,7 @@ namespace librealsense
             auto const q_it = _frames_queue.find( missing );
             if( q_it != _frames_queue.end() )
             {
-                if( q_it->second.empty() )
+                if( q_it->second.q.empty() )
                     _frames_queue.erase( q_it );
             }
             missing->set_active( false );
