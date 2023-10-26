@@ -362,7 +362,7 @@ namespace librealsense
                 auto diff
                     = ( frm.additional_data.timestamp - frm.additional_data.last_timestamp ) / (double)num_of_frames;
                 if( diff > 0 )
-                    return std::max( 1000. / std::ceil( diff ), (double) 1 );
+                    return std::max( 1000. / diff, 1. );
             }
 
             return frm.get_stream()->get_framerate();
@@ -397,13 +397,13 @@ namespace librealsense
                 auto exp_in_micro = _exposure_modifyer(exp);
                 if (exp_in_micro > 0)
                 {
-                    auto fps = 1000000.f / exp_in_micro;
+                    auto fps = 1000000. / exp_in_micro;
 
                     if (_discrete)
                     {
                         if (fps >= _fps_values.back())
                         {
-                            fps = static_cast<float>(_fps_values.back());
+                            fps = static_cast<double>(_fps_values.back());
                         }
                         else
                         {
@@ -411,13 +411,13 @@ namespace librealsense
                             {
                                 if (fps < _fps_values[i + 1])
                                 {
-                                    fps = static_cast<float>(_fps_values[i]);
+                                    fps = static_cast<double>(_fps_values[i]);
                                     break;
                                 }
                             }
                         }
                     }
-                    return std::min( (int) fps, (int) frm.get_stream()->get_framerate() ) * 1000;
+                    return rs2_metadata_type( std::min( fps, (double)frm.get_stream()->get_framerate() ) * 1000 );
                 }
             }
 
