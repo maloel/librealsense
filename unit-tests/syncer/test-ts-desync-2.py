@@ -1,5 +1,5 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 import pyrealsense2 as rs
 from rspy import log, test
@@ -12,7 +12,7 @@ import sw
 # sooner than Color at time X-18ms) with exaggerated next-expected because of low-calculated-fps
 # (29 versus the nominal 30 that's supposed to be seen).
 #
-# See [TODO]
+# See [RSDSO-19336]
 #
 
 
