@@ -127,6 +127,7 @@ if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
 endif()
 
 if( BUILD_LEGACY_PYBACKEND )
+include( ${CMAKE_SOURCE_DIR}/CMake/libusb_config.cmake )
 pybind11_add_module(pybackend2 SHARED ${RAW_RS})
 
 if(USE_EXTERNAL_USB)
