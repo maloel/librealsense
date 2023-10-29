@@ -56,10 +56,10 @@ include_directories(
 add_library(usb STATIC ${LIBUSB_C} ${LIBUSB_H})
 
 if(WIN32)
-    set_target_properties (usb PROPERTIES
+    set_target_properties( ${PROJECT_NAME} PROPERTIES
         FOLDER "3rd Party"
-    )
-    include_directories(msvc)
+        )
+    target_include_directories( ${PROJECT_NAME} PRIVATE msvc )
     foreach(flag_var
         CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
         CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
@@ -69,26 +69,23 @@ if(WIN32)
             string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
         endif(${flag_var} MATCHES "/MD")
     endforeach(flag_var)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /utf-8")
+    target_compile_definitions( ${PROJECT_NAME} PRIVATE /utf-8 )
 endif()
 
 if(ANDROID)
-    include_directories(android)
+    target_include_directories( ${PROJECT_NAME} PRIVATE android )
 endif()
 
 if(APPLE)
   find_library(corefoundation_lib CoreFoundation)
   find_library(iokit_lib IOKit)
   target_include_directories(usb PRIVATE XCode)
-  TARGET_LINK_LIBRARIES(usb objc ${corefoundation_lib} ${iokit_lib})
+  target_link_libraries(usb PRIVATE objc ${corefoundation_lib} ${iokit_lib})
 endif()
 
 if((NOT APPLE) AND (NOT ANDROID) AND (NOT WIN32))
-  TARGET_LINK_LIBRARIES(usb udev)
+  target_link_libraries(usb PRIVATE udev)
 endif()
-
-#set_target_properties(usb PROPERTIES PREFIX "")
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
