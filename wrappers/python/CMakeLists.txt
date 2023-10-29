@@ -127,13 +127,18 @@ if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
 endif()
 
 if( BUILD_LEGACY_PYBACKEND )
-include( ${CMAKE_SOURCE_DIR}/CMake/libusb_config.cmake )
 pybind11_add_module(pybackend2 SHARED ${RAW_RS})
 
+target_link_libraries( pybackend2 PRIVATE rsutils ${CMAKE_THREAD_LIBS_INIT})
+
+if( NOT WIN32 )
+include( ${CMAKE_SOURCE_DIR}/CMake/libusb_config.cmake )
 if(USE_EXTERNAL_USB)
     add_dependencies(pybackend2 libusb)
 endif()
-target_link_libraries(pybackend2 PRIVATE rsutils usb ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries( pybackend2 PRIVATE usb )
+endif()
+
 set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
