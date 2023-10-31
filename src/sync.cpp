@@ -141,7 +141,7 @@ namespace librealsense
              []( frame_holder const & fh )
              {
                  // If queues are overrun, we'll get here
-                 LOG_DEBUG( "DROPPED frame " << fh );
+                 LOG_ERROR( "DROPPED frame " << fh );
              } )
     {
     }
@@ -415,6 +415,56 @@ namespace librealsense
                             continue;
                         }
 
+                        // If all the synced frames have newer frames, and the newer frames also match the missing
+                        // stream, then it won't make sense to hold them...
+                        //
+                        // E.g.:
+                        //      Depth@50 <- this is curr_sync (fps=100)
+                        //      Depth@60
+                        // And we're waiting on Color@100 (fps=10).
+                        // Both D@50 and D@60 will match C@100.
+                        // We want to release D@50 because D@60 is available and can be synced instead...
+                        // 
+                        // This goes against "the synced frames should be the earliest possible!"?
+                        //
+                        if( ! is_smaller_than( i, *curr_sync ) )
+                        {
+                            bool have_more_frames = true;
+                            for( auto index : synced_frames )
+                            {
+                                librealsense::matcher * m = frames_arrived_matchers[index];
+                                if( ! _frames_queue[m].q.peek(
+                                        [&]( frame_holder & fh )
+                                        {
+                                            if( is_smaller_than( i, fh ) )
+                                            {
+                                                LOG_IF_ENABLE( "...   x " << fh << " is after next-expected", env );
+                                                have_more_frames = false;
+                                            }
+                                            else if( skip_missing_stream( fh, i, last_arrived, env ) )
+                                            {
+                                                LOG_IF_ENABLE( "...   x " << fh << " cannot be synced", env );
+                                                have_more_frames = false;
+                                            }
+                                            else
+                                            {
+                                                LOG_IF_ENABLE( "...     " << fh << " is a better sync", env );
+                                            }
+                                        },
+                                        1 ) )  // We looked at index 0, do the peek for the next index
+                                {
+                                    have_more_frames = false;
+                                }
+                                if( ! have_more_frames )
+                                    break;
+                            }
+                            if( have_more_frames )
+                            {
+                                LOG_IF_ENABLE( "...     not waiting because of above", env );
+                                continue;
+                            }
+                        }
+
                         LOG_IF_ENABLE( "...     waiting for it", env );
                         release_synced_frames = false;
                     }
@@ -478,6 +528,11 @@ namespace librealsense
     bool frame_number_composite_matcher::is_smaller_than(frame_holder & a, frame_holder & b)
     {
         return a->get_frame_number() < b->get_frame_number();
+    }
+    bool frame_number_composite_matcher::is_smaller_than( matcher * missing, frame_holder & a )
+    {
+        auto const & next_expected = _next_expected.at( missing );
+        return next_expected.value < a->get_frame_number();
     }
     void frame_number_composite_matcher::clean_inactive_streams(frame_holder& f)
     {
@@ -568,6 +623,12 @@ namespace librealsense
         auto ts = extract_timestamps(a, b);
 
         return ts.first < ts.second;
+    }
+
+    bool timestamp_composite_matcher::is_smaller_than( matcher * missing, frame_holder & a )
+    {
+        auto const & next_expected = _next_expected.at( missing );
+        return next_expected.value < a->get_frame_timestamp();
     }
 
     void timestamp_composite_matcher::update_last_arrived(frame_holder& f, matcher* m)

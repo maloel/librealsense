@@ -90,6 +90,7 @@ namespace librealsense
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) = 0;
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
+        virtual bool is_smaller_than( matcher * missing, frame_holder & ) = 0;
         virtual bool skip_missing_stream( frame_interface const * waiting_to_be_released,
                                           matcher * missing,
                                           frame_header const & last_arrived,
@@ -139,7 +140,8 @@ namespace librealsense
 
         void sync(frame_holder f, const syncronization_environment& env) override;
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) override { return false; }
-        virtual bool is_smaller_than(frame_holder& a, frame_holder& b) override { return false; }
+        virtual bool is_smaller_than( frame_holder & a, frame_holder & b ) override { return false; }
+        virtual bool is_smaller_than( matcher * missing, frame_holder & a ) override { return false; }
         virtual bool skip_missing_stream( frame_interface const * waiting_to_be_released,
                                           matcher * missing,
                                           frame_header const & last_arrived,
@@ -165,6 +167,7 @@ namespace librealsense
         virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
+        bool is_smaller_than( matcher * missing, frame_holder & a ) override;
         bool skip_missing_stream( frame_interface const * waiting_to_be_released,
                                   matcher * missing,
                                   frame_header const & last_arrived,
@@ -183,6 +186,7 @@ namespace librealsense
         timestamp_composite_matcher( std::vector< std::shared_ptr< matcher > > const & matchers );
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
+        bool is_smaller_than( matcher * missing, frame_holder & ) override;
         virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         void clean_inactive_streams(frame_holder& f) override;
         bool skip_missing_stream( frame_interface const * waiting_to_be_released,
