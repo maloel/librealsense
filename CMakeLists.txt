@@ -56,13 +56,14 @@ set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRIN
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
-include(lib/CMakeLists.txt)
 
 include(CMake/external_json.cmake)
 target_include_directories( rsutils
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/third-party/json/include>
     )
+
+include(lib/CMakeLists.txt)
 
 target_link_libraries( ${LRS_TARGET} PUBLIC rscore )
 
