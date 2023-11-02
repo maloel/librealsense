@@ -7,8 +7,7 @@
 #include <memory>
 #include <vector>
 #include "../types.h"
-#include "extension.h"
-#include "notification.h"
+#include <rscore/extension.h>
 #include "frame-holder.h"
 #include "stream-profile-interface.h"
 #include "notification.h"

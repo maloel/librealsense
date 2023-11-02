@@ -5,7 +5,7 @@
 #include "depth-frame.h"
 #include "sensor-interface.h"
 #include "depth-sensor.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 
 namespace librealsense {

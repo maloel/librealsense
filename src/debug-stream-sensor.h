@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include "core/stream-profile-interface.h"
 
 

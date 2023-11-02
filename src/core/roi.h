@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "extension.h"
+#include <rscore/extension.h>
 #include <src/librealsense-exception.h>
 #include <memory>
 
