@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <rscore/context.h>
-#include "device-info.h"
+#include <rscore/device-info.h>
 
 #include "backend-device-factory.h"
 
