@@ -53,3 +53,10 @@ install( TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
+
+
+# Examples -----------------------------------------------------------------------------------
+#
+if( BUILD_EXAMPLES )
+    add_subdirectory( examples )
+endif()
