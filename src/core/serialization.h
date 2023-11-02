@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 #include "../types.h"
-#include "extension.h"
+#include <rscore/extension.h>
 #include "streaming.h"
 #include "frame-holder.h"
 

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "depth-frame.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 
 namespace librealsense {

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "core/extension.h"
 #include "device.h"
 #include <vector>
 #include "../common/parser.hpp"
