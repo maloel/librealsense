@@ -4,7 +4,7 @@
 
 #include "video-frame.h"
 #include "frame-holder.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 
 namespace librealsense {

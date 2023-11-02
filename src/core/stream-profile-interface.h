@@ -3,7 +3,7 @@
 #pragma once
 
 #include "stream-interface.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 #include <librealsense2/h/rs_sensor.h>
 #include <functional>

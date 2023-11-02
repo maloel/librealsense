@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include "device.h"
 #include "hw-monitor.h"
 #include <vector>

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <src/frame.h>
-#include "extension.h"
+#include <rscore/extension.h>
 
 
 namespace librealsense {

@@ -4,7 +4,7 @@
 #pragma once
 #include <atomic>
 #include "../../core/roi.h"
-#include "../../core/extension.h"
+#include <rscore/extension.h>
 #include "../../core/serialization.h"
 #include <src/core/device-interface.h>
 #include "../../archive.h"

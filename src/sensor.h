@@ -6,7 +6,7 @@
 #include "core/sensor-interface.h"
 
 #include "source.h"
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include "proc/formats-converter.h"
 
 #include <rsutils/lazy.h>

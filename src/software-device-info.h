@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "device-info.h"
+#include <rscore/device-info.h>
 
 
 namespace librealsense {

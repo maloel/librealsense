@@ -10,7 +10,7 @@
 #include "algo.h"
 #include "core/debug.h"
 #include "core/motion.h"
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include "media/playback/playback-device-info.h"
 #include "media/record/record_device.h"
 #include <media/ros/ros_writer.h>

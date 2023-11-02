@@ -4,7 +4,7 @@
 #pragma once
 
 #include "option-interface.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 #include <librealsense2/h/rs_option.h>
 #include <vector>

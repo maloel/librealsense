@@ -3,7 +3,7 @@
 #pragma once
 
 #include "frame.h"
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include "types.h"
 
 #include <string>
