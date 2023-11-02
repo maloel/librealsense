@@ -7,7 +7,7 @@
 #include "core/device-interface.h"
 #include "core/info.h"
 
-#include "device-info.h"
+#include <rscore/device-info.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/subscription.h>
