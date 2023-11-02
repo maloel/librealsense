@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <src/device-info.h>
+#include <rscore/device-info.h>
 
 #include <memory>
 
