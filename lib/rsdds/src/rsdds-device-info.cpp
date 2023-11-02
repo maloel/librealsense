@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "rsdds-device-info.h"
-#include "rs-dds-device-proxy.h"
+#include <src/dds/rs-dds-device-proxy.h>
 
 #include <realdds/dds-participant.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
