@@ -4,7 +4,7 @@
 
 #pragma once
 #include "types.h"  // notification
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include "device.h"
 #include <rsutils/string/from.h>
 #include <rsutils/subscription.h>
