@@ -4,7 +4,7 @@
 #pragma once
 
 #include "backend-device-group.h"
-#include <src/device-info.h>
+#include <rscore/device-info.h>
 
 #include <memory>
 #include <vector>
