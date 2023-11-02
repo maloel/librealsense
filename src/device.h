@@ -8,7 +8,7 @@
 #include <src/core/info.h>
 #include <src/core/features-container.h>
 
-#include "device-info.h"
+#include <rscore/device-info.h>
 
 #include <rsutils/lazy.h>
 #include <rsutils/subscription.h>
