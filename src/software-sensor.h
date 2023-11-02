@@ -3,7 +3,7 @@
 #pragma once
 
 #include "sensor.h"
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include <librealsense2/hpp/rs_types.hpp>
 #include <librealsense2/h/rs_internal.h>
 #include <rsutils/lazy.h>

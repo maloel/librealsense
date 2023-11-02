@@ -3,7 +3,7 @@
 #pragma once
 
 #include <librealsense2/h/rs_option.h>
-#include "extension.h"
+#include <rscore/extension.h>
 #include <src/basics.h>
 #include "enum-helpers.h"
 #include <src/librealsense-exception.h>

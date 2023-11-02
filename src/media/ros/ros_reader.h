@@ -12,6 +12,8 @@
 
 namespace librealsense
 {
+    class context;
+
     using namespace device_serializer;
 
     class ros_reader: public device_serializer::reader

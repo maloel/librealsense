@@ -12,7 +12,7 @@
 #include "core/roi.h"
 #include "core/options.h"
 #include "source.h"
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include "proc/formats-converter.h"
 #include "platform/stream-profile.h"
 #include "platform/frame-object.h"

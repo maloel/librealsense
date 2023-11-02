@@ -4,7 +4,7 @@
 #pragma once
 
 #include "processing-block-interface.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 #include <functional>
 #include <vector>

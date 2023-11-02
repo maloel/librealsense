@@ -3,7 +3,7 @@
 #pragma once
 
 #include "recommended-proccesing-blocks-interface.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 
 namespace librealsense
