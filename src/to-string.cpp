@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "core/options-registry.h"
+#include <rscore/options-registry.h>
 #include <rscore/enum-helpers.h>
 
 #include <rsutils/string/make-less-screamy.h>
@@ -22,7 +22,7 @@ static std::string const unknown_value_str( librealsense::UNKNOWN_VALUE );
 
 namespace librealsense {
 
-   
+
 const char * get_string( rs2_exception_type value )
 {
 #define CASE( X ) STRCASE( EXCEPTION_TYPE, X )

@@ -18,8 +18,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/video.h"
         "${CMAKE_CURRENT_LIST_DIR}/video-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/options.h"
-        "${CMAKE_CURRENT_LIST_DIR}/options-registry.h"
-        "${CMAKE_CURRENT_LIST_DIR}/options-registry.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/pose-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing-block-interface.h"
