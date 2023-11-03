@@ -799,13 +799,46 @@ void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_c
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_notification, user)
 
+
+class software_device_destruction_callback : public rs2_software_device_destruction_callback
+{
+    rs2_software_device_destruction_callback_ptr nptr;
+    void * user;
+
+public:
+    software_device_destruction_callback( rs2_software_device_destruction_callback_ptr on_destruction,
+                                          void * user )
+        : nptr( on_destruction )
+        , user( user )
+    {
+    }
+
+    void on_destruction() override
+    {
+        if( nptr )
+        {
+            try
+            {
+                nptr( user );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Received an exception from software device destruction callback!" );
+            }
+        }
+    }
+
+    void release() override { delete this; }
+};
+
+
 void rs2_software_device_set_destruction_callback(const rs2_device* dev, rs2_software_device_destruction_callback_ptr on_destruction, void* user, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto swdev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
     VALIDATE_NOT_NULL(on_destruction);
     librealsense::software_device_destruction_callback_ptr callback(
-        new librealsense::software_device_destruction_callback(on_destruction, user),
+        new software_device_destruction_callback( on_destruction, user ),
         [](rs2_software_device_destruction_callback* p) { delete p; });
     swdev->register_destruction_callback(std::move(callback));
 }
@@ -2111,6 +2144,38 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
+
+class internal_frame_processor_fptr_callback : public rs2_frame_processor_callback
+{
+    rs2_frame_processor_callback_ptr fptr;
+    void * user;
+
+public:
+    internal_frame_processor_fptr_callback( rs2_frame_processor_callback_ptr on_frame, void * user )
+        : fptr( on_frame )
+        , user( user )
+    {
+    }
+
+    void on_frame( rs2_frame * frame, rs2_source * source ) override
+    {
+        if( fptr )
+        {
+            try
+            {
+                fptr( frame, source, user );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Received an exception from frame callback!" );
+            }
+        }
+    }
+
+    void release() override { delete this; }
+};
+
+
 rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(proc);
@@ -2118,7 +2183,7 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
     auto block = std::make_shared<librealsense::processing_block>("Custom processing block");
 
     block->set_processing_callback({
-        new librealsense::internal_frame_processor_fptr_callback(proc, context),
+        new internal_frame_processor_fptr_callback(proc, context),
         [](rs2_frame_processor_callback* p) { } });
 
     return new rs2_processing_block{ block };
