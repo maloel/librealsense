@@ -5,7 +5,7 @@
 
 #include "basics.h"  // C4250
 #include <src/core/device-interface.h>
-#include <src/core/info.h>
+#include <rscore/info-container.h>
 #include <src/core/features-container.h>
 
 #include <rscore/device-info.h>
