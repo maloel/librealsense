@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "device.h"
+#include <rscore/device.h>
 #include <librealsense2/h/rs_context.h>  // RS2_PRODUCT_LINE_...
 
 #include <limits>
