@@ -4,7 +4,7 @@
 #pragma once
 
 #include "../types.h"
-#include <src/core/device-interface.h>
+#include <rscore/device-interface.h>
 #include "../usb/usb-types.h"
 #include <cstddef>
 
