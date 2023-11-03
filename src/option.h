@@ -3,7 +3,7 @@
 #pragma once
 
 #include "core/option-interface.h"
-#include "librealsense-exception.h"
+#include <rscore/exceptions.h>
 
 #include <rsutils/string/from.h>
 #include <rsutils/lazy.h>

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "frame-interface.h"
-#include <src/basics.h>
+#include <rscore/basics.h>
 
 #include <string>
 #include <utility>  // swap

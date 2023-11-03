@@ -2,9 +2,8 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "extension.h"
-
-#include <src/basics.h>
+#include <rscore/extension.h>
+#include <rscore/basics.h>
 
 
 namespace librealsense {
