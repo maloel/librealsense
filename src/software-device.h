@@ -2,7 +2,7 @@
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "device.h"
+#include <rscore/device.h>
 #include <rscore/extension.h>
 #include <librealsense2/hpp/rs_types.hpp>
 
