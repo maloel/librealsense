@@ -38,4 +38,11 @@ module_registry::create_context_modules( context & ctx )
 }
 
 
+/*static*/ void module_registry::foreach_registered( std::function< void( std::string const & /*name*/ ) > && callback )
+{
+    for( auto & name_creator : the_registry() )
+        callback( name_creator.first );
+}
+
+
 }  // namespace librealsense

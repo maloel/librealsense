@@ -29,6 +29,8 @@ namespace librealsense
         {
             version_logged = true;
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_FULL_VERSION_STR );
+            module_registry::foreach_registered( []( std::string const & name )
+                                                 { LOG_DEBUG( "Module registered: " << name ); } );
         }
 
         _modules = module_registry::create_context_modules( *this );

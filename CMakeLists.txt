@@ -58,7 +58,7 @@ include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 include(lib/CMakeLists.txt)
 
-target_link_libraries( ${LRS_TARGET} PUBLIC rscore )
+target_link_libraries( ${LRS_TARGET} PUBLIC ${BUILD_RSLIBS} )
 
 if(BUILD_WITH_DDS)
     if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
