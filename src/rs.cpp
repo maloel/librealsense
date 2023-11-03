@@ -8,7 +8,7 @@
 #include <rscore/context.h>
 #include "device.h"
 #include "algo.h"
-#include "core/debug.h"
+#include <rscore/debug-interface.h>
 #include "core/motion.h"
 #include <rscore/extension.h>
 #include "media/playback/playback-device-info.h"

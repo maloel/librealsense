@@ -4,7 +4,7 @@
 #pragma once
 
 #include <src/software-device.h>
-#include <src/core/debug.h>
+#include <rscore/debug-interface.h>
 #include "sid_index.h"
 
 #include <memory>
