@@ -10,7 +10,7 @@ namespace librealsense
 {
     namespace platform
     {
-        std::shared_ptr<backend> create_backend()
+        LRS_EXTENSION_API std::shared_ptr<backend> create_backend()
         {
             return std::make_shared<rs_backend_windows>();
         }
