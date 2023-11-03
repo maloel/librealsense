@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "core/stream-profile.h"
+#include <rscore/stream-profile.h>
 #include "core/frame-additional-data.h"
 #include "callback-invocation.h"
 
