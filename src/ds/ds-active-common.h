@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "device.h"
+#include <rscore/device.h>
 #include "core/video.h"
 #include "ds/ds-device-common.h"
 #include "ds-private.h"
