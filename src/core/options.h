@@ -4,9 +4,9 @@
 
 #include <librealsense2/h/rs_option.h>
 #include <rscore/extension.h>
-#include <src/basics.h>
+#include <rscore/basics.h>
 #include "enum-helpers.h"
-#include <src/librealsense-exception.h>
+#include <rscore/exceptions.h>
 
 #include <rsutils/string/from.h>
 #include <map>

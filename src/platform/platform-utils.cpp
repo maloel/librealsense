@@ -5,7 +5,7 @@
 
 #include "uvc-device-info.h"
 #include "hid-device-info.h"
-#include <src/librealsense-exception.h>
+#include <rscore/exceptions.h>
 
 
 namespace librealsense {

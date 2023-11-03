@@ -4,7 +4,7 @@
 #pragma once
 
 #include "info-interface.h"
-#include <src/basics.h>
+#include <rscore/basics.h>
 
 #include <map>
 #include <string>
