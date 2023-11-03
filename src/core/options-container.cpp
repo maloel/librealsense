@@ -2,8 +2,8 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "options-container.h"
-#include "enum-helpers.h"
-#include <src/librealsense-exception.h>
+#include <rscore/enum-helpers.h>
+#include <rscore/exceptions.h>
 #include <rsutils/string/from.h>
 
 

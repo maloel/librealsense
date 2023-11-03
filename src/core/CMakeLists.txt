@@ -3,7 +3,6 @@
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode.h"
-        "${CMAKE_CURRENT_LIST_DIR}/enum-helpers.h"
         "${CMAKE_CURRENT_LIST_DIR}/depth-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-continuation.h"
