@@ -5,7 +5,7 @@
 #include <librealsense2/h/rs_option.h>
 #include <rscore/extension.h>
 #include <rscore/basics.h>
-#include "enum-helpers.h"
+#include <rscore/enum-helpers.h>
 #include <rscore/exceptions.h>
 
 #include <rsutils/string/from.h>
