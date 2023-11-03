@@ -4,7 +4,7 @@
 #pragma once
 
 #include <rscore/basics.h>  // C4250
-#include "core/device-interface.h"
+#include <rscore/device-interface.h>
 #include <rscore/info-container.h>
 
 #include <rscore/device-info.h>
