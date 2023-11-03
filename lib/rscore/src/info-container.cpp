@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include <rscore/info-container.h>
-#include <src/librealsense-exception.h>
+#include <rscore/exceptions.h>
 
 
 namespace librealsense {

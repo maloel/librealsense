@@ -2,8 +2,8 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "options-registry.h"
-#include "basics.h"
-#include <src/librealsense-exception.h>
+#include <rscore/basics.h>
+#include <rscore/exceptions.h>
 #include <vector>
 #include <mutex>
 #include <map>

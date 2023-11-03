@@ -3,7 +3,7 @@
 
 #include "software-device-info.h"
 #include "software-device.h"
-#include "librealsense-exception.h"
+#include <rscore/exceptions.h>
 
 #include <rsutils/string/from.h>
 

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "librealsense-exception.h"
+#include <rscore/exceptions.h>
 
 #include <mutex>
 #include <condition_variable>

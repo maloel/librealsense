@@ -45,11 +45,4 @@ namespace librealsense
         return extr;
     }
 
-    recoverable_exception::recoverable_exception(const std::string& msg,
-        rs2_exception_type exception_type) noexcept
-        : librealsense_exception(msg, exception_type)
-    {
-        LOG_DEBUG("recoverable_exception: " << msg);
-    }
-
 }

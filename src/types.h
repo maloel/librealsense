@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "basics.h"
+#include <rscore/basics.h>
 
 #include <librealsense2/hpp/rs_types.hpp>
 
 #include "core/enum-helpers.h"
 #include <rsutils/concurrency/concurrency.h>
-#include "librealsense-exception.h"
+#include <rscore/exceptions.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/version.h>
 
