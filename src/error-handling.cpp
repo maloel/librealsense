@@ -3,7 +3,7 @@
 
 #include "error-handling.h"
 #include "core/notification.h"
-#include "librealsense-exception.h"
+#include <rscore/exceptions.h>
 
 #include <rsutils/string/from.h>
 

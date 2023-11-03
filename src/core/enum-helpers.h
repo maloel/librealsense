@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <src/basics.h>
+#include <rscore/basics.h>
 #include <librealsense2/hpp/rs_types.hpp>
 
 

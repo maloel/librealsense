@@ -6,7 +6,7 @@
 #include "core/frame-interface.h"
 #include "core/frame-continuation.h"
 #include "core/frame-additional-data.h"
-#include "basics.h"
+#include <rscore/basics.h>
 #include <atomic>
 #include <vector>
 #include <memory>

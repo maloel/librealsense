@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "basics.h"  // C4250
+#include <rscore/basics.h>  // C4250
 #include "core/device-interface.h"
 #include <rscore/info-container.h>
 

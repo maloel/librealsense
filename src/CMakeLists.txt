@@ -161,10 +161,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/depth-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/color-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/callback-invocation.h"
-        "${CMAKE_CURRENT_LIST_DIR}/librealsense-exception.h"
         "${CMAKE_CURRENT_LIST_DIR}/polling-device-watcher.h"
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"
-        "${CMAKE_CURRENT_LIST_DIR}/basics.h"
 )
 
 if(BUILD_WITH_DDS)
