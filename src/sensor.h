@@ -5,8 +5,6 @@
 
 #include "core/sensor-interface.h"
 
-#include "core/debug.h"
-
 #include "archive.h"
 #include "core/recommended-proccesing-blocks-base.h"
 #include "core/roi.h"
