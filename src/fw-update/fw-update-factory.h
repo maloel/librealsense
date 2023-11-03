@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "platform/platform-device-info.h"
+#include <src/platform/platform-device-info.h>
 
 namespace librealsense
 {
