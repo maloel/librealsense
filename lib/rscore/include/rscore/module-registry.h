@@ -102,6 +102,10 @@ public:
     // Some modules may choose to remain inactive, depending on settings or other factors.
     //
     static std::vector< std::shared_ptr< context_module > > create_context_modules( context & );
+
+    // If you just want to get all known modules (handy for debug):
+    //
+    static void foreach_registered( std::function< void( std::string const & /*name*/ ) > && );
 };
 
 
