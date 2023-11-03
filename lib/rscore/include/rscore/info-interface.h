@@ -4,7 +4,6 @@
 #pragma once
 
 #include <rscore/extension.h>
-#include <src/basics.h>
 
 #include <librealsense2/h/rs_sensor.h>
 #include <string>

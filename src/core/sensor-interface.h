@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "info-interface.h"
+#include <rscore/info-interface.h>
 #include "options-container.h"
 #include "recommended-proccesing-blocks-interface.h"
 
