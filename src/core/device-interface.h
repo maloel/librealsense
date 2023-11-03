@@ -5,7 +5,7 @@
 
 #include <rscore/info-interface.h>
 #include <rscore/tagged-profile.h>
-#include "stream-profile.h"
+#include <rscore/stream-profile.h>
 
 #include <librealsense2/h/rs_sensor.h>
 #include <functional>
