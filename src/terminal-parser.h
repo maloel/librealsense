@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "device.h"
+#include <rscore/device.h>
 #include <vector>
 #include "../common/parser.hpp"
 

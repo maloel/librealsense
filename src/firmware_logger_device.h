@@ -4,7 +4,7 @@
 #pragma once
 
 #include <rscore/extension.h>
-#include "device.h"
+#include <rscore/device.h>
 #include "hw-monitor.h"
 #include <vector>
 #include "fw-logs/fw-log-data.h"

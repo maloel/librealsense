@@ -9,7 +9,7 @@
 #include <vector>
 #include <iterator>
 
-#include "device.h"
+#include <rscore/device.h>
 #include "image.h"
 #include "metadata.h"
 

@@ -6,7 +6,7 @@
 #include <src/environment.h>
 #include <src/core/depth-frame.h>
 #include <src/option.h>
-#include <src/device.h>
+#include <rscore/device.h>
 #include <src/stream.h>
 #include <src/points.h>
 #include <src/core/sensor-interface.h>

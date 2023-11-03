@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "hid-sensor.h"
-#include "device.h"
+#include <rscore/device.h>
 #include "stream.h"
 #include "global_timestamp_reader.h"
 #include "metadata.h"

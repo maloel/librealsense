@@ -4,7 +4,7 @@
 #include "uvc-sensor.h"
 
 #include "source.h"
-#include "device.h"
+#include <rscore/device.h>
 #include "stream.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"

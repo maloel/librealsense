@@ -9,7 +9,7 @@
 #include "error-handling.h"
 #include <rscore/debug-interface.h>
 #include "core/advanced_mode.h"
-#include "device.h"
+#include <rscore/device.h>
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "d400-auto-calibration.h"
