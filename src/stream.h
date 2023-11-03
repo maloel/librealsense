@@ -7,7 +7,7 @@
 #include "core/video.h"
 #include "core/motion.h"
 #include "core/stream-profile.h"
-#include "core/tagged-profile.h"
+#include <rscore/tagged-profile.h>
 #include "image.h"
 #include "environment.h"
 

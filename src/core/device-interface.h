@@ -4,7 +4,7 @@
 #pragma once
 
 #include <rscore/info-interface.h>
-#include "tagged-profile.h"
+#include <rscore/tagged-profile.h>
 #include "stream-profile.h"
 
 #include <src/core/has-features-interface.h>
