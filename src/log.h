@@ -2,7 +2,7 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "core/enum-helpers.h"
+#include <rscore/enum-helpers.h>
 #include <librealsense2/hpp/rs_types.hpp>
 
 #include <rsutils/string/from.h>
