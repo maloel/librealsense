@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include <src/core/device-interface.h>
+#include <rscore/device-interface.h>
 #include <librealsense2/hpp/rs_types.hpp>
 #include <cstdint>
 #include <vector>
