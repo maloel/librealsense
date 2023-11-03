@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "info-interface.h"
+#include <rscore/info-interface.h>
 #include "tagged-profile.h"
 #include "stream-profile.h"
 
