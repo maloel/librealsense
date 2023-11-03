@@ -101,7 +101,7 @@ namespace librealsense
                             std::make_shared<wmf_uvc_device>(info, shared_from_this()));
         }
 
-        std::shared_ptr<backend> create_backend()
+        LRS_EXTENSION_API std::shared_ptr<backend> create_backend()
         {
             return std::make_shared<wmf_backend>();
         }

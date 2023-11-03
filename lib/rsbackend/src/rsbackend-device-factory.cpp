@@ -1,17 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-#include "backend-device-factory.h"
+#include "rsbackend-device-factory.h"
 #include <rscore/context.h>
-#include "backend.h"
-#include "platform/platform-device-info.h"
-#include "platform/device-watcher.h"
+#include <src/backend.h>
+#include <src/platform/platform-device-info.h>
+#include <src/platform/device-watcher.h>
 
-#include "backend-device.h"
-#include "ds/d400/d400-info.h"
-#include "ds/d500/d500-info.h"
-#include "fw-update/fw-update-factory.h"
-#include "platform-camera.h"
+#include <src/backend-device.h>
+#include <src/ds/d400/d400-info.h>
+#include <src/ds/d500/d500-info.h>
+#include <src/fw-update/fw-update-factory.h>
+#include <src/platform-camera.h>
 
 #include <librealsense2/h/rs_context.h>
 
@@ -23,7 +23,7 @@
 
 namespace librealsense {
 namespace platform {
-std::shared_ptr< backend > create_backend();
+LRS_EXTENSION_API std::shared_ptr< backend > create_backend();
 }  // namespace platform
 }  // namespace librealsense
 
