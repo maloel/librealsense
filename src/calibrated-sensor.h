@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
-#include "types.h"
-#include "core/streaming.h"
+#include "core/extension.h"
+#include <librealsense2/h/rs_sensor.h>
+
 
 namespace librealsense
 {
@@ -19,6 +19,7 @@ namespace librealsense
 
         virtual void reset_calibration() = 0;
     };
+
     MAP_EXTENSION(RS2_EXTENSION_CALIBRATED_SENSOR, calibrated_sensor );
 }
 
