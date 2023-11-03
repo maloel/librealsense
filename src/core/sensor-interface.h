@@ -7,7 +7,7 @@
 #include "options-container.h"
 #include "recommended-proccesing-blocks-interface.h"
 
-#include "tagged-profile.h"
+#include <rscore/tagged-profile.h>
 
 #include <librealsense2/hpp/rs_types.hpp>
 #include <vector>
