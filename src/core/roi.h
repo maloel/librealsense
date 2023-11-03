@@ -3,7 +3,7 @@
 #pragma once
 
 #include <rscore/extension.h>
-#include <src/librealsense-exception.h>
+#include <rscore/exceptions.h>
 #include <memory>
 
 
