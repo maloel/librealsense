@@ -6,10 +6,10 @@
 
 #include <rscore/module-registry.h>
 #include <rscore/context-module.h>
-#include <librealsense2/hpp/rs_types.hpp>
 
 #include <librealsense2/hpp/rs_types.hpp>  // rs2_devices_changed_callback
 #include <librealsense2/rs.h>              // RS2_API_FULL_VERSION_STR
+
 #include <src/librealsense-exception.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
