@@ -13,7 +13,7 @@
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
 
-#include <src/core/options-registry.h>
+#include <rscore/options-registry.h>
 #include <src/core/frame-callback.h>
 #include <src/stream.h>
 
