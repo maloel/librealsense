@@ -95,7 +95,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/serialized-utilities.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/frame.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/points.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/to-string.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rs2-string.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
