@@ -56,6 +56,7 @@
 #include "debug-stream-sensor.h"
 #include "max-usable-range-sensor.h"
 #include "fw-update/fw-update-device-interface.h"
+#include "core/frame-callback.h"
 #include "color-sensor.h"
 #include "composite-frame.h"
 #include "points.h"
@@ -773,12 +774,29 @@ int rs2_supports_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, sensor, info)
 
+
+frame_callback_ptr make_user_frame_callback( rs2_frame_callback_ptr on_frame, void * user )
+{
+    return librealsense::make_frame_callback(
+        [on_frame, user]( frame_interface * f )
+        {
+            try
+            {
+                on_frame( (rs2_frame *)f, user );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Received an exception from frame callback!" );
+            }
+        } );
+}
+
+
 void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void* user, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(on_frame);
-    librealsense::frame_callback_ptr callback(
-        new librealsense::frame_callback(on_frame, user));
+    auto callback = make_user_frame_callback( on_frame, user );
     sensor->sensor->start(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_frame, user)
@@ -787,8 +805,7 @@ void rs2_start_queue(const rs2_sensor* sensor, rs2_frame_queue* queue, rs2_error
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(queue);
-    librealsense::frame_callback_ptr callback(
-        new librealsense::frame_callback(rs2_enqueue_frame, queue));
+    auto callback = make_user_frame_callback( rs2_enqueue_frame, queue );
     sensor->sensor->start(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, queue)
@@ -804,13 +821,46 @@ void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_c
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_notification, user)
 
+
+class software_device_destruction_callback : public rs2_software_device_destruction_callback
+{
+    rs2_software_device_destruction_callback_ptr nptr;
+    void * user;
+
+public:
+    software_device_destruction_callback( rs2_software_device_destruction_callback_ptr on_destruction,
+                                          void * user )
+        : nptr( on_destruction )
+        , user( user )
+    {
+    }
+
+    void on_destruction() override
+    {
+        if( nptr )
+        {
+            try
+            {
+                nptr( user );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Received an exception from software device destruction callback!" );
+            }
+        }
+    }
+
+    void release() override { delete this; }
+};
+
+
 void rs2_software_device_set_destruction_callback(const rs2_device* dev, rs2_software_device_destruction_callback_ptr on_destruction, void* user, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     auto swdev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
     VALIDATE_NOT_NULL(on_destruction);
     librealsense::software_device::destruction_callback_ptr callback(
-        new librealsense::software_device_destruction_callback(on_destruction, user),
+        new software_device_destruction_callback( on_destruction, user ),
         [](rs2_software_device_destruction_callback* p) { delete p; });
     swdev->register_destruction_callback(std::move(callback));
 }
@@ -1916,8 +1966,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config)
 rs2_pipeline_profile* rs2_pipeline_start_with_callback(rs2_pipeline* pipe, rs2_frame_callback_ptr on_frame, void* user, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
-    librealsense::frame_callback_ptr callback( new librealsense::frame_callback( on_frame, user ),
-                                               []( rs2_frame_callback * p ) { p->release(); } );
+    auto callback = make_user_frame_callback( on_frame, user );
     return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>(), std::move(callback)) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, on_frame, user)
@@ -1926,8 +1975,7 @@ rs2_pipeline_profile* rs2_pipeline_start_with_config_and_callback(rs2_pipeline* 
 {
     VALIDATE_NOT_NULL(pipe);
     VALIDATE_NOT_NULL(config);
-    librealsense::frame_callback_ptr callback( new librealsense::frame_callback( on_frame, user ),
-                                               []( rs2_frame_callback * p ) { p->release(); } );
+    auto callback = make_user_frame_callback( on_frame, user );
     return new rs2_pipeline_profile{ pipe->pipeline->start(config->config, callback) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config, on_frame, user)
@@ -2117,6 +2165,38 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc)
 
+
+class internal_frame_processor_fptr_callback : public rs2_frame_processor_callback
+{
+    rs2_frame_processor_callback_ptr fptr;
+    void * user;
+
+public:
+    internal_frame_processor_fptr_callback( rs2_frame_processor_callback_ptr on_frame, void * user )
+        : fptr( on_frame )
+        , user( user )
+    {
+    }
+
+    void on_frame( rs2_frame * frame, rs2_source * source ) override
+    {
+        if( fptr )
+        {
+            try
+            {
+                fptr( frame, source, user );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Received an exception from frame callback!" );
+            }
+        }
+    }
+
+    void release() override { delete this; }
+};
+
+
 rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(proc);
@@ -2124,7 +2204,7 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
     auto block = std::make_shared<librealsense::processing_block>("Custom processing block");
 
     block->set_processing_callback({
-        new librealsense::internal_frame_processor_fptr_callback(proc, context),
+        new internal_frame_processor_fptr_callback(proc, context),
         [](rs2_frame_processor_callback* p) { } });
 
     return new rs2_processing_block{ block };
@@ -2174,7 +2254,8 @@ void rs2_start_processing_fptr(rs2_processing_block* block, rs2_frame_callback_p
     VALIDATE_NOT_NULL(block);
     VALIDATE_NOT_NULL(on_frame);
 
-    block->block->set_output_callback({ new frame_callback(on_frame, user), [](rs2_frame_callback* p) { } });
+    auto callback = make_user_frame_callback( on_frame, user );
+    block->block->set_output_callback( std::move( callback ) );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame, user)
 
@@ -2182,8 +2263,7 @@ void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* qu
 {
     VALIDATE_NOT_NULL(block);
     VALIDATE_NOT_NULL(queue);
-    librealsense::frame_callback_ptr callback(
-        new librealsense::frame_callback(rs2_enqueue_frame, queue));
+    auto callback = make_user_frame_callback( rs2_enqueue_frame, queue );
     block->block->set_output_callback(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, queue)
