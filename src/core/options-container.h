@@ -3,12 +3,12 @@
 #pragma once
 
 #include "options-interface.h"
-#include "extension.h"
+#include <rscore/extension.h>
 
 #include <librealsense2/h/rs_option.h>
-#include <src/basics.h>
-#include "enum-helpers.h"
-#include <src/librealsense-exception.h>
+#include <rscore/basics.h>
+#include <rscore/enum-helpers.h>
+#include <rscore/exceptions.h>
 
 #include <map>
 #include <vector>

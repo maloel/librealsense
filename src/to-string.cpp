@@ -2,7 +2,7 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "core/options-registry.h"
-#include "core/enum-helpers.h"
+#include <rscore/enum-helpers.h>
 
 #include <rsutils/string/make-less-screamy.h>
 #include <cassert>
