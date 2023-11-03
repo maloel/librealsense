@@ -6,7 +6,7 @@
 #include "api.h"
 #include "log.h"
 #include <rscore/context.h>
-#include "device.h"
+#include <rscore/device.h>
 #include "algo.h"
 #include <rscore/debug-interface.h>
 #include "core/motion.h"

@@ -3,7 +3,7 @@
 
 #include "serialized-utilities.h"
 #include <rsutils/string/from.h>
-#include <device.h>
+#include <rscore/device.h>
 
 namespace librealsense {
 namespace serialized_utilities {
