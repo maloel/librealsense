@@ -4,8 +4,6 @@
 #include <rscore/context.h>
 #include <rscore/device-info.h>
 
-#include "backend-device-factory.h"
-
 #include <rscore/module-registry.h>
 #include <rscore/context-module.h>
 #include <librealsense2/hpp/rs_types.hpp>
@@ -32,13 +30,6 @@ namespace librealsense
             version_logged = true;
             LOG_DEBUG( "Librealsense VERSION: " << RS2_API_FULL_VERSION_STR );
         }
-
-        _device_factories.push_back( std::make_shared< backend_device_factory >(
-            *this,
-            [this]( std::vector< std::shared_ptr< device_info > > const & removed,
-                    std::vector< std::shared_ptr< device_info > > const & added )
-            { invoke_devices_changed_callbacks( removed, added ); } ) );
-
 
         _modules = module_registry::create_context_modules( *this );
         for( auto & m : _modules )

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "device.h"
-#include "core/extension.h"
+#include <rscore/extension.h>
 #include <librealsense2/hpp/rs_types.hpp>
 
 

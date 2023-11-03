@@ -1136,7 +1136,7 @@ namespace librealsense
         }
     }
 
-    std::vector<std::shared_ptr<d400_info>> d400_info::pick_d400_devices(
+    LRS_EXTENSION_API std::vector<std::shared_ptr<d400_info>> d400_info::pick_d400_devices(
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {

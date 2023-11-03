@@ -25,7 +25,7 @@ namespace librealsense
     }
 
 
-    std::vector< std::shared_ptr< fw_update_info > > fw_update_info::pick_recovery_devices(
+    LRS_EXTENSION_API std::vector< std::shared_ptr< fw_update_info > > fw_update_info::pick_recovery_devices(
         std::shared_ptr< context > ctx, const std::vector< platform::usb_device_info > & usb_devices, int mask )
     {
         std::vector< std::shared_ptr< fw_update_info > > list;

@@ -20,7 +20,7 @@ namespace librealsense
         {
         }
 
-        static std::vector<std::shared_ptr<d500_info>> pick_d500_devices(
+        LRS_EXTENSION_API static std::vector<std::shared_ptr<d500_info>> pick_d500_devices(
                 std::shared_ptr<context> ctx,
                 platform::backend_device_group& group);
     };

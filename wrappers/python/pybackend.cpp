@@ -37,7 +37,7 @@ using namespace pybackend2;
 
 namespace librealsense {
 namespace platform {
-std::shared_ptr< backend > create_backend();
+LRS_EXTENSION_API std::shared_ptr< backend > create_backend();
 }  // namespace platform
 }  // namespace librealsense
 
