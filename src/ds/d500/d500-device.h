@@ -8,7 +8,7 @@
 
 #include "algo.h"
 #include "error-handling.h"
-#include "core/debug.h"
+#include <rscore/debug-interface.h>
 #include "core/advanced_mode.h"
 #include "device.h"
 #include "global_timestamp_reader.h"
