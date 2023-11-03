@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-#include "options-registry.h"
+#include <rscore/options-registry.h>
 #include <rscore/basics.h>
 #include <rscore/exceptions.h>
 #include <vector>

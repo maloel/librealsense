@@ -23,8 +23,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/options-container.h"
         "${CMAKE_CURRENT_LIST_DIR}/options-container.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/options-interface.h"
-        "${CMAKE_CURRENT_LIST_DIR}/options-registry.h"
-        "${CMAKE_CURRENT_LIST_DIR}/options-registry.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/pose-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing.h"
         "${CMAKE_CURRENT_LIST_DIR}/processing-block-interface.h"
