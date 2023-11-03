@@ -4,6 +4,7 @@
 #pragma once
 
 #include "info-interface.h"
+#include <src/basics.h>
 
 #include <librealsense2/h/rs_sensor.h>
 #include <map>

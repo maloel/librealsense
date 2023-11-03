@@ -4,7 +4,7 @@
 
 #include "frame-holder.h"
 #include "options-container.h"
-#include "info.h"
+#include <rscore/info-container.h>
 
 #include <src/types.h>
 #include <vector>

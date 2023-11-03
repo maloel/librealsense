@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-#include "info.h"
+#include <rscore/info-container.h>
 #include <src/librealsense-exception.h>
 
 
