@@ -7,7 +7,7 @@
 #include "options.h"
 #include "recommended-proccesing-blocks-interface.h"
 
-#include "tagged-profile.h"
+#include <rscore/tagged-profile.h>
 
 #include <vector>
 #include <memory>
