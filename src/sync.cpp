@@ -5,7 +5,7 @@
 #include "core/frame-holder.h"
 #include "core/processing.h"
 #include "core/stream-profile-interface.h"
-#include "core/device-interface.h"
+#include <rscore/device-interface.h>
 #include "core/sensor-interface.h"
 #include "composite-frame.h"
 #include "core/time-service.h"
