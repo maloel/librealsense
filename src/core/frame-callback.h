@@ -4,6 +4,7 @@
 
 #include <librealsense2/hpp/rs_types.hpp>
 #include <memory>
+#include <functional>
 
 
 namespace librealsense {
@@ -12,27 +13,27 @@ namespace librealsense {
 class frame_interface;
 
 
-template< class T >
-class frame_callback : public rs2_frame_callback
+struct frame_callback : public rs2_frame_callback
 {
-    T on_frame_function;  // Callable of type: void(frame_interface* frame)
+    using fn = std::function< void( frame_interface * ) >;
 
-public:
-    explicit frame_callback( T on_frame )
-        : on_frame_function( on_frame )
+    explicit frame_callback( fn && on_frame )
+        : _on_frame( std::move( on_frame ) )
     {
     }
 
-    void on_frame( rs2_frame * fref ) override { on_frame_function( (frame_interface *)( fref ) ); }
+    void on_frame( rs2_frame * fref ) override { _on_frame( (frame_interface *)( fref ) ); }
 
     void release() override { delete this; }
+
+private:
+    fn _on_frame;
 };
 
 
-template< class T >
-frame_callback_ptr make_frame_callback( T callback )
+inline frame_callback_ptr make_frame_callback( std::function< void( frame_interface * ) > && callback )
 {
-    return { new frame_callback< T >( callback ),
+    return { new frame_callback( std::move( callback ) ),
              []( rs2_frame_callback * p ) { p->release(); } };
 }
 
