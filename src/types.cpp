@@ -147,8 +147,7 @@ namespace librealsense
         _dispatcher.stop();
     }
 
-
-    void notifications_processor::set_callback(notifications_callback_ptr callback)
+    void notifications_processor::set_callback( rs2_notifications_callback_sptr callback )
     {
 
         _dispatcher.stop();
@@ -157,7 +156,8 @@ namespace librealsense
         _callback = std::move(callback);
         _dispatcher.start();
     }
-    notifications_callback_ptr notifications_processor::get_callback() const
+    
+    rs2_notifications_callback_sptr notifications_processor::get_callback() const
     {
         return _callback;
     }
