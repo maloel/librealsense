@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cmath>
+#include <limits>
 
 using namespace rs2;
 
