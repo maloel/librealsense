@@ -303,48 +303,6 @@ namespace librealsense {
         return std::make_shared<struct_interface<T, R, W>>(r, w);
     }
 
-    class frame_callback : public rs2_frame_callback
-    {
-        rs2_frame_callback_ptr fptr;
-        void * user;
-
-    public:
-        frame_callback() : frame_callback(nullptr, nullptr) {}
-        frame_callback( rs2_frame_callback_ptr on_frame, void * user )
-            : fptr( on_frame )
-            , user( user )
-        {
-        }
-
-        operator bool() const { return fptr != nullptr; }
-        void on_frame (rs2_frame * frame) override {
-            if (fptr)
-            {
-                try { fptr(frame, user); } catch (...)
-                {
-                    LOG_ERROR("Received an exception from frame callback!");
-                }
-            }
-        }
-        void release() override { delete this; }
-    };
-
-
-
-    template<class T>
-    class internal_frame_callback : public rs2_frame_callback
-    {
-        T on_frame_function; //Callable of type: void(frame_interface* frame)
-    public:
-        explicit internal_frame_callback(T on_frame) : on_frame_function(on_frame) {}
-
-        void on_frame(rs2_frame* fref) override
-        {
-            on_frame_function((frame_interface*)(fref));
-        }
-
-        void release() override { delete this; }
-    };
 
     typedef void(*notifications_callback_function_ptr)(rs2_notification * notification, void * user);
 
