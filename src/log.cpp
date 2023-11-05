@@ -50,7 +50,7 @@ void librealsense::log_to_file(rs2_log_severity min_severity, const char * file_
     throw std::runtime_error("log_to_file is not supported without BUILD_EASYLOGGINGPP");
 }
 
-void librealsense::log_to_callback(rs2_log_severity min_severity, log_callback_ptr callback)
+void librealsense::log_to_callback(rs2_log_severity min_severity, rs2_log_callback_sptr callback)
 {
     throw std::runtime_error("log_to_callback is not supported without BUILD_EASYLOGGINGPP");
 }
