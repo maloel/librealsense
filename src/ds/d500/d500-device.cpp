@@ -460,7 +460,7 @@ namespace librealsense
             constexpr auto gvd_header_size = 8;
             get_gvd_details(gvd_buff, &gvd_parsed_fields);
             auto gvd_payload_data = gvd_buff.data() + gvd_header_size;
-            auto computed_crc = calc_crc32(gvd_payload_data, gvd_parsed_fields.payload_size);
+            auto computed_crc = rsutils::number::calc_crc32(gvd_payload_data, gvd_parsed_fields.payload_size);
             LOG_INFO("gvd version = " << gvd_parsed_fields.gvd_version);
             LOG_INFO("gvd payload size = " << gvd_parsed_fields.payload_size);
             LOG_INFO("gvd crc = " << gvd_parsed_fields.crc32);
