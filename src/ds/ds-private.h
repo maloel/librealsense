@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "types.h"
+#include <src/pose.h>
 #include "fw-update/fw-update-unsigned.h"
 #include <rsutils/string/from.h>
 #include <rsutils/number/crc32.h>

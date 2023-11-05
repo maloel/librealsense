@@ -105,131 +105,6 @@ namespace librealsense {
 #pragma pack(pop)
 
 
-    ////////////////////////////////////////////
-    // World's tiniest linear algebra library //
-    ////////////////////////////////////////////
-#pragma pack( push, 1 )
-    struct int2
-    {
-        int x, y;
-    };
-    struct float2
-    {
-        float x, y;
-        float & operator[]( int i )
-        {
-            assert( i >= 0 );
-            assert( i < 2 );
-            return *( &x + i );
-        }
-    };
-    struct float3
-    {
-        float x, y, z;
-        float & operator[]( int i )
-        {
-            assert( i >= 0 );
-            assert( i < 3 );
-            return ( *( &x + i ) );
-        }
-    };
-    struct float4
-    {
-        float x, y, z, w;
-        float & operator[]( int i )
-        {
-            assert( i >= 0 );
-            assert( i < 4 );
-            return ( *( &x + i ) );
-        }
-    };
-    struct float3x3
-    {
-        float3 x, y, z;
-        float & operator()( int i, int j )
-        {
-            assert( i >= 0 );
-            assert( i < 3 );
-            assert( j >= 0 );
-            assert( j < 3 );
-            return ( *( &x[0] + j * sizeof( float3 ) / sizeof( float ) + i ) );
-        }
-    };  // column-major
-    struct pose
-    {
-        float3x3 orientation;
-        float3 position;
-    };
-#pragma pack(pop)
-    inline bool operator == (const float3 & a, const float3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
-    inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
-    inline float3 operator - (const float3 & a, const float3 & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z }; }
-    inline float3 operator * (const float3 & a, float b) { return{ a.x*b, a.y*b, a.z*b }; }
-    inline bool operator == (const float4 & a, const float4 & b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
-    inline float4 operator + (const float4 & a, const float4 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
-    inline float4 operator - (const float4 & a, const float4 & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
-    inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
-    inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
-    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return{ a*b.x, a*b.y, a*b.z }; }
-    inline float3x3 transpose(const float3x3 & a) { return{ {a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z} }; }
-    inline bool operator == (const pose & a, const pose & b) { return a.orientation == b.orientation && a.position == b.position; }
-    inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
-    inline pose operator * (const pose & a, const pose & b) { return{ a.orientation * b.orientation, a * b.position }; }
-    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * a.position * -1 }; }
-    inline pose to_pose(const rs2_extrinsics& a)
-    {
-        pose r{};
-        for (int i = 0; i < 3; i++) r.position[i] = a.translation[i];
-        for (int j = 0; j < 3; j++)
-            for (int i = 0; i < 3; i++)
-                r.orientation(i, j) = a.rotation[j * 3 + i];
-        return r;
-    }
-    inline rs2_extrinsics from_pose(pose a)
-    {
-        rs2_extrinsics r;
-        for (int i = 0; i < 3; i++) r.translation[i] = a.position[i];
-        for (int j = 0; j < 3; j++)
-            for (int i = 0; i < 3; i++)
-                r.rotation[j * 3 + i] = a.orientation(i, j);
-        return r;
-    }
-    inline rs2_extrinsics identity_matrix() {
-        rs2_extrinsics r;
-        // Do it the silly way to avoid infite warnings about the dangers of memset
-        for (int i = 0; i < 3; i++) r.translation[i] = 0.f;
-        for (int j = 0; j < 3; j++)
-            for (int i = 0; i < 3; i++)
-                r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
-        return r;
-    }
-    inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
-
-    // The extrinsics on the camera ("raw extrinsics") are in milimeters, but LRS works in meters
-    // Additionally, LRS internal algorithms are
-    // written with a transposed matrix in mind! (see rs2_transform_point_to_point)
-    rs2_extrinsics to_raw_extrinsics(rs2_extrinsics);
-    rs2_extrinsics from_raw_extrinsics(rs2_extrinsics);
-
-    inline std::ostream& operator <<(std::ostream& stream, const float3& elem)
-    {
-        return stream << elem.x << " " << elem.y << " " << elem.z;
-    }
-
-    inline std::ostream& operator <<(std::ostream& stream, const float4& elem)
-    {
-        return stream << elem.x << " " << elem.y << " " << elem.z << " " << elem.w;
-    }
-
-    inline std::ostream& operator <<(std::ostream& stream, const float3x3& elem)
-    {
-        return stream << elem.x << "\n" << elem.y << "\n" << elem.z;
-    }
-
-    inline std::ostream& operator <<(std::ostream& stream, const pose& elem)
-    {
-        return stream << "Position:\n " << elem.position  << "\n Orientation :\n" << elem.orientation;
-    }
 
 
     using firmware_version = rsutils::version;
@@ -259,12 +134,6 @@ namespace librealsense {
 
 
 
-
-    ////////////////////////////////////////
-    // Helper functions for library types //
-    ////////////////////////////////////////
-
-    inline bool operator == (const rs2_intrinsics & a, const rs2_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
 
 
     bool file_exists(const char* filename);
@@ -345,64 +214,6 @@ namespace librealsense {
     };
 }
 
-inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
-{
-    return out
-        << "[ r["
-        << e.rotation[0] << "," << e.rotation[1] << "," << e.rotation[2] << "," << e.rotation[3] << "," << e.rotation[4] << ","
-        << e.rotation[5] << "," << e.rotation[6] << "," << e.rotation[7] << "," << e.rotation[8]
-        << "]  t[" << e.translation[0] << "," << e.translation[1] << "," << e.translation[2] << "] ]";
-}
-
-inline std::ostream& operator<<( std::ostream& out, rs2_intrinsics const & i )
-{
-    return out
-        << "[ " << i.width << "x" << i.height
-        << "  p[" << i.ppx << " " << i.ppy << "]"
-        << "  f[" << i.fx << " " << i.fy << "]"
-        << "  " << librealsense::get_string( i.model )
-        << " [" << i.coeffs[0] << " " << i.coeffs[1] << " " << i.coeffs[2]
-        << " " << i.coeffs[3] << " " << i.coeffs[4]
-        << "] ]";
-}
-
-inline std::ostream& operator<<( std::ostream& s, rs2_dsm_params const & self )
-{
-    s << "[ ";
-    if( self.timestamp )
-    {
-        time_t t = self.timestamp;
-        auto ptm = localtime( &t );
-        char buf[256];
-        strftime( buf, sizeof( buf ), "%F.%T ", ptm );
-        s << buf;
-
-        unsigned patch = self.version & 0xF;
-        unsigned minor = (self.version >> 4) & 0xFF;
-        unsigned major = (self.version >> 12);
-        s << major << '.' << minor << '.' << patch << ' ';
-    }
-    else
-    {
-        s << "new: ";
-    }
-    switch( self.model )
-    {
-    case RS2_DSM_CORRECTION_NONE: break;
-    case RS2_DSM_CORRECTION_AOT: s << "AoT "; break;
-    case RS2_DSM_CORRECTION_TOA: s << "ToA "; break;
-    }
-    s << "x[" << self.h_scale << " " << self.v_scale << "] ";
-    s << "+[" << self.h_offset << " " << self.v_offset;
-    if( self.rtd_offset )
-        s << " rtd " << self.rtd_offset;
-    s << "]";
-    if( self.temp_x2 )
-        s << " @" << float( self.temp_x2 ) / 2 << "degC";
-    s << " ]";
-    return s;
-}
-
 template<typename T>
 uint32_t rs_fourcc(const T a, const T b, const  T c, const T d)
 {
@@ -431,17 +242,4 @@ inline res_type get_res_type(uint32_t width, uint32_t height)
         return res_type::low_resolution;
 
     return res_type::high_resolution;
-}
-
-inline bool operator==( const rs2_extrinsics& a, const rs2_extrinsics& b )
-{
-    for( int i = 0; i < 3; i++ )
-        if( a.translation[i] != b.translation[i] )
-            return false;
-    for( int j = 0; j < 3; j++ )
-        for( int i = 0; i < 3; i++ )
-            if( std::fabs( a.rotation[j * 3 + i] - b.rotation[j * 3 + i] )
-        > std::numeric_limits<float>::epsilon() )
-                return false;
-    return true;
 }
