@@ -5,6 +5,7 @@
 #include <src/platform/command-transfer.h>
 #include <src/platform/hid-data.h>
 #include <src/core/time-service.h>
+#include <src/core/notification.h>
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
