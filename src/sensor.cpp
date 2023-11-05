@@ -13,6 +13,7 @@
 #include "core/depth-frame.h"
 #include "core/stream-profile-interface.h"
 #include "core/frame-callback.h"
+#include "core/notification.h"
 
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
@@ -54,7 +55,7 @@ void log_callback_end( uint32_t fps,
     : recommended_proccesing_blocks_base( owner )
     , _is_streaming( false )
     , _is_opened( false )
-    , _notifications_processor( std::shared_ptr< notifications_processor >( new notifications_processor() ) )
+    , _notifications_processor( std::make_shared< notifications_processor >() )
     , _on_open( nullptr )
     , _metadata_modifier( nullptr )
     , _metadata_parsers( std::make_shared< metadata_parser_map >() )

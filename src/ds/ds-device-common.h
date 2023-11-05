@@ -5,6 +5,7 @@
 
 #include "hw-monitor.h"
 #include "ds-private.h"
+#include <src/core/notification.h>
 
 
 namespace librealsense

@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+
 #include "error-handling.h"
+#include "core/notification.h"
 
 #include <rsutils/string/from.h>
 

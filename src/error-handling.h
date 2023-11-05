@@ -7,6 +7,9 @@
 
 namespace librealsense
 {
+    class notification_decoder;
+    class notifications_processor;
+
     class polling_error_handler
     {
     public:

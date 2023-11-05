@@ -20,6 +20,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/matcher-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/motion-frame.h"
+        "${CMAKE_CURRENT_LIST_DIR}/notification.h"
+        "${CMAKE_CURRENT_LIST_DIR}/notification.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/video.h"
         "${CMAKE_CURRENT_LIST_DIR}/video-frame.h"
         "${CMAKE_CURRENT_LIST_DIR}/options.h"
