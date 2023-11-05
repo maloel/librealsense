@@ -7,6 +7,12 @@
 #include <sstream>
 
 
+static inline uint32_t pack( uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3 )
+{
+    return ( c0 << 24 ) | ( c1 << 16 ) | ( c2 << 8 ) | c3;
+}
+
+
 namespace librealsense
 {
     std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
