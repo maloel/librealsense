@@ -19,7 +19,7 @@
 namespace librealsense {
 
 
-class LRS_EXTENSION_API options_container : public virtual options_interface, public extension_snapshot
+class options_container : public virtual options_interface, public extension_snapshot
 {
 public:
     bool supports_option(rs2_option id) const override
