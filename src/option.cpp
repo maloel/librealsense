@@ -12,7 +12,7 @@ namespace librealsense {
 
 bool option_base::is_valid(float value) const
 {
-    if (!std::isnormal(_opt_range.step) && _opt_range.step != 0)
+    if( _opt_range.step != 0 && ! std::isnormal( _opt_range.step ) )
         throw invalid_value_exception( rsutils::string::from()
                                        << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step
                                        << ")" );
@@ -27,10 +27,18 @@ bool option_base::is_valid(float value) const
     return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
 }
 
-option_range option_base::get_range() const
+void librealsense::option_base::check_valid( float value ) const
 {
-    return _opt_range;
+    if( ! is_valid( value ) )
+        throw invalid_value_exception( rsutils::string::from() << "invalid value (" << value << ")" );
 }
+
+void librealsense::option_base::apply()
+{
+    if( _recording_function )
+        _recording_function( *this );
+}
+
 void option_base::enable_recording(std::function<void(const option&)> recording_action)
 {
     _recording_function = recording_action;

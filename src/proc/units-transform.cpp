@@ -25,18 +25,18 @@ namespace librealsense
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_DISTANCE);
 
-            if (!_depth_units)
+            if( ! _depth_units_valid )
             {
                 try 
                 {
-                    auto sensor = ((frame_interface*)f.get())->get_sensor().get();
+                    auto sensor = ( (frame_interface *)f.get() )->get_sensor();
                     _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+                    _depth_units_valid = true;
                 }
                 catch (...)
                 {
                     // reset stream profile in case of failure.
                     _source_stream_profile = rs2::stream_profile();
-                    _depth_units = optional_value<float>();
                     LOG_ERROR("Failed obtaining depth units option");
                 }
             }
@@ -61,7 +61,7 @@ namespace librealsense
                                                   (int)_stride,
                                                   RS2_EXTENSION_DEPTH_FRAME );
 
-        if (new_f && _depth_units)
+        if( new_f && _depth_units_valid )
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
             auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)f.get());
@@ -74,7 +74,7 @@ namespace librealsense
             memset(new_data, 0, _width * _height * sizeof(float));
             for (int i = 0; i < _width * _height; i++)
             {
-                float dist = *_depth_units * depth_data[i];
+                float dist = _depth_units * depth_data[i];
                 new_data[i] = dist;
             }
 

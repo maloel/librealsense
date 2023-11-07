@@ -123,7 +123,7 @@ namespace librealsense
         auto hid_ep = create_hid_device(dev_info->get_context(), dev_info->get_group().hid_devices, _fw_version);
         if (hid_ep)
         {
-            _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
+            add_sensor( hid_ep );
 
             // HID metadata attributes
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
@@ -148,11 +148,11 @@ namespace librealsense
         }
 
         // Try to add HID endpoint
-        std::shared_ptr<synthetic_sensor> sensor_ep;
-        sensor_ep = create_uvc_device(dev_info->get_context(), dev_info->get_group().uvc_devices, _fw_version);
-        if (sensor_ep)
+        std::shared_ptr< synthetic_sensor > sensor_ep
+            = create_uvc_device( dev_info->get_context(), dev_info->get_group().uvc_devices, _fw_version );
+        if( sensor_ep )
         {
-            _motion_module_device_idx = static_cast<uint8_t>(add_sensor(sensor_ep));
+            add_sensor( sensor_ep );
 
             // HID metadata attributes - D457 dev - check metadata parser
             sensor_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&hid_header::timestamp));
@@ -184,11 +184,8 @@ namespace librealsense
         _ds_motion_common->assign_fisheye_ep(raw_fisheye_ep, fisheye_ep, enable_global_time_option);
         
         register_fisheye_options();
-
         register_fisheye_metadata();
-
-        // Add fisheye endpoint
-        _fisheye_device_idx = add_sensor(fisheye_ep);
+        add_sensor( fisheye_ep );
     }
 
     void d400_motion::register_fisheye_options()

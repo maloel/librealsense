@@ -20,14 +20,14 @@ namespace librealsense
     class observable_option
     {
     public:
-        void add_observer(std::function<void(float)> callback)
+        void add_observer( std::function< void( float ) > && callback )
         {
-            _callbacks.push_back(callback);
+            _callbacks.push_back( std::move( callback ) );
         }
 
         void notify(float val)
         {
-            for (auto callback : _callbacks)
+            for( auto & callback : _callbacks )
             {
                 callback(val);
             }
@@ -96,10 +96,17 @@ namespace librealsense
         {}
 
         bool is_valid(float value) const;
+        
+        // Throws if value is not valid
+        void check_valid( float value ) const;
 
-        option_range get_range() const override;
+        // Should be called after value changes
+        virtual void apply();
+
+        option_range get_range() const override { return _opt_range; }
 
         virtual void enable_recording(std::function<void(const option&)> recording_action) override;
+    
     protected:
         const option_range _opt_range;
         std::function<void(const option&)> _recording_function = [](const option&) {};
@@ -160,6 +167,70 @@ namespace librealsense
         {
             T::set(value);
         }
+    };
+
+    template<class T>
+    class LRS_EXTENSION_API typed_option : public option_base, observable_option
+    {
+        static_assert( sizeof( T ) <= sizeof( float ), "type must fit inside sizeof(float)" );
+
+        using super = option_base;
+
+    public:
+        typed_option( T min, T max, T step, T def )
+            : super( {
+                static_cast< float >( min ),
+                static_cast< float >( max ),
+                static_cast< float >( step ),
+                static_cast< float >( def ),
+            } )
+        {
+        }
+
+        void set( float fvalue ) override
+        {
+            T value = static_cast< T >( fvalue );
+            check_value( value );  // throws
+        }
+
+        void apply() override
+        {
+            notify( value );
+            super::apply();
+        }
+
+        float query() const override
+        {
+            return static_cast<float>(*_value);
+        }
+
+        bool is_enabled() const override { return true; }
+
+        void enable_recording( std::function<void( const option & )> record_action ) override {}
+
+        const char * get_description() const override { return _desc.c_str(); }
+
+        const char * get_value_description( float val ) const override
+        {
+            auto it = _item_desc.find( val );
+            if( it != _item_desc.end() )
+            {
+                return it->second.c_str();
+            }
+            return nullptr;
+        }
+
+        void set_description( float val, const std::string & desc )
+        {
+            _item_desc[val] = desc;
+        }
+
+        void on_set( std::function<void( float )> on_set ) { _on_set = on_set; }
+    private:
+        T _value;
+        std::string _desc;
+        std::map<float, std::string> _item_desc;
+        std::function<void( float )> _on_set;
     };
 
     template<class T>

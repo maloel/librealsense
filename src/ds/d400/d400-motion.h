@@ -36,7 +36,6 @@ namespace librealsense
 
         uint16_t _pid;    // product PID
         std::shared_ptr<mm_calib_handler>        _mm_calib;
-        optional_value<uint8_t> _motion_module_device_idx;
     };
 
     class d400_motion : public d400_motion_base
@@ -61,9 +60,6 @@ namespace librealsense
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
 
         void initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
-
-        optional_value<uint8_t> _fisheye_device_idx;
-        optional_value<uint8_t> _motion_module_device_idx;
 
     };
 

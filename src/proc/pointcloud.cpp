@@ -54,7 +54,7 @@ namespace librealsense
 
     void pointcloud::set_extrinsics()
     {
-        if (_output_stream && _other_stream && !_extrinsics)
+        if( _output_stream && _other_stream && ! _extrinsics_valid )
         {
             rs2_extrinsics ex;
             const rs2_stream_profile* ds = _output_stream;
@@ -63,6 +63,7 @@ namespace librealsense
                 *ds->profile, *os->profile, &ex))
             {
                 _extrinsics = ex;
+                _extrinsics_valid = true;
             }
         }
     }
@@ -76,7 +77,8 @@ namespace librealsense
             _depth_stream = depth;
             _depth_intrinsics = optional_value<rs2_intrinsics>();
             _depth_units = ((depth_frame*)depth.get())->get_units();
-            _extrinsics = optional_value<rs2_extrinsics>();
+            _depth_units_valid = true;
+            _extrinsics_valid = false;
         }
 
         bool found_depth_intrinsics = false;
@@ -165,7 +167,10 @@ namespace librealsense
                                         if( environment::get_instance()
                                                 .get_extrinsics_graph()
                                                 .try_fetch_extrinsics( *ds, *os, &ex ) )
+                                        {
                                             _extrinsics = ex;
+                                            _extrinsics_valid = true;
+                                        }
                                         else
                                             LOG_ERROR( "Failed to refresh extrinsics after calibration change" );
                                     }
@@ -183,12 +188,12 @@ namespace librealsense
             }
         }
 
-        if (_extrinsics.has_value() && other.get_profile().get() == _other_stream.get_profile().get())
+        if( _extrinsics_valid && other.get_profile().get() == _other_stream.get_profile().get() )
             return;
 
         _other_stream = other;
         _other_intrinsics = optional_value<rs2_intrinsics>();
-        _extrinsics = optional_value<rs2_extrinsics>();
+        _extrinsics_valid = false;
 
         if (!_other_intrinsics)
         {
@@ -254,31 +259,22 @@ namespace librealsense
 
         // Pixels calculated in the mapped texture. Used in post-processing filters
         float2* pixels_ptr = _pixels_map.data();
-        rs2_intrinsics mapped_intr;
-        rs2_extrinsics extr;
-        bool map_texture = false;
-        {
-            if (_extrinsics && _other_intrinsics)
-            {
-                mapped_intr = *_other_intrinsics;
-                extr = *_extrinsics;
-                map_texture = true;
-            }
-        }
-
+        bool map_texture = _extrinsics_valid && _other_intrinsics;
         if (map_texture)
         {
+            rs2_intrinsics mapped_intr = *_other_intrinsics;
+
             auto height = vid_frame.get_height();
             auto width = vid_frame.get_width();
 
-            get_texture_map(res, points, width, height, mapped_intr, extr, pixels_ptr);
+            get_texture_map(res, points, width, height, mapped_intr, _extrinsics, pixels_ptr);
 
-            if (run__occlusion_filter(extr))
+            if( run__occlusion_filter( _extrinsics ) )
             {
-                if (_occlusion_filter->find_scanning_direction(extr) == vertical)
+                if( _occlusion_filter->find_scanning_direction( _extrinsics ) == vertical )
                 {
                     _occlusion_filter->set_scanning(static_cast<uint8_t>(vertical));
-                    _occlusion_filter->_depth_units = _depth_units;
+                    _occlusion_filter->set_depth_units( _depth_units );
                 }
                 _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map, depth);
             }

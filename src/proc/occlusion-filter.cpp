@@ -20,7 +20,8 @@ namespace librealsense
     void occlusion_filter::set_texel_intrinsics(const rs2_intrinsics& in)
     {
         _texels_intrinsics = in;
-        _texels_depth.resize(_texels_intrinsics.value().width*_texels_intrinsics.value().height);
+        _texels_intrinsics_valid = true;
+        _texels_depth.resize( _texels_intrinsics.width * _texels_intrinsics.height );
     }
 
    void occlusion_filter::process(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const
@@ -230,8 +231,10 @@ namespace librealsense
     {
         auto depth_points = points;
         auto mapped_pix = pix_coord.data();
-        size_t mapped_tex_width = _texels_intrinsics->width;
-        size_t mapped_tex_height = _texels_intrinsics->height;
+        if( ! _texels_intrinsics_valid )
+            throw std::runtime_error( "texel intrinsics not set" );
+        size_t mapped_tex_width = _texels_intrinsics.width;
+        size_t mapped_tex_height = _texels_intrinsics.height;
         size_t points_width = _depth_intrinsics->width;
         size_t points_height = _depth_intrinsics->height;
 
