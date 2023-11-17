@@ -21,6 +21,10 @@ class device:
     def __init__( self ):
         self._handle = rs.software_device()
 
+    @property
+    def handle( self ):
+        return self._handle
+
 
 class sensor:
     def __init__( self, sensor_name:str, dev:device = None ):
@@ -28,6 +32,10 @@ class sensor:
             dev = device()
         self._handle = dev._handle.add_sensor( sensor_name )
         self._q = None
+
+    @property
+    def handle( self ):
+        return self._handle
 
     def __enter__( self ):
         return self

@@ -188,6 +188,7 @@ void init_internal(py::module &m) {
             "motion_stream"_a, "is_default"_a = false)
         .def("add_pose_stream", &rs2::software_sensor::add_pose_stream, "Add pose stream to software sensor",
             "pose_stream"_a, "is_default"_a = false)
+        .def( "add_recommended_processing_block", &rs2::software_sensor::add_processing_block )
         .def("on_video_frame", &rs2::software_sensor::on_video_frame, "Inject video frame into the sensor", "frame"_a)
         .def("on_motion_frame", &rs2::software_sensor::on_motion_frame, "Inject motion frame into the sensor", "frame"_a)
         .def("on_pose_frame", &rs2::software_sensor::on_pose_frame, "Inject pose frame into the sensor", "frame"_a)

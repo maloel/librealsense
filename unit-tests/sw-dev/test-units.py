@@ -5,7 +5,7 @@ import pyrealsense2 as rs
 from rspy import log, test
 import sw
 
-    
+
 with sw.sensor( "Stereo Module" ) as sensor:
     depth = sensor.video_stream( "Depth", rs.stream.depth, rs.format.z16 )
     sensor.start( depth )
