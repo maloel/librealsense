@@ -8,6 +8,8 @@
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
+#include <realdds/topics/blob-msg.h>
+#include <realdds/topics/blob/blobPubSubTypes.h>
 #include <realdds/topics/ros2/ros2imagePubSubTypes.h>
 #include <realdds/topics/ros2/ros2imuPubSubTypes.h>
 #include <realdds/topics/dds-topic-names.h>
@@ -30,6 +32,7 @@
 #include <realdds/dds-metadata-syncer.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/number/crc32.h>
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -298,8 +301,9 @@ PYBIND11_MODULE(NAME, m) {
                       callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
         .def( "run", &dds_topic_writer::run )
-        .def( "qos", []() { return writer_qos(); } )
-        .def( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
+        .def( "wait_for_acks", &dds_topic_writer::wait_for_acks )
+        .def_static( "qos", []() { return writer_qos(); } )
+        .def_static( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
 
 
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
@@ -524,6 +528,44 @@ PYBIND11_MODULE(NAME, m) {
             py::arg( "sample" ) = nullptr,
             py::call_guard< py::gil_scoped_release >() )
         /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
+
+
+    using blob_msg = realdds::topics::blob_msg;
+    py::class_< blob_msg, std::shared_ptr< blob_msg > >( message, "blob" )
+        .def( py::init<>() )
+        .def( py::init( []( std::vector< uint8_t > bytes ) { return blob_msg( std::move( bytes ) ); } ) )
+        .def_static(
+            "create_topic",
+            static_cast< std::shared_ptr< dds_topic > ( * )( std::shared_ptr< dds_participant > const &,
+                                                             std::string const & ) >( &blob_msg::create_topic ) )
+        .def( "data", []( blob_msg const & self ) { return self.data(); } )
+        .def( "size", []( blob_msg const & self ) { return self.data().size(); } )
+        .def( "__repr__",
+              []( blob_msg const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME ".blob_msg";
+                  os << ' ' << self.data().size();
+                  os << ' ' << rsutils::number::calc_crc32( self.data().data(), self.data().size() );
+                  os << ">";
+                  return os.str();
+              } )
+        .def_static(
+            "take_next",
+            []( dds_topic_reader & reader, SampleInfo * sample )
+            {
+                auto actual_type = reader.topic()->get()->get_type_name();
+                if( actual_type != blob_msg::type().getName() )
+                    throw std::runtime_error( "can't initialize blob from " + actual_type );
+                blob_msg data;
+                if( ! blob_msg::take_next( reader, &data, sample ) )
+                    assert( ! data.is_valid() );
+                return data;
+            },
+            py::arg( "reader" ),
+            py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
+        .def( "write_to", &blob_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
     using imu_msg = realdds::topics::imu_msg;

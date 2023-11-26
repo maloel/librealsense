@@ -7,7 +7,7 @@ args = ArgumentParser()
 args.add_argument( '--debug', action='store_true', help='enable debug mode' )
 args.add_argument( '--quiet', action='store_true', help='no output' )
 args.add_argument( '--device', metavar='<path>', help='the topic root for the device' )
-args.add_argument( '--topic', metavar='<path>', help='the topic on which to send flexible message, if --device is not supplied' )
+args.add_argument( '--topic', metavar='<path>', help='the topic on which to send a message/blob, if --device is not supplied' )
 import json
 def json_arg(x):
     try:
@@ -15,6 +15,8 @@ def json_arg(x):
     except Exception as e:
         raise ArgumentError( str(e) )
 args.add_argument( '--message', metavar='<json>', type=json_arg, help='a message to send', default='{"id":"ping","message":"some message"}' )
+args.add_argument( '--blob', metavar='<filename>', help='a file to send' )
+args.add_argument( '--ack', action=='store_true', help='wait for acks' )
 def domain_arg(x):
     t = int(x)
     if t <= 0 or t > 232:
@@ -47,7 +49,31 @@ participant.init( args.domain, 'topic-send', settings )
 
 message = args.message
 
-if args.device:
+if args.blob:
+    if not args.topic:
+        e( '--blob requires --topic' )
+        sys.exit( 1 )
+    topic_path = args.topic
+    if not os.path.isfile( args.blob ):
+        e( '--blob <file> does not exist:', args.blob )
+        sys.exit( 1 )
+    writer = dds.topic_writer( dds.message.blob.create_topic( participant, topic_path ))
+    writer.run( dds.topic_writer.qos() )  # reliable
+    # Let the client pick up on the new entity - if we send it too quickly, they won't see it before we disappear...
+    time.sleep( 1 )
+    with open( args.blob, mode='rb' ) as file: # b is important -> binary
+        blob = dds.message.blob( file.read() )
+    i( f'Writing {blob} on {topic_path} ...' )
+    blob.write_to( writer )
+    if args.ack:
+        if not writer.wait_for_ack( 5. ):  # seconds
+            e( 'Timeout waiting for ack' )
+            sys.exit( 1 )
+        i( f'Acknowledged' )
+    else:
+        i( f'Done' )
+
+elif args.device:
     info = dds.message.device_info()
     info.name = 'Dummy Device'
     info.topic_root = args.device
@@ -80,5 +106,9 @@ else:
     time.sleep( 1 )
     dds.message.flexible( message ).write_to( writer )
     i( f'Sent {message} on {topic_path}' )
+    if args.ack:
+        if not writer.wait_for_ack( 5. ):  # seconds
+            e( 'Timeout waiting for ack' )
+            sys.exit( 1 )
 
 
