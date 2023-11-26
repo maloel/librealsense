@@ -80,6 +80,9 @@ public:
     // The callbacks should be set before we actually create the underlying DDS objects, so the writer does not
     void run( qos const & = qos() );
 
+    // Waits until all writers have received their acknowledgments; return false on timeout
+    bool wait_for_acks( dds_time timeout );
+
     // DataWriterListener
 protected:
     // Called when the Publisher is matched (or unmatched) against an endpoint
