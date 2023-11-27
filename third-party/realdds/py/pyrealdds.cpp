@@ -301,6 +301,7 @@ PYBIND11_MODULE(NAME, m) {
                       callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
         .def( "run", &dds_topic_writer::run )
+        .def( "has_readers", &dds_topic_writer::has_readers )
         .def( "wait_for_acks", &dds_topic_writer::wait_for_acks )
         .def_static( "qos", []() { return writer_qos(); } )
         .def_static( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
@@ -533,7 +534,14 @@ PYBIND11_MODULE(NAME, m) {
     using blob_msg = realdds::topics::blob_msg;
     py::class_< blob_msg, std::shared_ptr< blob_msg > >( message, "blob" )
         .def( py::init<>() )
-        .def( py::init( []( std::vector< uint8_t > bytes ) { return blob_msg( std::move( bytes ) ); } ) )
+        .def( py::init(
+            []( py::bytes const & bytes )
+            {
+                auto info = py::buffer( bytes ).request();
+                auto data = reinterpret_cast< uint8_t const * >( info.ptr );
+                size_t length = static_cast< size_t >( info.size );
+                return blob_msg( std::vector< uint8_t >( data, data + length ) );
+            } ) )
         .def_static(
             "create_topic",
             static_cast< std::shared_ptr< dds_topic > ( * )( std::shared_ptr< dds_participant > const &,
