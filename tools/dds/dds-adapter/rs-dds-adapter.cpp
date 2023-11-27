@@ -83,6 +83,9 @@ static nlohmann::json load_settings( nlohmann::json const & local_settings )
     // Take the "dds" settings only
     config = rsutils::json::nested( config, "dds" );
 
+    // We should always have DDS enabled
+    config.erase( "enabled" );
+
     // Patch the given local settings into the configuration
     rsutils::json::patch( config, local_settings, "local settings" );
 
@@ -140,7 +143,6 @@ try
     auto participant = std::make_shared< dds_participant >();
     {
         nlohmann::json dds_settings;
-        dds_settings["enabled"];  // create a 'null' json key in there to remove any enabled:false
         dds_settings = load_settings( dds_settings );
         participant->init( domain, "rs-dds-adapter", std::move( dds_settings ) );
     }
