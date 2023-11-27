@@ -116,6 +116,7 @@ private:
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     std::shared_ptr< dds_topic_writer > _metadata_writer;
+    std::shared_ptr< dds_topic_reader > _dfu_reader;
     std::shared_ptr< dds_device_broadcaster > _broadcaster;
     dispatcher _control_dispatcher;
 
