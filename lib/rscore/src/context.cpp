@@ -4,7 +4,7 @@
 #include <rscore/context.h>
 #include <rscore/device-info.h>
 
-#include "rscore-pp-block-factory.h"
+#include <rscore/pp-block-factory.h>
 #include <rscore/module-registry.h>
 #include <rscore/context-module.h>
 #include <rscore/exceptions.h>
@@ -77,6 +77,9 @@ namespace librealsense {
                                             { invoke_devices_changed_callbacks( removed, added ); } );
             if( d_factory )
                 _device_factories.push_back( d_factory );
+
+            if( auto pp_factory = m->create_pp_block_factory() )
+                _pp_block_factories.push_back( pp_factory );
         }
     }
 
@@ -178,7 +181,13 @@ namespace librealsense {
     std::shared_ptr< processing_block_interface > context::create_pp_block( std::string const & name,
                                                                             nlohmann::json const & settings )
     {
-        return rscore_pp_block_factory().create_pp_block( name, settings );
+        for( auto const & factory : _pp_block_factories )
+        {
+            auto block = factory->create_pp_block( name, settings );
+            if( block )
+                return block;
+        }
+        return {};
     }
 
 }  // namespace librealsense

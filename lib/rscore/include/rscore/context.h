@@ -13,6 +13,7 @@
 namespace librealsense
 {
     class device_factory;
+    class pp_block_factory;
     class device_info;
     class context_module;
     class processing_block_interface;
@@ -80,6 +81,7 @@ namespace librealsense
         unsigned const _device_mask;
 
         std::vector< std::shared_ptr< device_factory > > _device_factories;
+        std::vector< std::shared_ptr< pp_block_factory > > _pp_block_factories;
         std::vector< std::shared_ptr< context_module > > _modules;
     };
 

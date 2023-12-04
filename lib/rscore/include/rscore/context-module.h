@@ -17,6 +17,7 @@ namespace librealsense {
 
 class module_registry;
 class context;
+class pp_block_factory;
 
 
 // The main object to interface between a module and a context, and from which all other module capabilities, in the
@@ -57,6 +58,10 @@ public:
     // The callback is to be called when new devices are recognized, or existing devices dropped.
     //
     virtual std::shared_ptr< device_factory > create_device_factory( device_factory::callback && ) = 0;
+
+    // If we can create post-processing blocks, we should return a pp-block-factory; otherwise return nullptr.
+    //
+    virtual std::shared_ptr< pp_block_factory > create_pp_block_factory() = 0;
 };
 
 

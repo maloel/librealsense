@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-#include "rscore-pp-block-factory.h"
+#include "rsproc-pp-block-factory.h"
 
 #include "proc/decimation-filter.h"
 #include "proc/disparity-transform.h"
@@ -20,7 +20,7 @@ namespace librealsense {
 
 
 std::shared_ptr< processing_block_interface >
-rscore_pp_block_factory::create_pp_block( std::string const & name, nlohmann::json const & settings )
+rsproc_pp_block_factory::create_pp_block( std::string const & name, nlohmann::json const & settings )
 {
     // These filters do not accept settings (nor are settings recorded in ros_writer)
     (void *)&settings;
