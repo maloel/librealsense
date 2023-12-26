@@ -70,6 +70,9 @@ public:
     ~dds_device_server();
 
     dds_guid const & guid() const;
+    std::shared_ptr< dds_participant > participant() const;
+    std::shared_ptr< dds_subscriber > subscriber() const { return _subscriber; }
+    std::string const & topic_root() const { return _topic_root; }
 
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
@@ -77,7 +80,13 @@ public:
     void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams,
                const dds_options & options, const extrinsics_map & extr );
 
+    // After initialization, the device can be broadcast on the device-info topic
     void broadcast( topics::device_info const & );
+
+    // Once broadcast, we can also broadcast that we expect the device to go down:
+    // To wait for acknowledgements, pass in a timeout; the return value will be false if a timeout occurs.
+    bool broadcast_disconnect( dds_time ack_timeout );
+    void broadcast_disconnect();
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
@@ -115,6 +124,7 @@ private:
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     std::shared_ptr< dds_topic_writer > _metadata_writer;
+    std::shared_ptr< dds_topic_reader > _dfu_reader;
     std::shared_ptr< dds_device_broadcaster > _broadcaster;
     dispatcher _control_dispatcher;
 

@@ -10,9 +10,12 @@
 #include <realdds/dds-stream.h>
 #include <realdds/dds-trinsics.h>
 #include <realdds/dds-participant.h>
+#include <realdds/dds-topic-writer.h>
 
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
+#include <realdds/topics/blob-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 
 #include <src/stream.h>
 #include <src/environment.h>
@@ -549,6 +552,67 @@ std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
     if( ! reply.nested( "data" ).get_ex( hexdata ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );
     return hexdata.detach();
+}
+
+
+bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & image ) const
+{
+    try
+    {
+        // Start DFU
+        nlohmann::json reply;
+        _dds_dev->send_control( nlohmann::json::object( { { "id", "dfu-start" } } ), &reply );
+
+        // Set up a reply handler that will get the "dfu-ready" message
+        std::mutex mutex;
+        std::condition_variable cv;
+        nlohmann::json dfu_ready;
+        auto subscription = _dds_dev->on_notification(
+            [&]( std::string const & id, nlohmann::json const & notification )
+            {
+                if( id != "dfu-ready" )
+                    return;
+                std::unique_lock< std::mutex > lock( mutex );
+                dfu_ready = notification;
+                cv.notify_all();
+            } );
+
+        // Upload the image; this will check its compatibility
+        auto topic = realdds::topics::blob_msg::create_topic( _dds_dev->participant(),
+                                                              _dds_dev->device_info().topic_root()
+                                                                  + realdds::topics::DFU_TOPIC_NAME );
+        auto writer = std::make_shared< realdds::dds_topic_writer >( topic );
+        writer->run( realdds::dds_topic_writer::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
+        if( ! writer->wait_for_readers( { 3, 0 } ) )
+            throw std::runtime_error( "timeout waiting for DFU subscriber" );
+        auto blob = realdds::topics::blob_msg( std::vector< uint8_t >( image ) );
+        blob.write_to( *writer );
+        if( ! writer->wait_for_acks( { 3, 0 } ) )
+            throw std::runtime_error( "timeout waiting for DFU image ack" );
+
+        // Wait for a reply
+        {
+            std::unique_lock< std::mutex > lock( mutex );
+            if( ! cv.wait_for( lock, std::chrono::seconds( 5 ), [&]() { return ! dfu_ready.is_null(); } ) )
+                throw std::runtime_error( "timeout waiting for dfu-ready" );
+            subscription.cancel();
+        }
+        LOG_DEBUG( dfu_ready );
+        realdds::dds_device::check_reply( dfu_ready );  // throws if not OK
+    }
+    catch( std::exception const & e )
+    {
+        //LOG_ERROR( "DFU start failed: " << e.what() );
+        throw std::runtime_error( rsutils::string::from() << "failed to check image compatibility: " << e.what() );
+    }
+
+    return true;
+}
+
+
+void dds_device_proxy::update_flash( std::vector< uint8_t > const & image, rs2_update_progress_callback_sptr, int update_mode )
+{
+    throw not_implemented_exception( "update_flash not yet implemented" );
 }
 
 

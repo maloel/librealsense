@@ -15,6 +15,7 @@
 #include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible-msg.h>
+#include <realdds/topics/blob-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-option.h>
@@ -22,6 +23,7 @@
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
+#include <rsutils/number/crc32.h>
 #include <rsutils/string/shorten-json-string.h>
 #include <rsutils/json.h>
 using rsutils::json;
@@ -63,6 +65,11 @@ dds_guid const & dds_device_server::guid() const
     return _notification_server ? _notification_server->guid() : unknown_guid;
 }
 
+
+std::shared_ptr< dds_participant > dds_device_server::participant() const
+{
+    return _publisher->get_participant();
+}
 
 
 dds_device_server::~dds_device_server()
@@ -214,14 +221,41 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         _notification_server->run();
 
         // Create a control reader and set callback
-        auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + topics::CONTROL_TOPIC_NAME );
-        _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+        if( auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + topics::CONTROL_TOPIC_NAME ) )
+        {
+            _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
 
-        _control_reader->on_data_available( [&]() { on_control_message_received(); } );
+            _control_reader->on_data_available( [&]() { on_control_message_received(); } );
 
-        dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
-        rqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "control" ) );
-        _control_reader->run( rqos );
+            dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
+            rqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "control" ) );
+            _control_reader->run( rqos );
+        }
+
+        // Create a DFU reader and set callback
+        if( auto topic = topics::blob_msg::create_topic( _subscriber->get_participant(), _topic_root + "/dfu" ) )
+        {
+            _dfu_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+
+            _dfu_reader->on_data_available(
+                [&]()
+                {
+                    topics::blob_msg blob;
+                    eprosima::fastdds::dds::SampleInfo info;
+                    while( topics::blob_msg::take_next( *_dfu_reader, &blob, &info ) )
+                    {
+                        if( ! blob.is_valid() )
+                            continue;
+                        LOG_DEBUG( "<----- blob size "
+                                   << blob.data().size() << " crc "
+                                   << rsutils::number::calc_crc32( blob.data().data(), blob.data().size() ) );
+                    }
+                } );
+
+            dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
+            rqos.override_from_json( rsutils::json::nested( _subscriber->get_participant()->settings(), "device", "dfu" ) );
+            _dfu_reader->run( rqos );
+        }
     }
     catch( std::exception const & )
     {
@@ -240,6 +274,24 @@ void dds_device_server::broadcast( topics::device_info const & device_info )
     if( device_info.topic_root() != _topic_root )
         DDS_THROW( runtime_error, "topic roots do not match" );
     _broadcaster = std::make_shared< dds_device_broadcaster >( _publisher, device_info );
+}
+
+
+void dds_device_server::broadcast_disconnect()
+{
+    broadcast_disconnect( {} );
+}
+
+
+bool dds_device_server::broadcast_disconnect( dds_time ack_timeout )
+{
+    bool got_acks = false;
+    if( _broadcaster )
+    {
+        got_acks = _broadcaster->broadcast_disconnect( ack_timeout );
+        _broadcaster.reset();
+    }
+    return got_acks;
 }
 
 
@@ -265,6 +317,28 @@ void dds_device_server::publish_metadata( rsutils::json && md )
 bool dds_device_server::has_metadata_readers() const
 {
     return _metadata_writer && _metadata_writer->has_readers();
+}
+
+
+namespace realdds {
+    namespace topics {
+
+
+        class control_msg : public flexible_msg
+        {
+        public:
+            eprosima::fastdds::dds::SampleInfo sample;
+
+            control_msg() = default;
+
+            static bool take_next( dds_topic_reader & reader, control_msg * output )
+            {
+                return flexible_msg::take_next( reader, output, &output->sample );
+            }
+        };
+
+
+    }
 }
 
 

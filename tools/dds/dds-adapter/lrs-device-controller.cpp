@@ -5,21 +5,30 @@
 
 #include <common/metadata-helper.h>
 
-#include <rsutils/easylogging/easyloggingpp.h>
-#include <rsutils/json.h>
-#include <rsutils/string/hexarray.h>
-using rsutils::string::hexarray;
-
 #include <realdds/topics/image-msg.h>
 #include <realdds/topics/imu-msg.h>
+#include <realdds/topics/blob-msg.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/ros2/ros2vector3.h>
 #include <realdds/topics/flexible-msg.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
+#include <realdds/dds-topic-reader-thread.h>
+#include <realdds/dds-participant.h>
+#include <realdds/dds-guid.h>
+
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
+
+#include <rsutils/number/crc32.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
+#include <rsutils/string/hexarray.h>
+#include <rsutils/catch-all.h>
 
 #include <algorithm>
 #include <iostream>
 
+using rsutils::string::hexarray;
 using rsutils::json;
 using namespace realdds;
 using tools::lrs_device_controller;
@@ -506,6 +515,21 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
         [this]( std::string const & id, rsutils::json const & control, rsutils::json & reply )
         { return on_control( id, control, reply ); } );
 
+    std::vector< std::shared_ptr< realdds::dds_stream_server > > supported_streams;
+    extrinsics_map extrinsics;
+    realdds::dds_options options;
+
+    if( is_recovery() )
+    {
+        _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+        LOG_DEBUG( "LRS device manager for recovery device: " << _device_sn << " created" );
+
+        // Initialize with nothing: no streams, no options, empty extrinsics, etc.
+        _md_enabled = false;
+        _dds_device_server->init( supported_streams, options, extrinsics );
+        return;
+    }
+
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " created" );
 
@@ -516,7 +540,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
                && rs2::metadata_helper::instance().is_enabled( _rs_dev.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT ) );
 
     // Create a supported streams list for initializing the relevant DDS topics
-    auto supported_streams = get_supported_streams();
+    supported_streams = get_supported_streams();
 
     _bridge.on_start_sensor(
         [this]( std::string const & sensor_name, dds_stream_profiles const & active_profiles )
@@ -607,9 +631,7 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
         } );
     _bridge.init( supported_streams );
 
-    auto extrinsics = get_extrinsics_map( dev );
-
-    realdds::dds_options options;  // TODO - get all device level options
+    extrinsics = get_extrinsics_map( dev );
 
     // Initialize the DDS device server with the supported streams
     _dds_device_server->init( supported_streams, options, extrinsics );
@@ -619,6 +641,13 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 lrs_device_controller::~lrs_device_controller()
 {
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " deleted" );
+}
+
+
+bool lrs_device_controller::is_recovery() const
+{
+    auto update_device = rs2::update_device( _rs_dev );
+    return update_device;
 }
 
 
@@ -845,6 +874,8 @@ bool lrs_device_controller::on_control( std::string const & id, rsutils::json co
             { "hw-reset", &lrs_device_controller::on_hardware_reset },
             { "open-streams", &lrs_device_controller::on_open_streams },
             { "hwm", &lrs_device_controller::on_hwm },
+            { "dfu-start", &lrs_device_controller::on_dfu_start },
+            { "dfu-apply", &lrs_device_controller::on_dfu_apply },
         };
     auto it = control_handlers.find( id );
     if( it == control_handlers.end() )
@@ -856,6 +887,7 @@ bool lrs_device_controller::on_control( std::string const & id, rsutils::json co
 
 bool lrs_device_controller::on_hardware_reset( rsutils::json const & control, rsutils::json & reply )
 {
+    _dds_device_server->broadcast_disconnect();
     _rs_dev.hardware_reset();
     return true;
 }
@@ -900,6 +932,232 @@ bool lrs_device_controller::on_hwm( rsutils::json const & control, rsutils::json
     data = dp.send_and_receive_raw_data( data.get_bytes() );
     reply["data"] = data;
     return true;
+}
+
+
+struct lrs_device_controller::dfu_support
+{
+    rs2::device rsdev;
+    std::string serial;
+    std::weak_ptr< dds_device_server > server;
+    std::shared_ptr< realdds::dds_topic_reader > reader;
+    std::shared_ptr< realdds::topics::blob_msg > image;
+    realdds::dds_guid_prefix initiator;
+};
+
+
+
+bool lrs_device_controller::on_dfu_start( nlohmann::json const & control, nlohmann::json & reply )
+{
+    if( _dfu )
+        throw std::runtime_error( "DFU already in progress" );
+
+    if( ! rs2::updatable( _rs_dev ) || ! _rs_dev.supports( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+        throw std::runtime_error( "device is not updatable" );
+
+    _dfu = std::make_shared< dfu_support >();
+    _dfu->server = _dds_device_server;
+    _dfu->rsdev = _rs_dev;
+    _dfu->initiator = realdds::guid_from_string( rsutils::json::string_ref( reply["sample"][0] ) ).guidPrefix;
+    _dfu->serial = _rs_dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+
+    // Open a DFU topic and wait for the image on another thread
+    auto topic = topics::blob_msg::create_topic( _dds_device_server->participant(),
+                                                 _dds_device_server->topic_root() + realdds::topics::DFU_TOPIC_NAME );
+
+    _dfu->reader = std::make_shared< dds_topic_reader_thread >( topic, _dds_device_server->subscriber() );
+    _dfu->reader->on_data_available(
+        [this,
+         weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
+        {
+            topics::blob_msg blob;
+            eprosima::fastdds::dds::SampleInfo sample;
+            while( auto dfu = weak_dfu.lock() )
+            {
+                if( ! topics::blob_msg::take_next( *dfu->reader, &blob, &sample ) )
+                    break;
+                if( ! blob.is_valid() )
+                    continue;
+                auto const & sender = sample.sample_identity.writer_guid().guidPrefix;
+                if( sender != dfu->initiator )
+                {
+                    LOG_ERROR( "Blob received from " << realdds::print_raw_guid_prefix( sender )
+                                                     << " != " << realdds::print_raw_guid_prefix( dfu->initiator )
+                                                     << " that started the DFU" );
+                }
+                else if( dfu->image )
+                {
+                    LOG_ERROR( "More than one blob received for DFU! Got " << blob.data().size() << " bytes" );
+                }
+                else
+                {
+                    size_t const n_bytes = blob.data().size();
+                    auto const crc = rsutils::number::calc_crc32( blob.data().data(), blob.data().size() );
+                    LOG_DEBUG( "<----- dfu blob received, " << n_bytes << " bytes, crc " << crc );
+
+                    // Build a reply
+                    nlohmann::json j = nlohmann::json::object( {
+                        { "id", "dfu-ready" },
+                        { "bytes", n_bytes },
+                        { "crc", crc } } );
+
+                    try
+                    {
+                        // Check the image
+                        rs2::updatable updatable( dfu->rsdev );
+                        if( ! updatable.check_firmware_compatibility( blob.data() ) )
+                            throw std::runtime_error( "image is incompatible" );
+
+                        // Keep it until we get a 'dfu-apply'
+                        dfu->image = std::make_shared< topics::blob_msg >( std::move( blob ) );
+                    }
+                    catch( std::exception const & e )
+                    {
+                        j["status"] = "error";
+                        j["explanation"] = e.what();
+                        LOG_ERROR( "DFU image check failed: " << e.what() << "; exiting DFU state" );
+                        _dfu.reset();  // no longer in DFU state
+                    }
+
+                    if( auto server = dfu->server.lock() )
+                        _dds_device_server->publish_notification( std::move( j ) );
+                }
+            }
+        } );
+
+    dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+    rqos.override_from_json( rsutils::json::nested( _dds_device_server->participant()->settings(), "device", "dfu" ) );
+    _dfu->reader->run( rqos );
+
+    // Start a thread that will cancel if we don't receive an image in time
+    std::thread(
+        [weak_controller = std::weak_ptr< lrs_device_controller >( shared_from_this() )]
+        {
+            std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
+            if( auto controller = weak_controller.lock() )
+            {
+                if( controller->_dfu && ! controller->_dfu->image )
+                {
+                    LOG_DEBUG( "... timed out waiting for image; cancelling DFU" );
+                    controller->_dfu.reset();  // no longer in DFU state
+                    nlohmann::json j
+                        = nlohmann::json::object( { { "id", "dfu-ready" },
+                                                    { "status", "error" },
+                                                    { "explanation", "timed out waiting for an image" } } );
+                    controller->_dds_device_server->publish_notification( std::move( j ) );
+                }
+            }
+        } )
+        .detach();
+
+    return true;  // we handled it
+}
+
+
+bool lrs_device_controller::on_dfu_apply( nlohmann::json const & control, nlohmann::json & reply )
+{
+    if( ! _dfu )
+        throw std::runtime_error( "DFU not started" );
+    if( ! _dfu->reader )
+        throw std::runtime_error( "dfu-apply already received" );
+    if( ! _dfu->image )
+        throw std::runtime_error( "no image received" );
+
+    // Keep the DFU alive once apply starts, even if reset somewhere else - but the reader is no longer needed
+    auto dfu = _dfu;
+    _dfu->reader.reset();
+
+    auto const sender = realdds::guid_from_string( rsutils::json::string_ref( reply["sample"][0] ) ).guidPrefix;
+    if( sender != dfu->initiator )
+        throw std::runtime_error( "only the DFU initiator can apply/cancel" );
+
+    if( rsutils::json::nested( control, "cancel" ) )
+    {
+        LOG_DEBUG( "DFU cancelled" );
+        _dfu.reset();
+        return true;  // handled
+    }
+
+
+    // We want to return a reply right away; we already have an image in hand, so all that needs to happen is to apply
+    // it in the background and return a reply when done
+    std::thread(
+        [weak_controller = std::weak_ptr< lrs_device_controller >( shared_from_this() ),
+         dfu]
+        {
+            // We already checked FW compatibility; to actually do a signed update, we switch to recovery mode (we need
+            // an update_device to do a signed update - but to get one, we need to be in recovery mode):
+            LOG_INFO( "Switching device " << dfu->serial << " to recovery mode" );
+            try
+            {
+                rs2::updatable( dfu->rsdev ).enter_update_state();
+            }
+            catch_all( LOG_ERROR, "Failed to enter recovery mode" )
+
+            // We need a context bu cannot get one from the device. But to wait for a recovery device, we can just
+            // create a new one:
+            nlohmann::json settings;
+            settings["dds"] = false;  // don't need DDS devices
+            rs2::context context( settings.dump() );
+
+            // Wait for the recovery device
+            LOG_DEBUG( "... waiting for update_device" );
+            rs2::update_device update_device;
+            auto const start = std::chrono::system_clock::now();
+            while( weak_controller.lock() )
+            {
+                try
+                {
+                    auto devs = context.query_devices( RS2_PRODUCT_LINE_ANY_INTEL );
+                    for( uint32_t j = 0; j < devs.size(); j++ )
+                    {
+                        auto d = devs[j];
+                        if( d.is< rs2::update_device >() && d.supports( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID )
+                            && dfu->serial == d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+                        {
+                            LOG_DEBUG( "... found DFU recovery device " << dfu->serial );
+                            update_device = d;
+                            break;
+                        }
+                    }
+                }
+                catch_all( LOG_DEBUG, "error looking for DFU device" )
+
+                if( update_device )
+                {
+                    if( auto controller = weak_controller.lock() )
+                    {
+                        try
+                        {
+                            LOG_INFO( "Updating device" );
+                            update_device.update( dfu->image->data(),
+                                                  [&]( float percent ) {  //
+                                                      LOG_DEBUG( "... updating " << int( percent * 100 ) << "%" );
+                                                  } );
+                            LOG_INFO( "DFU done" );
+                        }
+                        catch_all( LOG_ERROR, "DFU error" )
+                    }
+                    break;
+                }
+
+                if( std::chrono::system_clock::now() - start >= std::chrono::seconds( 60 ) )
+                {
+                    LOG_ERROR( "Failed to find recovery device for DFU" );
+                    break;
+                }
+
+                // Wait a little and retry
+                std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+            }
+
+            // Whether successful or not, we're dont with the DFU
+            if( auto controller = weak_controller.lock() )
+                controller->_dfu.reset();
+        } )
+        .detach();
+
+    return true;  // handled
 }
 
 
