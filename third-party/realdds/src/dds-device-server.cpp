@@ -379,7 +379,7 @@ void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann:
         }
         return value;
     };
-    auto query_option_j = [&]( rsutils::json::nested const & j )
+    auto query_option_j = [&]( rsutils::json_ref const & j )
     {
         if( ! j->is_string() )
             DDS_THROW( runtime_error, "option name should be a string; got " << j );
@@ -395,7 +395,7 @@ void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann:
         DDS_THROW( runtime_error, stream_name + " option '" + option_name + "' not found" );
     };
 
-    rsutils::json::nested option_name( j, option_name_key );
+    rsutils::json_ref option_name( j, option_name_key );
     if( option_name.is_array() )
     {
         if( option_name->empty() )

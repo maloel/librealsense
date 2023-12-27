@@ -247,7 +247,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     dds_device::check_reply( j );
 
     // We need the original control request as part of the reply, otherwise we can't know what option this is for
-    rsutils::json::nested control( j, control_key );
+    rsutils::json_ref control( j, control_key );
     if( ! control.is_object() )
         throw std::runtime_error( "missing control object" );
 
@@ -277,13 +277,13 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         LOG_DEBUG( "[" << debug_name() << "] option '" << option_name << "': not found" );
     };
 
-    rsutils::json::nested value_j( j, value_key );
+    rsutils::json_ref value_j( j, value_key );
     if( ! value_j.exists() )
     {
         // Use case:
         //      Bulk query without ANY option names supplied, { "option-name": [] }
         // There is no 'value' key; instead, the server returns option-value pairs in 'option-values':
-        rsutils::json::nested option_values( j, option_values_key );
+        rsutils::json_ref option_values( j, option_values_key );
         if( ! option_values.is_object() )
             throw std::runtime_error( "missing value or option-values" );
         for( auto it = option_values->begin(); it != option_values->end(); ++it )
@@ -362,7 +362,7 @@ void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds:
                 throw std::runtime_error( "type not one of 'EWID'" );
             char const type = stype[0];
             auto const & text = rsutils::json::string_ref( entry[2] );
-            nlohmann::json const & data = entry.size() > 3 ? entry[3] : rsutils::json::null_json;
+            nlohmann::json const & data = entry.size() > 3 ? entry[3] : rsutils::null_json;
 
             if( ! _on_device_log.raise( timestamp, type, text, data ) )
                 LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text

@@ -83,7 +83,7 @@ static std::mutex domain_context_by_id_mutex;
 rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & ctx, callback && cb )
     : super( ctx )
 {
-    rsutils::json::nested dds_settings( ctx->get_settings(), std::string( "dds", 3 ) );
+    rsutils::json_ref dds_settings( ctx->get_settings(), std::string( "dds", 3 ) );
     if( ! dds_settings.exists()
         || dds_settings->is_object() && dds_settings.find( std::string( "enabled", 7 ) ).default_value( true ) )
     {

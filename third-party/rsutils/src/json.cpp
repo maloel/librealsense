@@ -5,15 +5,14 @@
 #include <rsutils/os/executable-name.h>
 
 namespace rsutils {
-namespace json {
 
 
-nlohmann::json const null_json = {};
-nlohmann::json const empty_json_string = nlohmann::json::value_type( nlohmann::json::value_t::string );
-nlohmann::json const empty_json_object = nlohmann::json::object();
+json_type const null_json = {};
+json_type const empty_json_string = json_type::value_type( json_type::value_t::string );
+json_type const empty_json_object = json_type::object();
 
 
-void patch( nlohmann::json & j, nlohmann::json const & patches, std::string const & what )
+/*static*/ void json::patch( json_type & j, json_type const & patches, std::string const & what )
 {
     if( ! patches.is_object() )
     {
@@ -33,30 +32,29 @@ void patch( nlohmann::json & j, nlohmann::json const & patches, std::string cons
 }
 
 
-nlohmann::json load_app_settings( nlohmann::json const & global,
-                                  std::string const & application,
-                                  std::string const & subkey,
-                                  std::string const & error_context )
+/*static*/ json_type json::load_app_settings( json_type const & global,
+                                              std::string const & application,
+                                              json_key const & subkey,
+                                              std::string const & error_context )
 {
     // Take the global subkey settings out of the configuration
     nlohmann::json settings;
-    if( auto global_subkey = rsutils::json::nested( global, subkey ) )
+    if( auto global_subkey = json_ref( global, subkey ) )
         patch( settings, global_subkey, "global " + error_context + '/' + subkey );
 
     // Patch any application-specific subkey settings
-    if( auto application_subkey = rsutils::json::nested( global, application, subkey ) )
+    if( auto application_subkey = json_ref( global, application, subkey ) )
         patch( settings, application_subkey, error_context + '/' + application + '/' + subkey );
 
     return settings;
 }
 
 
-nlohmann::json
-load_settings( nlohmann::json const & global, std::string const & subkey, std::string const & error_context )
+/*static*/ json_type
+json::load_settings( json_type const & global, json_key const & subkey, std::string const & error_context )
 {
     return load_app_settings( global, rsutils::os::executable_name(), subkey, error_context );
 }
 
 
-}  // namespace json
 }  // namespace rsutils
