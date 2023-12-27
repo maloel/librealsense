@@ -296,7 +296,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     if( _dds_dev->supports_metadata() )
     {
         _metadata_subscription = _dds_dev->on_metadata_available(
-            [this]( std::shared_ptr< const nlohmann::json > const & dds_md )
+            [this]( std::shared_ptr< const rsutils::json > const & dds_md )
             {
                 std::string const & stream_name = rsutils::json::nested( *dds_md, stream_name_key ).string_ref();
                 auto it = _stream_name_to_owning_sensor.find( stream_name );
@@ -354,9 +354,9 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     // Depth & IR matched by frame-number, time-stamp-matched to color.
     // Motion streams will not get synced.
     rs2_matchers matcher = RS2_MATCHER_DLR_C;
-    if( auto matcher_j = rsutils::json::nested( _dds_dev->participant()->settings(), "device", "matcher" ) )
+    if( auto matcher_j = _dds_dev->participant()->settings().find( "device", "matcher" ) )
     {
-        if( ! matcher_j->is_string() || ! try_parse( matcher_j.string_ref(), matcher ) )
+        if( ! matcher_j.is_string() || ! try_parse( matcher_j.string_ref(), matcher ) )
             LOG_WARNING( "Invalid 'device/matcher' value " << matcher_j );
     }
     set_matcher_type( matcher );
@@ -506,8 +506,8 @@ void dds_device_proxy::tag_profiles( stream_profiles profiles ) const
 
 void dds_device_proxy::hardware_reset()
 {
-    nlohmann::json control = nlohmann::json::object( { { "id", "hw-reset" } } );
-    nlohmann::json reply;
+    rsutils::json control = rsutils::json::object( { { "id", "hw-reset" } } );
+    rsutils::json reply;
     _dds_dev->send_control( control, &reply );
 }
 
@@ -516,8 +516,8 @@ std::vector< uint8_t > dds_device_proxy::send_receive_raw_data( const std::vecto
 {
     // debug_interface function
     auto hexdata = rsutils::string::hexarray::to_string( input );
-    nlohmann::json control = nlohmann::json::object( { { "id", "hwm" }, { "data", hexdata } } );
-    nlohmann::json reply;
+    rsutils::json control = rsutils::json::object( { { "id", "hwm" }, { "data", hexdata } } );
+    rsutils::json reply;
     _dds_dev->send_control( control, &reply );
     rsutils::string::hexarray data;
     if( ! rsutils::json::get_ex( reply, "data", &data ) )
@@ -536,15 +536,15 @@ std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
 {
     // debug_interface function
     rsutils::string::hexarray hexdata( std::vector< uint8_t >( data, data + dataLength ) );
-    nlohmann::json control = nlohmann::json::object( { { "id", "hwm" },
-                                                       { "data", hexdata },
-                                                       { "opcode", opcode },
-                                                       { "param1", param1 },
-                                                       { "param2", param2 },
-                                                       { "param3", param3 },
-                                                       { "param4", param4 },
-                                                       { "build-command", true } } );
-    nlohmann::json reply;
+    rsutils::json control = rsutils::json::object( { { "id", "hwm" },
+                                                     { "data", hexdata },
+                                                     { "opcode", opcode },
+                                                     { "param1", param1 },
+                                                     { "param2", param2 },
+                                                     { "param3", param3 },
+                                                     { "param4", param4 },
+                                                     { "build-command", true } } );
+    rsutils::json reply;
     _dds_dev->send_control( control, &reply );
     if( ! rsutils::json::get_ex( reply, "data", &hexdata ) )
         throw std::runtime_error( "Failed HWM: missing 'data' in reply" );

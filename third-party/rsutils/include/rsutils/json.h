@@ -2,27 +2,28 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 #pragma once
 
+#include "json-fwd.h"
 #include <nlohmann/json.hpp>
-#include <string>
 
 
 namespace rsutils {
 
 
-using json_key = std::string;
-using json_type = nlohmann::json;
-
-class json_ref;  // forward decl
-
-
-extern json_type const null_json;
-extern json_type const empty_json_string;
-extern json_type const empty_json_object;
-
-
 class json : public json_type
 {
+    json_type const & _j() const { return static_cast< json_type const & >( *this ); }
+
 public:
+    json( initializer_list_t init = {} ) : json_type( init ) {}
+    json( json_type const & j ) : json_type( j ) {}
+
+    template< typename... Rest >
+    json( json_type const & j, Rest... rest )
+        : json( json::nested( j, std::forward< Rest >( rest )... ) )
+    {}
+
+
+    using json_type::operator=;
 
 
     // Returns true if the json has a certain key.
@@ -135,10 +136,7 @@ public:
 
 
     template< typename... Rest >
-    static json_ref nested( json_type const & j )
-    {
-        return j;
-    }
+    static json_ref nested( json_type const & j ) { return j; }
     template< typename... Rest >
     static json_ref nested( json_type const & j, json_key const & inner, Rest... rest )
     {
@@ -146,6 +144,55 @@ public:
         if( it == j.end() )
             return null_json;
         return nested( *it, std::forward< Rest >( rest )... );
+    }
+    template< typename... Rest >
+    static json_ref nested( json_type const & j, size_type index, Rest... rest )
+    {
+        if( ! j.is_array() )
+            return null_json;
+        if( index >= j.size() )
+            return null_json;
+        return nested( j[index], std::forward< Rest >( rest )... );
+    }
+
+    static inline std::string nested_path( json_key const & a ) { return a; }
+    static inline std::string nested_path( size_type const & x ) { return '[' + std::to_string( x ) + ']'; }
+    template< typename... Rest >
+    static std::string nested_path( json_key const & a, json_key const & b, Rest... rest )
+    {
+        return a + '/' + nested_path( b, std::forward< Rest >( rest )... );
+    }
+    template< typename... Rest >
+    static std::string nested_path( json_key const & a, size_type b, Rest... rest )
+    {
+        return a + nested_path( b, std::forward< Rest >( rest )... );
+    }
+    template< typename... Rest >
+    static std::string nested_path( size_type a, size_type b, Rest... rest )
+    {
+        return nested_path( a ) + nested_path( b, std::forward< Rest >( rest )... );
+    }
+    template< typename... Rest >
+    static std::string nested_path( size_type a, json_key const & b, Rest... rest )
+    {
+        return nested_path( a ) + '/' + nested_path(b, std::forward< Rest >(rest)...);
+    }
+    template< typename... Rest >
+    static std::string nested_path( size_type index, Rest... rest )
+    {
+        return a + '[' + std::to_string(index) + ']' + nested_path(std::forward< Rest >(rest)...);
+    }
+
+
+    template< typename... Rest >
+    inline json_ref find( Rest... rest ) const
+    {
+        return json_ref( *this, std::forward< Rest >( rest )... );
+    }
+    template< typename... Rest >
+    inline json_ref at( Rest... rest ) const
+    {
+        return json_ref( *this ).at( std::forward< Rest >( rest )... );
     }
 
 
@@ -236,17 +283,28 @@ public:
         : _j( json::nested( j, std::forward< Rest >( rest )... ) )
     {}
 
-    json_type const * operator->() const { return &_j; }
+    //json_type const * operator->() const { return &_j; }
 
-    bool exists() const { return !_j.is_null(); }
+    bool exists() const { return ! _j.is_null(); }
     operator bool() const { return exists(); }
 
-    json_type const & get() const { return _j; }
-    operator json_type const & () const { return get(); }
+    json_type const & get_json() const { return _j; }
+    operator json_type const & () const { return get_json(); }
+    operator json const &() const { return static_cast< json const & >( _j ); }
 
+    bool is_null() const { return _j.is_null(); }
     bool is_array() const { return _j.is_array(); }
     bool is_object() const { return _j.is_object(); }
     bool is_string() const { return _j.is_string(); }
+    bool is_number() const { return _j.is_number(); }
+    bool is_number_float() const { return _j.is_number_float(); }
+    bool is_number_integer() const { return _j.is_number_integer(); }
+    bool is_number_unsigned() const { return _j.is_number_unsigned(); }
+
+    bool empty() const { return _j.empty(); }
+    json_type::size_type size() const { return _j.size(); }
+    auto begin() const { return _j.begin(); }
+    auto end() const { return _j.end(); }
 
     // Dig deeper
     template< typename... Rest >
@@ -254,21 +312,44 @@ public:
     {
         return json::nested( _j, std::forward< Rest >( rest )... );
     }
+
+    // Same, but throws
+    template< typename... Rest >
+    inline json_ref at( Rest... rest ) const
+    {
+        if( auto jr = json::nested( _j, std::forward< Rest >( rest )... ) )
+            return jr;
+        throw std::runtime_error( "key not found: " + json::nested_path( std::forward< Rest >( rest )... ) );
+    }
     inline json_ref operator[]( json_key const & key ) const { return find( key ); }
 
     // Get the JSON as a value
-    template< class T > T value() const { return json::value< T >( get() ); }
+    template< class T > T value() const { return json::value< T >( _j ); }
+    // Get the JSON as a value, put into pre-allocated variable
+    template< class T > T & value_to( T & t ) const { return _j.get_to< T >( t ); }
     // Get the JSON as a value, or a default if not there (throws if wrong type)
-    template < class T > T default_value( T const & default_value ) const { return json::value< T >( get(), default_value ); }
+    template < class T > T default_value( T const & default_value ) const { return json::value< T >( _j, default_value ); }
     // Get the object, with a default being an empty one; does not throw
     json_type const & default_object() const { return is_object() ? _j : empty_json_object; }
     // Get the object, with a default being an empty one; does not throw
     json_type const & default_string() const { return is_string() ? _j : empty_json_string; }
     // Get a JSON string by reference (zero copy); it must be a string or it'll throw
-    inline std::string const & string_ref() const { return json::string_ref( get() ); }
+    inline std::string const & string_ref() const { return json::string_ref( _j ); }
     // Get a JSON string by reference (zero copy); does not throw
     inline std::string const & string_ref_or_empty() const { return json::string_ref( default_string() ); }
 };
+
+
+inline std::ostream & operator<<( std::ostream & os, json const & j )
+{
+    return operator<<( os, static_cast< json_type const & >( j ) );
+}
+
+
+inline std::ostream & operator<<( std::ostream & os, json_ref const & j )
+{
+    return operator<<( os, static_cast< json_type const & >( j ) );
+}
 
 
 }  // namespace rsutils

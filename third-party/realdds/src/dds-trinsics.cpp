@@ -10,15 +10,15 @@
 namespace realdds {
 
 
-nlohmann::json video_intrinsics::to_json() const
+rsutils::json video_intrinsics::to_json() const
 {
-    return nlohmann::json::array( {
+    return rsutils::json::array( {
         width, height, principal_point_x, principal_point_y, focal_lenght_x, focal_lenght_y, distortion_model,
         distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3], distortion_coeffs[4]
     } );
 }
 
-/* static  */ video_intrinsics video_intrinsics::from_json( nlohmann::json const & j )
+/* static  */ video_intrinsics video_intrinsics::from_json( rsutils::json const & j )
 {
     video_intrinsics ret;
     int index = 0;
@@ -42,9 +42,9 @@ nlohmann::json video_intrinsics::to_json() const
     return ret;
 }
 
-nlohmann::json motion_intrinsics::to_json() const
+rsutils::json motion_intrinsics::to_json() const
 {
-    return nlohmann::json::array( {
+    return rsutils::json::array( {
         data[0][0], data[0][1], data[0][2], data[0][3],
         data[1][0], data[1][1], data[1][2], data[1][3],
         data[2][0], data[2][1], data[2][2], data[2][3],
@@ -53,7 +53,7 @@ nlohmann::json motion_intrinsics::to_json() const
     } );
 }
 
-/* static  */ motion_intrinsics motion_intrinsics::from_json( nlohmann::json const & j )
+/* static  */ motion_intrinsics motion_intrinsics::from_json( rsutils::json const & j )
 {
     motion_intrinsics ret;
     int index = 0;
@@ -83,9 +83,9 @@ nlohmann::json motion_intrinsics::to_json() const
     return ret;
 }
 
-nlohmann::json extrinsics::to_json() const
+rsutils::json extrinsics::to_json() const
 {
-    return nlohmann::json::array( {
+    return rsutils::json::array( {
         rotation[0], rotation[1], rotation[2],
         rotation[3], rotation[4], rotation[5],
         rotation[6], rotation[7], rotation[8],
@@ -93,7 +93,7 @@ nlohmann::json extrinsics::to_json() const
     } );
 }
 
-/* static  */ extrinsics extrinsics::from_json( nlohmann::json const & j )
+/* static  */ extrinsics extrinsics::from_json( rsutils::json const & j )
 {
     extrinsics ret;
     int index = 0;

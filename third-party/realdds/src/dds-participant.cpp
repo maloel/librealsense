@@ -186,7 +186,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
 };
 
 
-void dds_participant::init( dds_domain_id domain_id, std::string const & participant_name, nlohmann::json const & settings )
+void dds_participant::init( dds_domain_id domain_id, std::string const & participant_name, rsutils::json const & settings )
 {
     if( is_valid() )
     {
@@ -245,7 +245,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     if( settings.is_object() )
         _settings = settings;
     else if( settings.is_null() )
-        _settings = nlohmann::json::object();
+        _settings = rsutils::json::object();
     else
         DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 

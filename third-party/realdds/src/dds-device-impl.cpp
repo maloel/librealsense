@@ -47,12 +47,12 @@ static std::string const id_hwm( "hwm", 3 );
 namespace {
 
 
-nlohmann::json device_settings( std::shared_ptr< realdds::dds_participant > const & participant )
+rsutils::json device_settings( std::shared_ptr< realdds::dds_participant > const & participant )
 {
-    nlohmann::json settings = rsutils::json::nested( participant->settings(), "device" );
+    rsutils::json settings = participant->settings().find( "device" );
     if( settings.is_null() )
         // Nothing there: default is empty object
-        return nlohmann::json::object();
+        return rsutils::json::object();
     if( ! settings.is_object() )
         // Device settings, if they exist, must be an object!
         DDS_THROW( runtime_error, "participant 'device' settings must be an object: " << settings );
@@ -95,8 +95,8 @@ void dds_device::impl::set_state( state_t new_state )
     {
         if( _metadata_reader )
         {
-            nlohmann::json md_settings = rsutils::json::nested( _device_settings, "metadata" );
-            if( ! md_settings.is_null() && ! md_settings.is_object() )  // not found is null
+            auto md_settings = _device_settings.find( "metadata" );
+            if( md_settings.exists() && ! md_settings.is_object() )  // not found is null
             {
                 LOG_DEBUG( "[" << debug_name() << "] ... metadata is available but device/metadata is disabled" );
                 _metadata_reader.reset();
@@ -172,7 +172,7 @@ void dds_device::impl::wait_until_ready( size_t timeout_ms )
 }
 
 
-void dds_device::impl::handle_notification( nlohmann::json const & j,
+void dds_device::impl::handle_notification( rsutils::json const & j,
                                             eprosima::fastdds::dds::SampleInfo const & sample )
 {
     try
@@ -196,10 +196,9 @@ void dds_device::impl::handle_notification( nlohmann::json const & j,
     try
     {
         // Check if this is a reply - maybe someone's waiting on it...
-        auto sampleit = j.find( sample_key );
-        if( sampleit != j.end() )
+        if( auto sample = j.find( sample_key ) )
         {
-            nlohmann::json const & sample = *sampleit;  // ["<prefix>.<entity>", <sequence-number>]
+            // ["<prefix>.<entity>", <sequence-number>]
             if( sample.size() == 2 && sample.is_array() )
             {
                 // We have to be the ones who sent the control!
@@ -235,7 +234,7 @@ void dds_device::impl::handle_notification( nlohmann::json const & j,
 }
 
 
-void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_option_value( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     if( ! is_ready() )
         return;
@@ -247,7 +246,7 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     dds_device::check_reply( j );
 
     // We need the original control request as part of the reply, otherwise we can't know what option this is for
-    rsutils::json_ref control( j, control_key );
+    auto control = j.find( control_key );
     if( ! control.is_object() )
         throw std::runtime_error( "missing control object" );
 
@@ -277,16 +276,16 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
         LOG_DEBUG( "[" << debug_name() << "] option '" << option_name << "': not found" );
     };
 
-    rsutils::json_ref value_j( j, value_key );
+    auto value_j = j.find( value_key );
     if( ! value_j.exists() )
     {
         // Use case:
         //      Bulk query without ANY option names supplied, { "option-name": [] }
         // There is no 'value' key; instead, the server returns option-value pairs in 'option-values':
-        rsutils::json_ref option_values( j, option_values_key );
+        auto option_values = j.find( option_values_key );
         if( ! option_values.is_object() )
             throw std::runtime_error( "missing value or option-values" );
-        for( auto it = option_values->begin(); it != option_values->end(); ++it )
+        for( auto it = option_values.begin(); it != option_values.end(); ++it )
             update_option( it.key(), it.value().get< float >() );
         return;
     }
@@ -295,22 +294,22 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     if( ! option_name_j.exists() )
         throw std::runtime_error( "missing option-name" );
 
-    if( value_j->is_array() )
+    if( value_j.is_array() )
     {
         // Use case:
         //      Bulk query, but specific option names were given, { "option-name": ["opt1", ...] }
         // The 'option-name' should be an array of options for which values are returned
         // The 'value' should be a similarly-sized array
-        if( ! option_name_j->is_array() )
+        if( ! option_name_j.is_array() )
             throw std::runtime_error( "'option-name' does not match 'value' array type" );
-        if( value_j->size() != option_name_j->size() )
+        if( value_j.size() != option_name_j.size() )
             throw std::runtime_error( "'option-name' does not match 'value' array size" );
 
-        auto size = value_j->size();
+        auto size = value_j.size();
         for( auto x = 0; x < size; ++x )
         {
-            auto const & option_name = rsutils::json::string_ref( option_name_j->at( x ) );
-            auto const new_value = rsutils::json::value< float >( value_j->at( x ) );
+            auto const & option_name = rsutils::json::string_ref( option_name_j.at( x ) );
+            auto const new_value = rsutils::json::value< float >( value_j.at( x ) );
             update_option( option_name, new_value );
         }
         return;
@@ -320,27 +319,27 @@ void dds_device::impl::on_option_value( nlohmann::json const & j, eprosima::fast
     //      Simple single-option value update, { "option-name": "opt1" }
     // 'option-name' should be a string
     // A single 'value' is returned
-    if( ! option_name_j->is_string() )
+    if( ! option_name_j.is_string() )
         throw std::runtime_error( "option-name is not a string" );
     auto & option_name = option_name_j.string_ref();
     update_option( option_name, rsutils::json::value< float >( value_j ) );
 }
 
 
-void dds_device::impl::on_known_notification( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_known_notification( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     // This is a known notification, but we don't want to do anything for it
 }
 
 
-void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & )
+void dds_device::impl::on_log( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & )
 {
     // This is the notification for "log"  (see docs/notifications.md#Logging)
     //     - `entries` is an array containing 1 or more log entries
-    auto it = j.find( entries_key );
-    if( it == j.end() )
+    auto entries = j.find( entries_key );
+    if( ! entries )
         throw std::runtime_error( "log entries not found" );
-    if( ! it->is_array() )
+    if( ! entries.is_array() )
         throw std::runtime_error( "log entries not an array" );
     // Each log entry is a JSON array of `[timestamp, type, text, data]` containing:
     //     - `timestamp`: when the event occurred
@@ -348,7 +347,7 @@ void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds:
     //     - `text`: any text that needs output
     //     - `data`: optional; an object containing any pertinent information about the event
     size_t x = 0;
-    for( auto & entry : *it )
+    for( auto & entry : entries )
     {
         try
         {
@@ -362,7 +361,7 @@ void dds_device::impl::on_log( nlohmann::json const & j, eprosima::fastdds::dds:
                 throw std::runtime_error( "type not one of 'EWID'" );
             char const type = stype[0];
             auto const & text = rsutils::json::string_ref( entry[2] );
-            nlohmann::json const & data = entry.size() > 3 ? entry[3] : rsutils::null_json;
+            auto const & data = entry.size() > 3 ? entry[3] : rsutils::null_json;
 
             if( ! _on_device_log.raise( timestamp, type, text, data ) )
                 LOG_DEBUG( "[" << debug_name() << "][" << timestamp << "][" << type << "] " << text
@@ -382,24 +381,24 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     if( profiles.empty() )
         DDS_THROW( runtime_error, "must provide at least one profile" );
 
-    auto stream_profiles = nlohmann::json();
+    rsutils::json stream_profiles;
     for( auto & profile : profiles )
     {
         auto stream = profile->stream();
         if( ! stream )
             DDS_THROW( runtime_error, "profile " << profile->to_string() << " is not part of any stream" );
-        if( stream_profiles.find( stream->name() ) != stream_profiles.end() )
+        if( stream_profiles.find( stream->name() ) )
             DDS_THROW( runtime_error, "more than one profile found for stream '" << stream->name() << "'" );
 
         stream_profiles[stream->name()] = profile->to_json();
     }
 
-    nlohmann::json j = {
+    rsutils::json j = {
         { id_key, id_open_streams },
         { "stream-profiles", stream_profiles },
     };
 
-    nlohmann::json reply;
+    rsutils::json reply;
     write_control_message( j, &reply );
 }
 
@@ -409,7 +408,7 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
     if( ! option )
         DDS_THROW( runtime_error, "must provide an option to set" );
 
-    nlohmann::json j = nlohmann::json::object({
+    rsutils::json j = rsutils::json::object({
         { id_key, id_set_option },
         { option_name_key, option->get_name() },
         { value_key, new_value }
@@ -417,7 +416,7 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
     if( auto stream = option->stream() )
         j[stream_name_key] = stream->name();
 
-    nlohmann::json reply;
+    rsutils::json reply;
     write_control_message( j, &reply );
     //option->set_value( new_value );
 }
@@ -428,21 +427,21 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
     if( !option )
         DDS_THROW( runtime_error, "must provide an option to query" );
 
-    nlohmann::json j = nlohmann::json::object({
+    rsutils::json j = rsutils::json::object({
         { id_key, id_query_option },
         { option_name_key, option->get_name() }
     });
     if( auto stream = option->stream() )
         j[stream_name_key] = stream->name();
 
-    nlohmann::json reply;
+    rsutils::json reply;
     write_control_message( j, &reply );
 
     return rsutils::json::get< float >( reply, value_key );
 }
 
 
-void dds_device::impl::write_control_message( topics::flexible_msg && msg, nlohmann::json * reply )
+void dds_device::impl::write_control_message( topics::flexible_msg && msg, rsutils::json * reply )
 {
     assert( _control_writer != nullptr );
     auto this_sequence_number = std::move( msg ).write_to( *_control_writer );
@@ -530,7 +529,7 @@ void dds_device::impl::create_metadata_reader()
                 {
                     try
                     {
-                        auto sptr = std::make_shared< const nlohmann::json >( message.json_data() );
+                        auto sptr = std::make_shared< const rsutils::json >( message.json_data() );
                         _on_metadata_available.raise( sptr );
                     }
                     catch( std::exception const & e )
@@ -558,7 +557,7 @@ void dds_device::impl::create_control_writer()
 }
 
 
-void dds_device::impl::on_device_header( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_device_header( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_DEVICE_HEADER )
         return;
@@ -577,7 +576,7 @@ void dds_device::impl::on_device_header( nlohmann::json const & j, eprosima::fas
             std::string from_name = rsutils::json::get< std::string >( ex, 0 );
             std::string to_name = rsutils::json::get< std::string >( ex, 1 );
             LOG_DEBUG( "[" << debug_name() << "]     ... got extrinsics from " << from_name << " to " << to_name );
-            extrinsics extr = extrinsics::from_json( rsutils::json::get< nlohmann::json >( ex, 2 ) );
+            extrinsics extr = extrinsics::from_json( ex.at( 2 ) );
             _extrinsics_map[std::make_pair( from_name, to_name )] = std::make_shared< extrinsics >( extr );
         }
     }
@@ -586,16 +585,16 @@ void dds_device::impl::on_device_header( nlohmann::json const & j, eprosima::fas
 }
 
 
-void dds_device::impl::on_device_options( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_device_options( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_DEVICE_OPTIONS )
         return;
 
-    if( rsutils::json::has( j, "options" ) )
+    if( auto options_j = j.find( "options" ) )
     {
-        LOG_DEBUG( "[" << debug_name() << "] ... " << id_device_options << ": " << j["options"].size() << " options received" );
+        LOG_DEBUG( "[" << debug_name() << "] ... " << id_device_options << ": " << options_j.size() << " options received" );
 
-        for( auto & option_json : j["options"] )
+        for( auto & option_json : options_j )
         {
             auto option = dds_option::from_json( option_json );
             _options.push_back( option );
@@ -609,7 +608,7 @@ void dds_device::impl::on_device_options( nlohmann::json const & j, eprosima::fa
 }
 
 
-void dds_device::impl::on_stream_header( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_stream_header( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_HEADER )
         return;
@@ -670,7 +669,7 @@ void dds_device::impl::on_stream_header( nlohmann::json const & j, eprosima::fas
 }
 
 
-void dds_device::impl::on_stream_options( nlohmann::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
+void dds_device::impl::on_stream_options( rsutils::json const & j, eprosima::fastdds::dds::SampleInfo const & sample )
 {
     if( _state != state_t::WAIT_FOR_STREAM_OPTIONS )
         return;
@@ -682,10 +681,10 @@ void dds_device::impl::on_stream_options( nlohmann::json const & j, eprosima::fa
                        + rsutils::json::get< std::string >( j, "stream-name" )
                        + "' whose header was not received yet" );
 
-    if( rsutils::json::has( j, "options" ) )
+    if( auto options_j = j.find( "options" ) )
     {
         dds_options options;
-        for( auto & option : j["options"] )
+        for( auto & option : options_j )
         {
             options.push_back( dds_option::from_json( option ) );
         }
@@ -693,10 +692,8 @@ void dds_device::impl::on_stream_options( nlohmann::json const & j, eprosima::fa
         stream_it->second->init_options( options );
     }
 
-    auto intit = j.find( "intrinsics" );
-    if( intit != j.end() )
+    if( auto j_int = j.find( "intrinsics" ) )
     {
-        nlohmann::json const & j_int = *intit;
         if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second ) )
         {
             std::set< video_intrinsics > intrinsics;
@@ -706,15 +703,15 @@ void dds_device::impl::on_stream_options( nlohmann::json const & j, eprosima::fa
         }
         else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second ) )
         {
-            motion_stream->set_accel_intrinsics( motion_intrinsics::from_json( j_int["accel"] ) );
-            motion_stream->set_gyro_intrinsics( motion_intrinsics::from_json( j_int["gyro"] ) );
+            motion_stream->set_accel_intrinsics( motion_intrinsics::from_json( j_int.at( "accel" ) ) );
+            motion_stream->set_gyro_intrinsics( motion_intrinsics::from_json( j_int.at( "gyro" ) ) );
         }
     }
 
-    if( rsutils::json::has( j, "recommended-filters" ) )
+    if( auto filters_j = j.find( "recommended-filters" ) )
     {
         std::vector< std::string > filter_names;
-        for( auto & filter : j["recommended-filters"] )
+        for( auto & filter : filters_j )
         {
             filter_names.push_back( filter );
         }

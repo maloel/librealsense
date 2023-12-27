@@ -338,7 +338,7 @@ void dds_sensor_proxy::handle_motion_data( realdds::topics::imu_msg && imu,
 
 
 void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name,
-                                            std::shared_ptr< const nlohmann::json > const & dds_md )
+                                            std::shared_ptr< const rsutils::json > const & dds_md )
 {
     if( ! _md_enabled )
         return;
@@ -366,11 +366,11 @@ void dds_sensor_proxy::add_no_metadata( frame * const f, streaming_impl & stream
 
 
 void dds_sensor_proxy::add_frame_metadata( frame * const f,
-                                           nlohmann::json const & dds_md,
+                                           rsutils::json const & dds_md,
                                            streaming_impl & streaming )
 {
-    nlohmann::json const & md_header = rsutils::json::nested( dds_md, metadata_header_key );
-    nlohmann::json const & md = rsutils::json::nested( dds_md, metadata_key );
+    auto md_header = dds_md.find( metadata_header_key );
+    auto md = dds_md.find( metadata_key );
 
     // A frame number is "optional". If the server supplies it, we try to use it for the simple fact that,
     // otherwise, we have no way of detecting drops without some advanced heuristic tracking the FPS and
@@ -408,13 +408,13 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
             std::string const & keystr = librealsense::get_string( key );
             try
             {
-                if( auto value = rsutils::json::nested( md, keystr ) )
+                if( auto value_j = md.find( keystr ) )
                 {
-                    if( value->is_number_integer() )
-                        metadata[key] = { true, rsutils::json::get< rs2_metadata_type >( md, keystr ) };
+                    if( value_j.is_number_integer() )
+                        metadata[key] = { true, value_j.value< rs2_metadata_type >() };
                 }
             }
-            catch( nlohmann::json::exception const & )
+            catch( rsutils::json::exception const & )
             {
                 // The metadata key doesn't exist or the value isn't the right type... we ignore it!
                 // (all metadata is not there when we create the frame, so no need to erase)
@@ -440,7 +440,7 @@ void dds_sensor_proxy::start( rs2_frame_callback_sptr callback )
         auto & streaming = _streaming_by_name[dds_stream->name()];
         streaming.syncer.on_frame_release( frame_releaser );
         streaming.syncer.on_frame_ready(
-            [this, &streaming]( syncer_type::frame_holder && fh, std::shared_ptr< const nlohmann::json > const & md )
+            [this, &streaming]( syncer_type::frame_holder && fh, std::shared_ptr< const rsutils::json > const & md )
             {
                 if( _is_streaming ) // stop was not called
                 {

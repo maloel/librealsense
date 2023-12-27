@@ -87,7 +87,7 @@ dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 }
 
 
-void dds_topic_reader::qos::override_from_json( nlohmann::json const & qos_settings )
+void dds_topic_reader::qos::override_from_json( rsutils::json const & qos_settings )
 {
     // Default values should be set before we're called:
     // All we do here is override those - if specified!

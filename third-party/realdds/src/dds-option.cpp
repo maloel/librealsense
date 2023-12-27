@@ -5,7 +5,6 @@
 #include <realdds/dds-exceptions.h>
 
 #include <rsutils/json.h>
-using nlohmann::json;
 
 
 namespace realdds {
@@ -20,7 +19,7 @@ dds_option::dds_option( const std::string & name, dds_option_range const & range
 }
 
 
-dds_option::dds_option( nlohmann::json const & j )
+dds_option::dds_option( rsutils::json const & j )
 {
     int index = 0;
 
@@ -33,7 +32,7 @@ dds_option::dds_option( nlohmann::json const & j )
     _description         = rsutils::json::get< std::string >( j, index++ );
 
     if( index != j.size() )
-        DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
+        DDS_THROW( runtime_error, "expected end of json at index " << index );
 }
 
 
@@ -47,15 +46,15 @@ void dds_option::init_stream( std::shared_ptr< dds_stream_base > const & stream 
 }
 
 
-/* static  */ std::shared_ptr< dds_option > dds_option::from_json( nlohmann::json const & j )
+/*static*/ std::shared_ptr< dds_option > dds_option::from_json( rsutils::json const & j )
 {
     return std::shared_ptr< dds_option >( new dds_option( j ) );
 }
 
 
-nlohmann::json dds_option::to_json() const
+rsutils::json dds_option::to_json() const
 {
-    return json::array( { _name, _value, _range.min, _range.max, _range.step, _range.default_value, _description } );
+    return rsutils::json::array( { _name, _value, _range.min, _range.max, _range.step, _range.default_value, _description } );
 }
 
 }  // namespace realdds

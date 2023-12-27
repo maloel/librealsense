@@ -24,7 +24,7 @@
 
 #include <rsutils/string/shorten-json-string.h>
 #include <rsutils/json.h>
-using nlohmann::json;
+using rsutils::json;
 using rsutils::string::slice;
 using rsutils::string::shorten_json_string;
 
@@ -91,7 +91,7 @@ static void on_discovery_device_header( size_t const n_streams,
     //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_header.json_data() ).size() );
     notifications.add_discovery_notification( std::move( device_header ) );
 
-    auto device_options = nlohmann::json::array();
+    auto device_options = rsutils::json::array();
     for( auto & opt : options )
         device_options.push_back( std::move( opt->to_json() ) );
     topics::flexible_msg device_options_message( json {
@@ -108,7 +108,7 @@ static void on_discovery_device_header( size_t const n_streams,
 static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > const & stream,
                                         dds_notification_server & notifications )
 {
-    auto profiles = nlohmann::json::array();
+    auto profiles = rsutils::json::array();
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
     topics::flexible_msg stream_header_message( json{
@@ -125,26 +125,26 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_header_message.json_data() ).size() );
     notifications.add_discovery_notification( std::move( stream_header_message ) );
 
-    auto stream_options = nlohmann::json::array();
+    auto stream_options = rsutils::json::array();
     for( auto & opt : stream->options() )
         stream_options.push_back( std::move( opt->to_json() ) );
 
-    nlohmann::json intrinsics;
+    rsutils::json intrinsics;
     if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream_server >( stream ) )
     {
-        intrinsics = nlohmann::json::array();
+        intrinsics = rsutils::json::array();
         for( auto & intr : video_stream->get_intrinsics() )
             intrinsics.push_back( intr.to_json() );
     }
     else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream ) )
     {
-        intrinsics = nlohmann::json::object( {
+        intrinsics = rsutils::json::object( {
             { "accel", motion_stream->get_accel_intrinsics().to_json() },
             { "gyro", motion_stream->get_gyro_intrinsics().to_json() }
         } );
     }
 
-    auto stream_filters = nlohmann::json::array();
+    auto stream_filters = rsutils::json::array();
     for( auto & filter : stream->recommended_filters() )
         stream_filters.push_back( filter );
     topics::flexible_msg stream_options_message( json {
@@ -250,7 +250,7 @@ void dds_device_server::publish_notification( topics::flexible_msg && notificati
 }
 
 
-void dds_device_server::publish_metadata( nlohmann::json && md )
+void dds_device_server::publish_metadata( rsutils::json && md )
 {
     if( ! _metadata_writer )
         DDS_THROW( runtime_error, "device '" + _topic_root + "' has no stream with enabled metadata" );
@@ -313,8 +313,8 @@ void dds_device_server::on_control_message_received()
 
 
 void dds_device_server::handle_control_message( std::string const & id,
-                                                nlohmann::json const & j,
-                                                nlohmann::json & reply )
+                                                rsutils::json const & j,
+                                                rsutils::json & reply )
 {
     LOG_DEBUG( "<----- control " << j );
 
@@ -333,7 +333,7 @@ void dds_device_server::handle_control_message( std::string const & id,
 }
 
 
-void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::json & reply )
+void dds_device_server::handle_set_option( const rsutils::json & j, rsutils::json & reply )
 {
     auto option_name = rsutils::json::get< std::string >( j, option_name_key );
     std::string stream_name;  // default is empty, for a device option
@@ -359,7 +359,7 @@ void dds_device_server::handle_set_option( const nlohmann::json & j, nlohmann::j
 }
 
 
-void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann::json & reply )
+void dds_device_server::handle_query_option( const rsutils::json & j, rsutils::json & reply )
 {
     std::string stream_name;  // default is empty, for a device option
     rsutils::json::get_ex( j, stream_name_key, &stream_name );
@@ -381,7 +381,7 @@ void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann:
     };
     auto query_option_j = [&]( rsutils::json_ref const & j )
     {
-        if( ! j->is_string() )
+        if( ! j.is_string() )
             DDS_THROW( runtime_error, "option name should be a string; got " << j );
         std::string const & option_name = j.string_ref();
         std::shared_ptr< dds_option > option = find_option( option_name, stream_name );
@@ -398,10 +398,10 @@ void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann:
     rsutils::json_ref option_name( j, option_name_key );
     if( option_name.is_array() )
     {
-        if( option_name->empty() )
+        if( option_name.empty() )
         {
             // Query all options and return in option:value object
-            nlohmann::json & option_values = reply[option_values_key] = nlohmann::json::object();
+            rsutils::json_type & option_values = reply[option_values_key] = rsutils::json::object();
             if( stream_name.empty() )
             {
                 for( auto const & option : _options )
@@ -419,9 +419,9 @@ void dds_device_server::handle_query_option( const nlohmann::json & j, nlohmann:
         }
         else
         {
-            nlohmann::json & value = reply[value_key];
-            for( auto x = 0; x < option_name->size(); ++x )
-                value.push_back( query_option_j( option_name->at( x ) ) );
+            rsutils::json_type & value = reply[value_key];
+            for( auto x = 0; x < option_name.size(); ++x )
+                value.push_back( query_option_j( option_name.at( x ) ) );
         }
     }
     else

@@ -118,7 +118,7 @@ namespace fastrtps {
 
 
 // Allow j["key"] = qos.lease_duration;
-void to_json( nlohmann::json & j, Duration_t const & duration )
+void to_json( rsutils::json_type & j, Duration_t const & duration )
 {
     if( duration == c_TimeInfinite )
         j = "infinite";
@@ -130,7 +130,7 @@ void to_json( nlohmann::json & j, Duration_t const & duration )
 
 
 // Allow j.get< eprosima::fastrtps::Duration_t >();
-void from_json( nlohmann::json const & j, Duration_t & duration )
+void from_json( rsutils::json_type const & j, Duration_t & duration )
 {
     if( j.is_string() )
     {
@@ -140,7 +140,7 @@ void from_json( nlohmann::json const & j, Duration_t & duration )
         else if( rsutils::string::nocase_equal( s, "invalid" ) )
             duration = c_TimeInvalid;
         else
-            throw nlohmann::json::type_error::create( 317, "unknown duration value '" + s + "'", &j );
+            throw rsutils::json_type::type_error::create( 317, "unknown duration value '" + s + "'", &j );
     }
     else
         duration = realdds::dds_time( j.get< double >() );
@@ -244,7 +244,7 @@ eprosima::fastrtps::rtps::MemoryManagementPolicy_t history_memory_policy_from_st
 }
 
 
-void override_reliability_qos_from_json( eprosima::fastdds::dds::ReliabilityQosPolicy & qos, nlohmann::json const & j )
+void override_reliability_qos_from_json( eprosima::fastdds::dds::ReliabilityQosPolicy & qos, rsutils::json const & j )
 {
     if( j.is_null() )
         return;
@@ -259,12 +259,12 @@ void override_reliability_qos_from_json( eprosima::fastdds::dds::ReliabilityQosP
 }
 
 
-void override_durability_qos_from_json( eprosima::fastdds::dds::DurabilityQosPolicy & qos, nlohmann::json const & j )
+void override_durability_qos_from_json( eprosima::fastdds::dds::DurabilityQosPolicy & qos, rsutils::json const & j )
 {
     if( j.is_null() )
         return;
     if( j.is_string() )
-        qos.kind = durability_kind_from_string( j.get_ref< const nlohmann::json::string_t & >() );
+        qos.kind = durability_kind_from_string( j.get_ref< const rsutils::json::string_t & >() );
     else if( j.is_object() )
     {
         std::string kind_str;
@@ -274,7 +274,7 @@ void override_durability_qos_from_json( eprosima::fastdds::dds::DurabilityQosPol
 }
 
 
-void override_history_qos_from_json( eprosima::fastdds::dds::HistoryQosPolicy & qos, nlohmann::json const & j )
+void override_history_qos_from_json( eprosima::fastdds::dds::HistoryQosPolicy & qos, rsutils::json const & j )
 {
     if( j.is_null() )
         return;
@@ -290,38 +290,38 @@ void override_history_qos_from_json( eprosima::fastdds::dds::HistoryQosPolicy & 
 }
 
 
-void override_liveliness_qos_from_json( eprosima::fastdds::dds::LivelinessQosPolicy & qos, nlohmann::json const & j )
+void override_liveliness_qos_from_json( eprosima::fastdds::dds::LivelinessQosPolicy & qos, rsutils::json const & j )
 {
     if( j.is_object() )
     {
         if( auto kind = rsutils::json::nested( j, "kind" ) )
         {
-            if( kind->is_string() )
-                qos.kind = liveliness_kind_from_string( rsutils::json::string_ref( kind ) );
+            if( kind.is_string() )
+                qos.kind = liveliness_kind_from_string( kind.string_ref() );
             else
                 DDS_THROW( runtime_error, "liveliness kind not a string: " << kind );
         }
 
         if( auto lease = rsutils::json::nested( j, "lease-duration" ) )
         {
-            if( lease->is_null() )
+            if( lease.is_null() )
                 qos.lease_duration = eprosima::fastdds::dds::LivelinessQosPolicy().lease_duration;
             else
-                lease->get_to( qos.lease_duration );
+                lease.value_to( qos.lease_duration );
         }
 
         if( auto announce = rsutils::json::nested( j, "announcement-period" ) )
         {
-            if( announce->is_null() )
+            if( announce.is_null() )
                 qos.announcement_period = eprosima::fastdds::dds::LivelinessQosPolicy().announcement_period;
             else
-                announce->get_to( qos.announcement_period );
+                announce.value_to( qos.announcement_period );
         }
     }
 }
 
 
-void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQosPolicy & qos, nlohmann::json const & j )
+void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQosPolicy & qos, rsutils::json const & j )
 {
     if( j.is_boolean() )
     {
@@ -337,7 +337,7 @@ void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQos
 }
 
 
-void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & qos, nlohmann::json const & j )
+void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & qos, rsutils::json const & j )
 {
     if( j.is_null() )
         return;
@@ -350,13 +350,13 @@ void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & 
 }
 
 
-static bool parse_ip_list( nlohmann::json const & j, std::string const & key, std::vector< std::string > * output )
+static bool parse_ip_list( rsutils::json const & j, std::string const & key, std::vector< std::string > * output )
 {
     if( auto whitelist_j = rsutils::json::nested( j, key ) )
     {
-        if( ! whitelist_j->is_array() )
+        if( ! whitelist_j.is_array() )
             return false;
-        for( auto & ip : whitelist_j.get() )
+        for( auto & ip : whitelist_j )
         {
             if( ! ip.is_string() )
                 return false;
@@ -368,7 +368,7 @@ static bool parse_ip_list( nlohmann::json const & j, std::string const & key, st
 }
 
 
-static void override_udp_settings( eprosima::fastdds::rtps::UDPTransportDescriptor & udp, nlohmann::json const & j )
+static void override_udp_settings( eprosima::fastdds::rtps::UDPTransportDescriptor & udp, rsutils::json_type const & j )
 {
     rsutils::json::get_ex( j, "send-buffer-size", &udp.sendBufferSize );
     rsutils::json::get_ex( j, "receive-buffer-size", &udp.receiveBufferSize );
@@ -377,7 +377,7 @@ static void override_udp_settings( eprosima::fastdds::rtps::UDPTransportDescript
 }
 
 
-void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipantQos & qos, nlohmann::json const & j )
+void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipantQos & qos, rsutils::json const & j )
 {
     if( ! j.is_object() )
         return;
@@ -388,7 +388,7 @@ void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipa
     if( auto udp_j = rsutils::json::nested( j, "udp" ) )
     {
         for( auto t : qos.transport().user_transports )
-            if( auto udp_t = std::dynamic_pointer_cast<eprosima::fastdds::rtps::UDPTransportDescriptor>(t) )
+            if( auto udp_t = std::dynamic_pointer_cast< eprosima::fastdds::rtps::UDPTransportDescriptor >( t ) )
             {
                 override_udp_settings( *udp_t, udp_j );
                 break;
