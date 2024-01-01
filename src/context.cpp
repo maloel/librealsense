@@ -36,7 +36,8 @@ namespace librealsense {
         nlohmann::json config;
 
         // Load the realsense configuration file settings
-        std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME );
+        auto const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + RS2_CONFIG_FILENAME;
+        std::ifstream f( filename );
         if( f.good() )
         {
             try
@@ -45,7 +46,7 @@ namespace librealsense {
             }
             catch( std::exception const & e )
             {
-                throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
+                throw std::runtime_error( "failed to load configuration file (" + filename + "): " + std::string( e.what() ) );
             }
         }
 
