@@ -26,6 +26,9 @@ public:
     using json_type::operator=;
 
 
+    json_type && moved() { return std::move( *this ); }
+
+
     // Returns true if the json has a certain key.
     // Does not check the value at all, so it could be any type or null.
     static bool has( json_type const & j, json_key const & key )

@@ -139,21 +139,21 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream ) )
     {
         intrinsics = rsutils::json::object( {
-            { "accel", motion_stream->get_accel_intrinsics().to_json() },
-            { "gyro", motion_stream->get_gyro_intrinsics().to_json() }
+            { "accel", motion_stream->get_accel_intrinsics().to_json().moved() },
+            { "gyro", motion_stream->get_gyro_intrinsics().to_json().moved() }
         } );
     }
 
     auto stream_filters = rsutils::json::array();
     for( auto & filter : stream->recommended_filters() )
         stream_filters.push_back( filter );
-    topics::flexible_msg stream_options_message( json {
+    topics::flexible_msg stream_options_message( json::object( {
         { id_key, "stream-options" },
         { "stream-name", stream->name() },
-        { "options" , std::move( stream_options ) },
-        { "intrinsics" , intrinsics },
+        { "options", std::move( stream_options ) },
+        { "intrinsics", intrinsics.moved() },
         { "recommended-filters", std::move( stream_filters ) },
-    } );
+    } ) );
     json_string = slice( stream_options_message.custom_data< char const >(), stream_options_message._data.size() );
     LOG_DEBUG( "-----> JSON = " << shorten_json_string( json_string, 300 ) << " size " << json_string.length() );
     //LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_options_message.json_data() ).size() );
