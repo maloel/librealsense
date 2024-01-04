@@ -118,7 +118,7 @@ namespace fastrtps {
 
 
 // Allow j["key"] = qos.lease_duration;
-void to_json( rsutils::json_type & j, Duration_t const & duration )
+void to_json( rsutils::json & j, Duration_t const & duration )
 {
     if( duration == c_TimeInfinite )
         j = "infinite";
@@ -130,17 +130,17 @@ void to_json( rsutils::json_type & j, Duration_t const & duration )
 
 
 // Allow j.get< eprosima::fastrtps::Duration_t >();
-void from_json( rsutils::json_type const & j, Duration_t & duration )
+void from_json( rsutils::json const & j, Duration_t & duration )
 {
     if( j.is_string() )
     {
-        auto & s = rsutils::json::string_ref( j );
+        auto & s = j.string_ref();
         if( rsutils::string::nocase_equal( s, "infinite" ) )
             duration = c_TimeInfinite;
         else if( rsutils::string::nocase_equal( s, "invalid" ) )
             duration = c_TimeInvalid;
         else
-            throw rsutils::json_type::type_error::create( 317, "unknown duration value '" + s + "'", &j );
+            throw rsutils::json::type_error::create( 317, "unknown duration value '" + s + "'", &j );
     }
     else
         duration = realdds::dds_time( j.get< double >() );
@@ -246,46 +246,37 @@ eprosima::fastrtps::rtps::MemoryManagementPolicy_t history_memory_policy_from_st
 
 void override_reliability_qos_from_json( eprosima::fastdds::dds::ReliabilityQosPolicy & qos, rsutils::json const & j )
 {
-    if( j.is_null() )
-        return;
     if( j.is_string() )
-        qos.kind = reliability_kind_from_string( rsutils::json::string_ref( j ) );
+        qos.kind = reliability_kind_from_string( j.string_ref() );
     else if( j.is_object() )
     {
-        std::string kind_str;
-        if( rsutils::json::get_ex( j, "kind", &kind_str ) )
-            qos.kind = reliability_kind_from_string( kind_str );
+        if( auto kind_j = j.nested( "kind", &rsutils::json::is_string ) )
+            qos.kind = reliability_kind_from_string( kind_j.string_ref() );
     }
 }
 
 
 void override_durability_qos_from_json( eprosima::fastdds::dds::DurabilityQosPolicy & qos, rsutils::json const & j )
 {
-    if( j.is_null() )
-        return;
     if( j.is_string() )
         qos.kind = durability_kind_from_string( j.get_ref< const rsutils::json::string_t & >() );
     else if( j.is_object() )
     {
-        std::string kind_str;
-        if( rsutils::json::get_ex( j, "kind", &kind_str ) )
-            qos.kind = durability_kind_from_string( kind_str );
+        if( auto kind_j = j.nested( "kind", &rsutils::json::is_string ) )
+            qos.kind = durability_kind_from_string( kind_j.string_ref() );
     }
 }
 
 
 void override_history_qos_from_json( eprosima::fastdds::dds::HistoryQosPolicy & qos, rsutils::json const & j )
 {
-    if( j.is_null() )
-        return;
     if( j.is_number_unsigned() )
-        qos.depth = rsutils::json::value< int32_t >( j );
+        qos.depth = j.get< int32_t >();
     else if( j.is_object() )
     {
-        std::string kind_str;
-        if( rsutils::json::get_ex( j, "kind", &kind_str ) )
-            qos.kind = history_kind_from_string( kind_str );
-        rsutils::json::get_ex( j, "depth", &qos.depth );
+        if( auto kind_j = j.nested( "kind", &rsutils::json::is_string ) )
+            qos.kind = history_kind_from_string( kind_j.string_ref() );
+        j.nested( "depth" ).get_ex( qos.depth );
     }
 }
 
@@ -294,7 +285,7 @@ void override_liveliness_qos_from_json( eprosima::fastdds::dds::LivelinessQosPol
 {
     if( j.is_object() )
     {
-        if( auto kind = rsutils::json::nested( j, "kind" ) )
+        if( auto kind = j.nested( "kind" ) )
         {
             if( kind.is_string() )
                 qos.kind = liveliness_kind_from_string( kind.string_ref() );
@@ -302,20 +293,20 @@ void override_liveliness_qos_from_json( eprosima::fastdds::dds::LivelinessQosPol
                 DDS_THROW( runtime_error, "liveliness kind not a string: " << kind );
         }
 
-        if( auto lease = rsutils::json::nested( j, "lease-duration" ) )
+        if( auto lease = j.nested( "lease-duration" ) )
         {
             if( lease.is_null() )
                 qos.lease_duration = eprosima::fastdds::dds::LivelinessQosPolicy().lease_duration;
             else
-                lease.value_to( qos.lease_duration );
+                lease.get_to( qos.lease_duration );
         }
 
-        if( auto announce = rsutils::json::nested( j, "announcement-period" ) )
+        if( auto announce = j.nested( "announcement-period" ) )
         {
             if( announce.is_null() )
                 qos.announcement_period = eprosima::fastdds::dds::LivelinessQosPolicy().announcement_period;
             else
-                announce.value_to( qos.announcement_period );
+                announce.get_to( qos.announcement_period );
         }
     }
 }
@@ -325,12 +316,12 @@ void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQos
 {
     if( j.is_boolean() )
     {
-        if( rsutils::json::value< bool >( j ) )
+        if( j.get< bool >() )
             qos.automatic();
         else
             qos.off();
     }
-    else if( ! j.is_null() )
+    else if( j.exists() )
     {
         DDS_THROW( runtime_error, "data-sharing must be a boolean (off/automatic); got " << j );
     }
@@ -339,20 +330,17 @@ void override_data_sharing_qos_from_json( eprosima::fastdds::dds::DataSharingQos
 
 void override_endpoint_qos_from_json( eprosima::fastdds::dds::RTPSEndpointQos & qos, rsutils::json const & j )
 {
-    if( j.is_null() )
-        return;
     if( j.is_object() )
     {
-        std::string policy_str;
-        if( rsutils::json::get_ex( j, "history-memory-policy", &policy_str ) )
-            qos.history_memory_policy = history_memory_policy_from_string( policy_str );
+        if( auto policy_j = j.nested( "history-memory-policy", &rsutils::json::is_string ) )
+            qos.history_memory_policy = history_memory_policy_from_string( policy_j.string_ref() );
     }
 }
 
 
 static bool parse_ip_list( rsutils::json const & j, std::string const & key, std::vector< std::string > * output )
 {
-    if( auto whitelist_j = rsutils::json::nested( j, key ) )
+    if( auto whitelist_j = j.nested( key ) )
     {
         if( ! whitelist_j.is_array() )
             return false;
@@ -361,17 +349,17 @@ static bool parse_ip_list( rsutils::json const & j, std::string const & key, std
             if( ! ip.is_string() )
                 return false;
             if( output )
-                output->push_back( rsutils::json::string_ref( ip ) );
+                output->push_back( ip.string_ref() );
         }
     }
     return true;
 }
 
 
-static void override_udp_settings( eprosima::fastdds::rtps::UDPTransportDescriptor & udp, rsutils::json_type const & j )
+static void override_udp_settings( eprosima::fastdds::rtps::UDPTransportDescriptor & udp, rsutils::json const & j )
 {
-    rsutils::json::get_ex( j, "send-buffer-size", &udp.sendBufferSize );
-    rsutils::json::get_ex( j, "receive-buffer-size", &udp.receiveBufferSize );
+    j.nested( "send-buffer-size" ).get_ex( udp.sendBufferSize );
+    j.nested( "receive-buffer-size" ).get_ex( udp.receiveBufferSize );
     if( ! parse_ip_list( j, "whitelist", &udp.interfaceWhiteList ) )
         LOG_WARNING( "invalid UDP whitelist in settings" );
 }
@@ -381,11 +369,11 @@ void override_participant_qos_from_json( eprosima::fastdds::dds::DomainParticipa
 {
     if( ! j.is_object() )
         return;
-    rsutils::json::get_ex( j, "participant-id", &qos.wire_protocol().participant_id );
-    rsutils::json::get_ex( j, "lease-duration", &qos.wire_protocol().builtin.discovery_config.leaseDuration );
+    j.nested( "participant-id" ).get_ex( qos.wire_protocol().participant_id );
+    j.nested( "lease-duration" ).get_ex( qos.wire_protocol().builtin.discovery_config.leaseDuration );
 
-    rsutils::json::get_ex( j, "use-builtin-transports", &qos.transport().use_builtin_transports );
-    if( auto udp_j = rsutils::json::nested( j, "udp" ) )
+    j.nested( "use-builtin-transports" ).get_ex( qos.transport().use_builtin_transports );
+    if( auto udp_j = j.nested( "udp" ) )
     {
         for( auto t : qos.transport().user_transports )
             if( auto udp_t = std::dynamic_pointer_cast< eprosima::fastdds::rtps::UDPTransportDescriptor >( t ) )

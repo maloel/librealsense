@@ -346,8 +346,8 @@ void dds_sensor_proxy::handle_new_metadata( std::string const & stream_name,
     auto it = _streaming_by_name.find( stream_name );
     if( it != _streaming_by_name.end() )
     {
-        if( auto timestamp = rsutils::json::nested( *dds_md, metadata_header_key, timestamp_key ) )
-            it->second.syncer.enqueue_metadata( timestamp.value< realdds::dds_nsec >(), dds_md );
+        if( auto timestamp = dds_md->nested( metadata_header_key, timestamp_key ) )
+            it->second.syncer.enqueue_metadata( timestamp.get< realdds::dds_nsec >(), dds_md );
         else
             throw std::runtime_error( "missing metadata header/timestamp" );
     }
@@ -369,14 +369,14 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
                                            rsutils::json const & dds_md,
                                            streaming_impl & streaming )
 {
-    auto md_header = dds_md.find( metadata_header_key );
-    auto md = dds_md.find( metadata_key );
+    auto md_header = dds_md.nested( metadata_header_key );
+    auto md = dds_md.nested( metadata_key );
 
     // A frame number is "optional". If the server supplies it, we try to use it for the simple fact that,
     // otherwise, we have no way of detecting drops without some advanced heuristic tracking the FPS and
     // timestamps. If not supplied, we use an increasing counter.
     // Note that if we have no metadata, we have no frame-numbers! So we need a way of generating them
-    if( rsutils::json::get_ex( md_header, frame_number_key, &f->additional_data.frame_number ) )
+    if( md_header.nested( frame_number_key ).get_ex( f->additional_data.frame_number ) )
     {
         f->additional_data.last_frame_number = streaming.last_frame_number.exchange( f->additional_data.frame_number );
         if( f->additional_data.frame_number != f->additional_data.last_frame_number + 1
@@ -396,7 +396,7 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
     // purposes, so we ignore here. The domain is optional, and really only rs-dds-adapter communicates it
     // because the source is librealsense...
     f->additional_data.timestamp;
-    rsutils::json::get_ex( md_header, timestamp_domain_key, &f->additional_data.timestamp_domain );
+    md_header.nested( timestamp_domain_key ).get_ex( f->additional_data.timestamp_domain );
 
     if( ! md.empty() )
     {
@@ -408,11 +408,8 @@ void dds_sensor_proxy::add_frame_metadata( frame * const f,
             std::string const & keystr = librealsense::get_string( key );
             try
             {
-                if( auto value_j = md.find( keystr ) )
-                {
-                    if( value_j.is_number_integer() )
-                        metadata[key] = { true, value_j.value< rs2_metadata_type >() };
-                }
+                if( auto value_j = md.nested( keystr, &rsutils::json::is_number_integer ) )
+                    metadata[key] = { true, value_j.get< rs2_metadata_type >() };
             }
             catch( rsutils::json::exception const & )
             {

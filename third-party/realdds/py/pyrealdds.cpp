@@ -34,6 +34,7 @@
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/from.h>
 #include <rsutils/json.h>
+#include <rsutils/json-config.h>
 
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -77,40 +78,28 @@ std::string script_name()
 
 rsutils::json load_rs_settings( rsutils::json const & local_settings )
 {
-    rsutils::json config;
-
     // Load the realsense configuration file settings
-    std::ifstream f( rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json" );
-    if( f.good() )
-    {
-        try
-        {
-            config = rsutils::json::parse( f );
-        }
-        catch( std::exception const & e )
-        {
-            throw std::runtime_error( "failed to load configuration file: " + std::string( e.what() ) );
-        }
-    }
+    std::string const filename = rsutils::os::get_special_folder( rsutils::os::special_folder::app_data ) + "realsense-config.json";
+    auto config = rsutils::json_config::load_from_file( filename );
 
     // Load "python"-specific settings
-    auto settings = rsutils::json::load_app_settings( config, "python", "context", "config-file" );
+    rsutils::json settings = rsutils::json_config::load_app_settings( config, "python", "context", "config-file" );
 
     // Take the "dds" settings only
-    settings = rsutils::json::nested( settings, "dds" );
+    settings = settings.nested( "dds" );
 
     // Patch any script-specific settings
     // NOTE: this is also accessed by pyrealsense2, where a "context" hierarchy is still used
     auto script = script_name();
-    if( auto script_settings = rsutils::json::nested( config, script, "context", "dds" ) )
-        rsutils::json::patch( settings, script_settings, "config-file/" + script + "/context" );
+    if( auto script_settings = config.nested( script, "context", "dds" ) )
+        settings.override( script_settings, "config-file/" + script + "/context" );
 
     // We should always have DDS enabled
     if( settings.is_object() )
         settings.erase( "enabled" );
 
     // Patch the given local settings into the configuration
-    rsutils::json::patch( settings, local_settings, "local settings" );
+    settings.override( local_settings, "local settings" );
 
     return settings;
 }

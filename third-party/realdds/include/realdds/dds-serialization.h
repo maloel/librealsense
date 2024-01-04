@@ -28,14 +28,17 @@ class DomainParticipantQos;
 
 namespace eprosima {
 namespace fastrtps {
+
 // Allow j["key"] = qos.lease_duration;
-void to_json( rsutils::json_type &, Duration_t const & );
+void to_json( rsutils::json &, Duration_t const & );
 // Allow j.get< eprosima::fastrtps::Duration_t >();
-void from_json( rsutils::json_type const &, Duration_t & );
+void from_json( rsutils::json const &, Duration_t & );
+
 namespace rtps {
 std::ostream & operator<<( std::ostream &, class WriterProxyData const & );
 std::ostream & operator<<( std::ostream &, class ReaderProxyData const & );
 }  // namespace rtps
+
 }  // namespace fastrtps
 }  // namespace eprosima
 

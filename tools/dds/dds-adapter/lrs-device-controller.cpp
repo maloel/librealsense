@@ -630,7 +630,7 @@ bool lrs_device_controller::on_open_streams( rsutils::json const & control, rsut
     // out, a sensor is reset back to its default state using implicit stream selection.
     // (For example, the 'Stereo Module' sensor controls Depth, IR1, IR2: but turning on all 3 has performance
     // implications and may not be desirable. So you can open only Depth and IR1/2 will stay inactive...)
-    if( rsutils::json::get< bool >( control, "reset", true ) )
+    if( control.nested( "reset" ).default_value( true ) )
         _bridge.reset();
 
     auto const & msg_profiles = control["stream-profiles"];
@@ -653,7 +653,7 @@ bool lrs_device_controller::on_open_streams( rsutils::json const & control, rsut
     }
 
     // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
-    if( rsutils::json::get< bool >( control, "commit", true ) )
+    if( control.nested( "commit" ).default_value( true ) )
         _bridge.commit();
 
     // We don't touch the reply - it's already filled in for us
@@ -870,22 +870,22 @@ bool lrs_device_controller::on_hwm( rsutils::json const & control, rsutils::json
     rsutils::string::hexarray data;
 
     uint32_t opcode;
-    if( rsutils::json::get_ex( control, "opcode", &opcode ) )
+    if( control.nested( "opcode" ).get_ex( opcode ) )
     {
         // In the presence of 'opcode', we're asked to build the command using optional parameters
         uint32_t param1 = 0, param2 = 0, param3 = 0, param4 = 0;
-        rsutils::json::get_ex( control, "param1", &param1 );
-        rsutils::json::get_ex( control, "param2", &param2 );
-        rsutils::json::get_ex( control, "param3", &param3 );
-        rsutils::json::get_ex( control, "param4", &param4 );
+        control.nested( "param1" ).get_ex( param1 );
+        control.nested( "param2" ).get_ex( param2 );
+        control.nested( "param3" ).get_ex( param3 );
+        control.nested( "param4" ).get_ex( param4 );
 
-        rsutils::json::get_ex( control, "data", &data );  // optional
+        control.nested( "data" ).get_ex( data );  // optional
 
         // Build the HWM command
         data = dp.build_command( opcode, param1, param2, param3, param4, data.get_bytes() );
 
         // And, if told to not actually run it, we return the HWM command
-        if( rsutils::json::get< bool >( control, "build-command", false ) )
+        if( control.nested( "build-command" ).default_value( false ) )
         {
             reply["data"] = data;
             return true;
@@ -893,7 +893,7 @@ bool lrs_device_controller::on_hwm( rsutils::json const & control, rsutils::json
     }
     else
     {
-        if( ! rsutils::json::get_ex( control, "data", &data ) )
+        if( ! control.nested( "data" ).get_ex( data ) )
             throw std::runtime_error( "no 'data' in HWM control" );
     }
 

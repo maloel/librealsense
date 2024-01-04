@@ -139,8 +139,8 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream ) )
     {
         intrinsics = rsutils::json::object( {
-            { "accel", motion_stream->get_accel_intrinsics().to_json().moved() },
-            { "gyro", motion_stream->get_gyro_intrinsics().to_json().moved() }
+            { "accel", motion_stream->get_accel_intrinsics().to_json() },
+            { "gyro", motion_stream->get_gyro_intrinsics().to_json() }
         } );
     }
 
@@ -151,7 +151,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { id_key, "stream-options" },
         { "stream-name", stream->name() },
         { "options", std::move( stream_options ) },
-        { "intrinsics", intrinsics.moved() },
+        { "intrinsics", intrinsics },
         { "recommended-filters", std::move( stream_filters ) },
     } ) );
     json_string = slice( stream_options_message.custom_data< char const >(), stream_options_message._data.size() );
@@ -206,8 +206,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
                 _metadata_writer = std::make_shared< dds_topic_writer >( topic, _publisher );
                 dds_topic_writer::qos wqos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS );
                 wqos.history().depth = 10;  // default is 1
-                wqos.override_from_json(
-                    rsutils::json::nested( _subscriber->get_participant()->settings(), "device", "metadata" ) );
+                wqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "metadata" ) );
                 _metadata_writer->run( wqos );
             }
         }
@@ -221,7 +220,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         _control_reader->on_data_available( [&]() { on_control_message_received(); } );
 
         dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
-        rqos.override_from_json( rsutils::json::nested( _subscriber->get_participant()->settings(), "device", "control" ) );
+        rqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "control" ) );
         _control_reader->run( rqos );
     }
     catch( std::exception const & )
@@ -281,14 +280,16 @@ void dds_device_server::on_control_message_received()
         _control_dispatcher.invoke(
             [j = data.json_data(), sample = info, this]( dispatcher::cancellable_timer )
             {
-                json reply;
-                reply[sample_key] = json::array( {
+                auto sample_j = json::array( {
                     rsutils::string::from( realdds::print_raw_guid( sample.sample_identity.writer_guid() ) ),
                     sample.sample_identity.sequence_number().to64long(),
                 } );
+                LOG_DEBUG( "<----- control " << sample_j << ": " << j );
+                json reply;
+                reply[sample_key] = std::move( sample_j );
                 try
                 {
-                    std::string id = rsutils::json::get< std::string >( j, id_key );
+                    std::string const & id = j.at( id_key ).string_ref();
                     reply[id_key] = id;
                     reply[control_key] = j;
                     handle_control_message( id, j, reply );
@@ -298,9 +299,9 @@ void dds_device_server::on_control_message_received()
                     reply[status_key] = "error";
                     reply[explanation_key] = e.what();
                 }
+                LOG_DEBUG( "----->   reply " << reply );
                 try
                 {
-                    LOG_DEBUG( "----->   reply " << reply );
                     publish_notification( reply );
                 }
                 catch( ... )
@@ -316,8 +317,6 @@ void dds_device_server::handle_control_message( std::string const & id,
                                                 rsutils::json const & j,
                                                 rsutils::json & reply )
 {
-    LOG_DEBUG( "<----- control " << j );
-
     if( id.compare( id_set_option ) == 0 )
     {
         handle_set_option( j, reply );
@@ -328,21 +327,21 @@ void dds_device_server::handle_control_message( std::string const & id,
     }
     else if( ! _control_callback || ! _control_callback( id, j, reply ) )
     {
-        DDS_THROW( runtime_error, "invalid control '" + id + "'" );
+        DDS_THROW( runtime_error, "invalid control" );
     }
 }
 
 
 void dds_device_server::handle_set_option( const rsutils::json & j, rsutils::json & reply )
 {
-    auto option_name = rsutils::json::get< std::string >( j, option_name_key );
+    auto & option_name = j.at( option_name_key ).string_ref();
     std::string stream_name;  // default is empty, for a device option
-    rsutils::json::get_ex( j, stream_name_key, &stream_name );
+    j.nested( stream_name_key ).get_ex( stream_name );
 
     std::shared_ptr< dds_option > opt = find_option( option_name, stream_name );
     if( opt )
     {
-        float value = rsutils::json::get< float >( j, value_key );
+        float value = j.at( value_key ).get< float >();
         if( _set_option_callback )
             _set_option_callback( opt, value ); //Handle setting option outside realdds
         opt->set_value( value ); //Update option object. Do second to check if _set_option_callback did not throw
@@ -354,7 +353,7 @@ void dds_device_server::handle_set_option( const rsutils::json & j, rsutils::jso
             stream_name = "device";
         else
             stream_name = "'" + stream_name + "'";
-        DDS_THROW( runtime_error, stream_name + " option '" + option_name + "' not found" );
+        DDS_THROW( runtime_error, stream_name << " option '" << option_name << "' not found" );
     }
 }
 
@@ -362,7 +361,7 @@ void dds_device_server::handle_set_option( const rsutils::json & j, rsutils::jso
 void dds_device_server::handle_query_option( const rsutils::json & j, rsutils::json & reply )
 {
     std::string stream_name;  // default is empty, for a device option
-    rsutils::json::get_ex( j, stream_name_key, &stream_name );
+    j.nested( stream_name_key ).get_ex( stream_name );
 
     auto query_option = [&]( std::shared_ptr< dds_option > const & option )
     {
@@ -379,7 +378,7 @@ void dds_device_server::handle_query_option( const rsutils::json & j, rsutils::j
         }
         return value;
     };
-    auto query_option_j = [&]( rsutils::json_ref const & j )
+    auto query_option_j = [&]( rsutils::json const & j )
     {
         if( ! j.is_string() )
             DDS_THROW( runtime_error, "option name should be a string; got " << j );
@@ -395,13 +394,13 @@ void dds_device_server::handle_query_option( const rsutils::json & j, rsutils::j
         DDS_THROW( runtime_error, stream_name + " option '" + option_name + "' not found" );
     };
 
-    rsutils::json_ref option_name( j, option_name_key );
+    auto option_name = j.nested( option_name_key );
     if( option_name.is_array() )
     {
         if( option_name.empty() )
         {
             // Query all options and return in option:value object
-            rsutils::json_type & option_values = reply[option_values_key] = rsutils::json::object();
+            rsutils::json & option_values = reply[option_values_key] = rsutils::json::object();
             if( stream_name.empty() )
             {
                 for( auto const & option : _options )
@@ -419,7 +418,7 @@ void dds_device_server::handle_query_option( const rsutils::json & j, rsutils::j
         }
         else
         {
-            rsutils::json_type & value = reply[value_key];
+            rsutils::json & value = reply[value_key];
             for( auto x = 0; x < option_name.size(); ++x )
                 value.push_back( query_option_j( option_name.at( x ) ) );
         }

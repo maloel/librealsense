@@ -136,7 +136,7 @@ dds_video_encoding dds_video_encoding::from_rs2( int rs2_format )
 
 
 dds_stream_profile::dds_stream_profile( rsutils::json const & j, int & it )
-    : _frequency( rsutils::json::get< int16_t >( j, it++ ) )
+    : _frequency( j[it++].get< int16_t >() )
 {
     // NOTE: the order of construction is the order of declaration -- therefore the to_json() function
     // should use the same ordering!
@@ -196,10 +196,10 @@ rsutils::json dds_stream_profile::to_json() const
 
 dds_video_stream_profile::dds_video_stream_profile( rsutils::json const & j, int & index )
     : super( j, index )
-    , _encoding( rsutils::json::get< std::string >( j, index++ ) )
+    , _encoding( j[index++].get< std::string >() )
 {
-    _width = rsutils::json::get< int16_t >( j, index++ );
-    _height = rsutils::json::get< int16_t >( j, index++ );
+    _width = j[index++].get< int16_t >();
+    _height = j[index++].get< int16_t >();
 }
 
 

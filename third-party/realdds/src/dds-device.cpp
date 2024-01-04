@@ -143,7 +143,7 @@ static std::string const id_key( "id", 2 );
 
 bool dds_device::check_reply( rsutils::json const & reply, std::string * p_explanation )
 {
-    auto status_j = reply.find( status_key );
+    auto status_j = reply.nested( status_key );
     if( ! status_j )
         return true;
     std::ostringstream os;
@@ -154,13 +154,13 @@ bool dds_device::check_reply( rsutils::json const & reply, std::string * p_expla
     else
     {
         os << "[";
-        if( auto id = reply.find( id_key ) )
+        if( auto id = reply.nested( id_key ) )
         {
             if( id.is_string() )
                 os << "\"" << id.string_ref() << "\" ";
         }
         os << status_j.string_ref() << "]";
-        if( auto explanation_j = reply.find( explanation_key ) )
+        if( auto explanation_j = reply.nested( explanation_key ) )
         {
             os << ' ';
             if( explanation_j.string_ref_or_empty().empty() )

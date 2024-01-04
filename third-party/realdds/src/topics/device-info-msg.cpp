@@ -39,7 +39,7 @@ rsutils::json const & device_info::to_json() const
 
 std::string const & device_info::name() const
 {
-    return rsutils::json::nested( _json, name_key ).string_ref_or_empty();
+    return _json.nested( name_key ).string_ref_or_empty();
 }
 
 void device_info::set_name( std::string const & v )
@@ -50,7 +50,7 @@ void device_info::set_name( std::string const & v )
 
 std::string const & device_info::topic_root() const
 {
-    return rsutils::json::nested( _json, topic_root_key ).string_ref_or_empty();
+    return _json.nested( topic_root_key ).string_ref_or_empty();
 }
 
 void device_info::set_topic_root( std::string const & v )
@@ -61,7 +61,7 @@ void device_info::set_topic_root( std::string const & v )
 
 std::string const & device_info::serial_number() const
 {
-    return rsutils::json::nested( _json, serial_number_key ).string_ref_or_empty();
+    return _json.nested( serial_number_key ).string_ref_or_empty();
 }
 
 void device_info::set_serial_number( std::string const & v )

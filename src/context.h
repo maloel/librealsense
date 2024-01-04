@@ -17,12 +17,12 @@ namespace librealsense
 
     class context
     {
-        context( nlohmann::json const & );  // private! use make()
+        context( rsutils::json const & );  // private! use make()
 
         void create_factories( std::shared_ptr< context > const & sptr );
 
     public:
-        static std::shared_ptr< context > make( nlohmann::json const & );
+        static std::shared_ptr< context > make( rsutils::json const & );
         static std::shared_ptr< context > make( char const * json_settings );
 
         ~context();
@@ -65,7 +65,7 @@ namespace librealsense
         // Create processing blocks given a name and settings.
         //
         std::shared_ptr< processing_block_interface > create_pp_block( std::string const & name,
-                                                                       nlohmann::json const & settings );
+                                                                       rsutils::json const & settings );
 
     private:
         void invoke_devices_changed_callbacks( std::vector< std::shared_ptr< device_info > > const & devices_removed,
