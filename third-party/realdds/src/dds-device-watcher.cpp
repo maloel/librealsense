@@ -240,7 +240,7 @@ bool dds_device_watcher::foreach_device(
 
 bool dds_device_watcher::is_device_broadcast( std::shared_ptr< dds_device > const & dev ) const
 {
-    auto & root = dev->device_info().topic_root;
+    auto & root = dev->device_info().topic_root();
     std::lock_guard< std::mutex > lock( _devices_mutex );
     auto it = _root_liveliness.find( root );
     if( it == _root_liveliness.end() )
