@@ -155,7 +155,7 @@ bool dds_device_broadcaster::broadcast_disconnect( dds_time ack_timeout ) const
 {
     try
     {
-        topics::flexible_msg msg( nlohmann::json::object( { { "stopping", true } } ) );
+        topics::flexible_msg msg( rsutils::json::object( { { "stopping", true } } ) );
         LOG_DEBUG( "sending disconnect message " << slice( msg.custom_data< char const >(), msg._data.size() ) );
         std::move( msg ).write_to( *_writer );
 

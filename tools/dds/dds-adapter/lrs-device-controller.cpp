@@ -24,6 +24,7 @@
 #include <rsutils/json.h>
 #include <rsutils/string/hexarray.h>
 #include <rsutils/catch-all.h>
+#include <rsutils/time/timer.h>
 
 #include <algorithm>
 #include <iostream>
@@ -940,14 +941,14 @@ struct lrs_device_controller::dfu_support
     rs2::device rsdev;
     std::string serial;
     std::weak_ptr< dds_device_server > server;
+    std::weak_ptr< lrs_device_controller > controller;
     std::shared_ptr< realdds::dds_topic_reader > reader;
     std::shared_ptr< realdds::topics::blob_msg > image;
     realdds::dds_guid_prefix initiator;
 };
 
 
-
-bool lrs_device_controller::on_dfu_start( nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_dfu_start( rsutils::json const & control, rsutils::json & reply )
 {
     if( _dfu )
         throw std::runtime_error( "DFU already in progress" );
@@ -957,8 +958,9 @@ bool lrs_device_controller::on_dfu_start( nlohmann::json const & control, nlohma
 
     _dfu = std::make_shared< dfu_support >();
     _dfu->server = _dds_device_server;
+    _dfu->controller = shared_from_this();
     _dfu->rsdev = _rs_dev;
-    _dfu->initiator = realdds::guid_from_string( rsutils::json::string_ref( reply["sample"][0] ) ).guidPrefix;
+    _dfu->initiator = realdds::guid_from_string( reply["sample"][0].string_ref() ).guidPrefix;
     _dfu->serial = _rs_dev.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
 
     // Open a DFU topic and wait for the image on another thread
@@ -967,8 +969,7 @@ bool lrs_device_controller::on_dfu_start( nlohmann::json const & control, nlohma
 
     _dfu->reader = std::make_shared< dds_topic_reader_thread >( topic, _dds_device_server->subscriber() );
     _dfu->reader->on_data_available(
-        [this,
-         weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
+        [weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
         {
             topics::blob_msg blob;
             eprosima::fastdds::dds::SampleInfo sample;
@@ -981,24 +982,24 @@ bool lrs_device_controller::on_dfu_start( nlohmann::json const & control, nlohma
                 auto const & sender = sample.sample_identity.writer_guid().guidPrefix;
                 if( sender != dfu->initiator )
                 {
-                    LOG_ERROR( "Blob received from " << realdds::print_raw_guid_prefix( sender )
-                                                     << " != " << realdds::print_raw_guid_prefix( dfu->initiator )
-                                                     << " that started the DFU" );
+                    LOG_ERROR( "DFU image received from " << realdds::print_raw_guid_prefix( sender )
+                                                          << " != " << realdds::print_raw_guid_prefix( dfu->initiator )
+                                                          << " that started the DFU" );
                 }
                 else if( dfu->image )
                 {
-                    LOG_ERROR( "More than one blob received for DFU! Got " << blob.data().size() << " bytes" );
+                    LOG_ERROR( "More than one DFU image received!" );
                 }
                 else
                 {
                     size_t const n_bytes = blob.data().size();
                     auto const crc = rsutils::number::calc_crc32( blob.data().data(), blob.data().size() );
-                    LOG_DEBUG( "<----- dfu blob received, " << n_bytes << " bytes, crc " << crc );
+                    LOG_INFO( "DFU image received, " << n_bytes << " bytes, crc " << crc );
 
                     // Build a reply
-                    nlohmann::json j = nlohmann::json::object( {
+                    rsutils::json j = rsutils::json::object( {
                         { "id", "dfu-ready" },
-                        { "bytes", n_bytes },
+                        { "size", n_bytes },
                         { "crc", crc } } );
 
                     try
@@ -1013,38 +1014,72 @@ bool lrs_device_controller::on_dfu_start( nlohmann::json const & control, nlohma
                     }
                     catch( std::exception const & e )
                     {
-                        j["status"] = "error";
+                        j["status"] = "check-fw-compat";
                         j["explanation"] = e.what();
                         LOG_ERROR( "DFU image check failed: " << e.what() << "; exiting DFU state" );
-                        _dfu.reset();  // no longer in DFU state
+                        if( auto controller = dfu->controller.lock() )
+                            controller->_dfu.reset();  // no longer in DFU state
                     }
 
                     if( auto server = dfu->server.lock() )
-                        _dds_device_server->publish_notification( std::move( j ) );
+                        server->publish_notification( std::move( j ) );
                 }
             }
         } );
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
-    rqos.override_from_json( rsutils::json::nested( _dds_device_server->participant()->settings(), "device", "dfu" ) );
+    rqos.override_from_json( _dds_device_server->participant()->settings().nested( "device", "dfu" ) );
     _dfu->reader->run( rqos );
 
-    // Start a thread that will cancel if we don't receive an image in time
+    // Start a thread that will cancel if we don't receive an image in time, or if the process somehow takes too long
     std::thread(
-        [weak_controller = std::weak_ptr< lrs_device_controller >( shared_from_this() )]
+        [weak_dfu = std::weak_ptr< dfu_support >( _dfu )]
         {
             std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
-            if( auto controller = weak_controller.lock() )
+            if( auto dfu = weak_dfu.lock() )
             {
-                if( controller->_dfu && ! controller->_dfu->image )
+                if( ! dfu->image )
                 {
-                    LOG_DEBUG( "... timed out waiting for image; cancelling DFU" );
-                    controller->_dfu.reset();  // no longer in DFU state
-                    nlohmann::json j
-                        = nlohmann::json::object( { { "id", "dfu-ready" },
-                                                    { "status", "error" },
-                                                    { "explanation", "timed out waiting for an image" } } );
-                    controller->_dds_device_server->publish_notification( std::move( j ) );
+                    if( auto controller = dfu->controller.lock() )
+                    {
+                        LOG_ERROR( "DFU timed out waiting for image; resetting" );
+                        controller->_dfu.reset();  // no longer in DFU state
+                    }
+                    if( auto server = dfu->server.lock() )
+                    {
+                        rsutils::json j
+                            = rsutils::json::object( { { "id", "dfu-ready" },
+                                                       { "status", "error" },
+                                                       { "explanation", "timed out waiting for an image; resetting" } } );
+                        server->publish_notification( std::move( j ) );
+                    }
+                    return;
+                }
+            }
+            else
+                return;
+
+            // We have an image: sleep some more and cancel the DFU after a while if no dfu-apply is received
+            rsutils::time::timer timer( std::chrono::minutes( 10 ) );
+            std::this_thread::sleep_for( std::chrono::seconds( 10 ) );
+            while( auto dfu = weak_dfu.lock() )
+            {
+                if( timer.has_expired() )
+                {
+                    if( auto controller = dfu->controller.lock() )
+                    {
+                        LOG_ERROR( "DFU timed out; resetting" );
+                        controller->_dfu.reset();  // no longer in DFU state
+                    }
+                    if( auto server = dfu->server.lock() )
+                    {
+                        rsutils::json j
+                            = rsutils::json::object( { { "id", "dfu-ready" },
+                                                       { "status", "error" },
+                                                       { "explanation", "timed out; resetting" } } );
+                        server->publish_notification( std::move( j ) );
+                    }
+                    return;
                 }
             }
         } )
@@ -1054,105 +1089,114 @@ bool lrs_device_controller::on_dfu_start( nlohmann::json const & control, nlohma
 }
 
 
-bool lrs_device_controller::on_dfu_apply( nlohmann::json const & control, nlohmann::json & reply )
+bool lrs_device_controller::on_dfu_apply( rsutils::json const & control, rsutils::json & reply )
 {
+    if( _dfu )
+    {
+        auto const sender = realdds::guid_from_string( reply["sample"][0].string_ref() ).guidPrefix;
+        if( sender != _dfu->initiator )
+            throw std::runtime_error( "only the DFU initiator can apply/cancel" );
+    }
+
+    if( control.nested( "cancel" ).default_value( false ) )
+    {
+        if( _dfu )
+            LOG_DEBUG( "DFU cancelled" );
+        _dfu.reset();
+        return true;  // handled
+    }
+
     if( ! _dfu )
         throw std::runtime_error( "DFU not started" );
     if( ! _dfu->reader )
         throw std::runtime_error( "dfu-apply already received" );
-    if( ! _dfu->image )
-        throw std::runtime_error( "no image received" );
 
     // Keep the DFU alive once apply starts, even if reset somewhere else - but the reader is no longer needed
     auto dfu = _dfu;
     _dfu->reader.reset();
 
-    auto const sender = realdds::guid_from_string( rsutils::json::string_ref( reply["sample"][0] ) ).guidPrefix;
-    if( sender != dfu->initiator )
-        throw std::runtime_error( "only the DFU initiator can apply/cancel" );
-
-    if( rsutils::json::nested( control, "cancel" ) )
-    {
-        LOG_DEBUG( "DFU cancelled" );
-        _dfu.reset();
-        return true;  // handled
-    }
-
+    if( ! _dfu->image )
+        throw std::runtime_error( "no image received" );
 
     // We want to return a reply right away; we already have an image in hand, so all that needs to happen is to apply
     // it in the background and return a reply when done
     std::thread(
-        [weak_controller = std::weak_ptr< lrs_device_controller >( shared_from_this() ),
-         dfu]
+        [dfu]
         {
-            // We already checked FW compatibility; to actually do a signed update, we switch to recovery mode (we need
-            // an update_device to do a signed update - but to get one, we need to be in recovery mode):
-            LOG_INFO( "Switching device " << dfu->serial << " to recovery mode" );
+            auto on_fail = [dfu]( char const * what )
+            {
+                LOG_ERROR( when_what( "Failed to apply DFU image", what ) );
+                if( auto server = dfu->server.lock() )
+                {
+                    rsutils::json j = rsutils::json::object( { { "id", "dfu-apply" }, { "status", "error" } } );
+                    if( what )
+                        j["explanation"] = what;
+                    server->publish_notification( std::move( j ) );
+                }
+            };
+
             try
             {
+                // We already checked FW compatibility; to actually do a signed update, we switch to recovery mode (we need
+                // an update_device to do a signed update - but to get one, we need to be in recovery mode):
+                LOG_INFO( "Switching device " << dfu->serial << " to recovery mode" );
+                if( auto server = dfu->server.lock() )
+                    server->broadcast_disconnect();
                 rs2::updatable( dfu->rsdev ).enter_update_state();
-            }
-            catch_all( LOG_ERROR, "Failed to enter recovery mode" )
+                // NOTE: the device will go offline; the adapter will see the device disappear, and so will the controller/server!
 
-            // We need a context bu cannot get one from the device. But to wait for a recovery device, we can just
-            // create a new one:
-            nlohmann::json settings;
-            settings["dds"] = false;  // don't need DDS devices
-            rs2::context context( settings.dump() );
+                // We need a context but cannot get one from the device... so we can just create a new one:
+                rsutils::json settings;
+                settings["dds"] = false;  // don't want DDS devices
+                rs2::context context( settings.dump() );
 
-            // Wait for the recovery device
-            LOG_DEBUG( "... waiting for update_device" );
-            rs2::update_device update_device;
-            auto const start = std::chrono::system_clock::now();
-            while( weak_controller.lock() )
-            {
-                try
+                // Wait for the recovery device
+                rs2::update_device update_device;
+                rsutils::time::timer timeout( std::chrono::seconds( 60 ) );
+                while( dfu->controller.lock() )
                 {
-                    auto devs = context.query_devices( RS2_PRODUCT_LINE_ANY_INTEL );
-                    for( uint32_t j = 0; j < devs.size(); j++ )
+                    try
                     {
-                        auto d = devs[j];
-                        if( d.is< rs2::update_device >() && d.supports( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID )
-                            && dfu->serial == d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+                        auto devs = context.query_devices( RS2_PRODUCT_LINE_ANY_INTEL );
+                        for( uint32_t j = 0; j < devs.size(); j++ )
                         {
-                            LOG_DEBUG( "... found DFU recovery device " << dfu->serial );
-                            update_device = d;
-                            break;
+                            auto d = devs[j];
+                            if( d.is< rs2::update_device >() && d.supports( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID )
+                                && dfu->serial == d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID ) )
+                            {
+                                LOG_DEBUG( "... found DFU recovery device " << dfu->serial );
+                                update_device = d;
+                                break;
+                            }
                         }
                     }
-                }
-                catch_all( LOG_DEBUG, "error looking for DFU device" )
+                    catch_all( LOG_DEBUG, "... error looking for DFU device" )
 
-                if( update_device )
-                {
-                    if( auto controller = weak_controller.lock() )
+                    if( update_device )
                     {
-                        try
+                        if( auto controller = dfu->controller.lock() )
                         {
-                            LOG_INFO( "Updating device" );
+                            LOG_INFO( "Updating - DO NOT SHUT DOWN" );
                             update_device.update( dfu->image->data(),
-                                                  [&]( float percent ) {  //
+                                                  [dfu]( float percent ) {  //
                                                       LOG_DEBUG( "... updating " << int( percent * 100 ) << "%" );
                                                   } );
                             LOG_INFO( "DFU done" );
                         }
-                        catch_all( LOG_ERROR, "DFU error" )
+                        break;
                     }
-                    break;
-                }
 
-                if( std::chrono::system_clock::now() - start >= std::chrono::seconds( 60 ) )
-                {
-                    LOG_ERROR( "Failed to find recovery device for DFU" );
-                    break;
-                }
+                    if( timeout.has_expired() )
+                        throw std::runtime_error( "failed to find recovery device" );
 
-                // Wait a little and retry
-                std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+                    // Wait a little and retry
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+                }
             }
+            catch_all_( on_fail )
 
-            // Whether successful or not, we're dont with the DFU
-            if( auto controller = weak_controller.lock() )
+            // Whether successful or not, we're done with the DFU
+            if( auto controller = dfu->controller.lock() )
                 controller->_dfu.reset();
         } )
         .detach();

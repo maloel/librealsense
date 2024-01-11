@@ -560,15 +560,15 @@ bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & im
     try
     {
         // Start DFU
-        nlohmann::json reply;
-        _dds_dev->send_control( nlohmann::json::object( { { "id", "dfu-start" } } ), &reply );
+        rsutils::json reply;
+        _dds_dev->send_control( rsutils::json::object( { { "id", "dfu-start" } } ), &reply );
 
         // Set up a reply handler that will get the "dfu-ready" message
         std::mutex mutex;
         std::condition_variable cv;
-        nlohmann::json dfu_ready;
+        rsutils::json dfu_ready;
         auto subscription = _dds_dev->on_notification(
-            [&]( std::string const & id, nlohmann::json const & notification )
+            [&]( std::string const & id, rsutils::json const & notification )
             {
                 if( id != "dfu-ready" )
                     return;
@@ -613,6 +613,35 @@ bool dds_device_proxy::check_fw_compatibility( const std::vector< uint8_t > & im
 void dds_device_proxy::update_flash( std::vector< uint8_t > const & image, rs2_update_progress_callback_sptr, int update_mode )
 {
     throw not_implemented_exception( "update_flash not yet implemented" );
+}
+
+
+void dds_device_proxy::update( const void * /*image*/, int /*image_size*/, rs2_update_progress_callback_sptr callback ) const
+{
+    // Set up a reply handler that will get the "dfu-apply" messages and progress notifications
+    // NOTE: this depends on the implementation! If the device goes offline (as the DDS adapter device will), we won't
+    // get anything...
+    auto subscription = _dds_dev->on_notification(
+        [callback]( std::string const & id, rsutils::json const & notification )
+        {
+            if( id != "dfu-apply" )
+                return;
+            if( auto progress = notification.nested( "progress", &rsutils::json::is_number ) )
+            {
+                auto fraction = progress.get< float >();
+                LOG_DEBUG( "... DFU progress: " << ( fraction * 100 ) );
+                if( callback )
+                    callback->on_update_progress( fraction );
+            }
+        } );
+
+    // Will throw if an error is returned
+    rsutils::json reply;
+    _dds_dev->send_control( rsutils::json::object( { { "id", "dfu-apply" } } ), &reply );
+
+    // The device will take time to do its thing. We want to return only when it's done, but we cannot know when it's
+    // done if it goes down. It should go down right before restarting, so that's what we wait for:
+    _dds_dev->wait_until_offline();
 }
 
 

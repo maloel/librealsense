@@ -253,7 +253,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
                 } );
 
             dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
-            rqos.override_from_json( rsutils::json::nested( _subscriber->get_participant()->settings(), "device", "dfu" ) );
+            rqos.override_from_json( _subscriber->get_participant()->settings().nested( "device", "dfu" ) );
             _dfu_reader->run( rqos );
         }
     }

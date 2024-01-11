@@ -77,11 +77,9 @@ void print_device_info(rs2::device d)
         camera_info[info] = d.supports(info) ? d.get_info(info) : "unknown";
     }
 
-    std::cout << "Name: " << camera_info[RS2_CAMERA_INFO_NAME] <<
-        ", serial number: " << camera_info[RS2_CAMERA_INFO_SERIAL_NUMBER] <<
+    std::cout << d.get_description() <<
         ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID] <<
-        ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] <<
-        ", USB type: " << camera_info[RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR] << std::endl;
+        ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] << std::endl;
 }
 
 std::vector<uint8_t> read_firmware_data(bool is_set, const std::string& file_path)
@@ -120,7 +118,7 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
     std::cout << std::endl << std::endl << "Firmware update done" << std::endl;
 }
 
-void list_devices( rs2::context ctx, bool only_sw_devs )
+rs2::device_list query_devices( rs2::context ctx, bool only_sw_devs )
 {
     auto devs = ctx.query_devices();
     if( only_sw_devs )
@@ -128,7 +126,7 @@ void list_devices( rs2::context ctx, bool only_sw_devs )
         // For SW-only devices, allow some time for DDS devices to connect
         int tries = 3;
         std::cout << "No device detected. Waiting..." << std::flush;
-        while( ! devs.size() && tries-- )
+        while( !devs.size() && tries-- )
         {
             std::cout << "." << std::flush;
             std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
@@ -136,7 +134,12 @@ void list_devices( rs2::context ctx, bool only_sw_devs )
         }
         std::cout << std::endl;
     }
+    return devs;
+}
 
+void list_devices( rs2::context ctx, bool only_sw_devs )
+{
+    auto devs = query_devices( ctx, only_sw_devs );
     if (devs.size() == 0)
     {
         std::cout << std::endl << "There are no connected devices" << std::endl;
@@ -261,15 +264,17 @@ try
     rs2::log_to_console( debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_WARN );
 #endif
 
-    nlohmann::json settings = nlohmann::json::object();
+    rsutils::json settings = rsutils::json::object();
 #ifdef BUILD_WITH_DDS
-    nlohmann::json dds;
+    rsutils::json dds;
     if( domain_arg.isSet() )
         dds["domain"] = domain_arg.getValue();
     if( only_sw_arg.isSet() )
         dds["enabled"];  // null: remove global dds:false or dds/enabled:false, if any
     settings["dds"] = std::move( dds );
 #endif
+    if( only_sw_arg.getValue() )
+        settings["device-mask"] = RS2_PRODUCT_LINE_SW_ONLY | RS2_PRODUCT_LINE_ANY;
     rs2::context ctx( settings.dump() );
 
     if (!list_devices_arg.isSet() && !recover_arg.isSet() && !unsigned_arg.isSet() &&
@@ -309,7 +314,7 @@ try
         std::vector<uint8_t> fw_image = read_firmware_data(file_arg.isSet(), file_arg.getValue());
 
         std::cout << std::endl << "Update to FW: " << file_arg.getValue() << std::endl;
-        auto devs = ctx.query_devices(RS2_PRODUCT_LINE_DEPTH);
+        auto devs = query_devices( ctx, only_sw_arg.getValue() );
         rs2::device recovery_device;
 
         for (auto&& d : devs)
@@ -397,23 +402,7 @@ try
             cv.notify_one();
     });
 
-    int mask = RS2_PRODUCT_LINE_DEPTH;  // why not RS2_PRODUCT_LINE_ANY_INTEL?!
-    if( only_sw_arg.getValue() )
-        mask |= RS2_PRODUCT_LINE_SW_ONLY;
-    auto devs = ctx.query_devices( mask );
-    if( only_sw_arg.isSet() )
-    {
-        // For SW-only devices, allow some time for DDS devices to connect
-        int tries = 10;
-        std::cout << "No device detected. Waiting..." << std::flush;
-        while( ! devs.size() && tries-- )
-        {
-            std::cout << "." << std::flush;
-            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-            devs = ctx.query_devices( mask );
-        }
-        std::cout << std::endl;
-    }
+    auto devs = query_devices( ctx, only_sw_arg.getValue() );
 
     if (!serial_number_arg.isSet() && devs.size() > 1)
     {
