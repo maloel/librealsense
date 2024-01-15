@@ -32,6 +32,9 @@ void dds_device::wait_until_ready( size_t timeout_ms )
     if( is_ready() )
         return;
 
+    if( ! timeout_ms )
+        DDS_THROW( runtime_error, "device is " << ( is_online() ? "not ready" : "offline" ) );
+
     LOG_DEBUG( "[" << debug_name() << "] waiting until ready ..." );
     rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
     bool was_online = is_online();
@@ -69,6 +72,9 @@ void dds_device::wait_until_online( size_t timeout_ms )
     if( is_online() )
         return;
 
+    if( ! timeout_ms )
+        DDS_THROW( runtime_error, "device is offline" );
+
     LOG_DEBUG( "[" << debug_name() << "] waiting until online ..." );
     rsutils::time::timer timer{ std::chrono::milliseconds( timeout_ms ) };
     do
@@ -86,6 +92,7 @@ void dds_device::on_discovery_lost()
     // Called when the device-watcher has lost connection with the device
     // Only devices that are discovered by the device-watcher get called with this!
     _impl->_lost_discovery = true;
+    // A device that loses discovery needs to be reinitialized
     _impl->set_state( impl::state_t::WAIT_FOR_DEVICE_HEADER );
 }
 
@@ -106,6 +113,7 @@ void dds_device::on_discovery_restored( topics::device_info const & new_info )
 
     _impl->_info = new_info;
     _impl->_lost_discovery = false;
+    // NOTE: we may still not be ready - pending reinitialization
 }
 
 
@@ -166,25 +174,25 @@ size_t dds_device::foreach_option( std::function< void( std::shared_ptr< dds_opt
 
 void dds_device::open( const dds_stream_profiles & profiles )
 {
-    wait_until_online();
+    wait_until_ready( 0 );  // throw if not
     _impl->open( profiles );
 }
 
 void dds_device::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
 {
-    wait_until_online();
+    wait_until_ready( 0 );  // throw if not
     _impl->set_option_value( option, new_value );
 }
 
 float dds_device::query_option_value( const std::shared_ptr< dds_option > & option )
 {
-    wait_until_online();
+    wait_until_ready( 0 );  // throw if not
     return _impl->query_option_value( option );
 }
 
 void dds_device::send_control( topics::flexible_msg && msg, rsutils::json * reply )
 {
-    wait_until_online();
+    wait_until_ready( 0 );  // throw if not
     _impl->write_control_message( std::move( msg ), reply );
 }
 

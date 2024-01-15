@@ -62,6 +62,10 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                         if( stopping )
                         {
                             // We marked last-seen; nothing else to do with it
+                            if( is.alive )
+                                LOG_DEBUG( "[" << is.alive->debug_name() << "] device (from " << _participant->print( guid ) << ") is stopping" );
+                            else
+                                continue;
                         }
                         else if( is.alive )
                         {
@@ -72,7 +76,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                         {
                             // Old device coming back to life
                             is.writer_guid = guid;
-                            LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") back to life: " << j.dump( 4 ) );
+                            LOG_DEBUG( "[" << is.alive->debug_name() << "] device (from " << _participant->print( guid ) << ") back to life: " << j.dump( 4 ) );
                             topics::device_info device_info = topics::device_info::from_json( j );
                             static_cast< dds_discovery_sink * >( is.alive.get() )->on_discovery_restored( device_info );
                             if( _on_device_added )
@@ -93,8 +97,6 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                 if( stopping )
                 {
                     // This device is stopping for whatever reason (e.g., HW reset); remove it
-                    LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") is stopping: " << root );
-                    // TODO notify the device?
                     remove_device( root );
                     continue;
                 }
@@ -142,8 +144,11 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                         // This is OK, and is likely the broadcaster's writer itself; ignore
                         return;
                 }
-                LOG_DEBUG( "DDS device (from " << _participant->print( guid ) << ") disconnected: " << it->first );
-                remove_device( it->first );
+                if( auto device = it->second.alive )
+                {
+                    LOG_DEBUG( "[" << device->debug_name() << "] device subscription lost (from " << _participant->print( guid ) << ")" );
+                    remove_device( it->first );
+                }
             }
         } );
 

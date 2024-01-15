@@ -389,7 +389,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
     {
         auto stream = profile->stream();
         if( ! stream )
-            DDS_THROW( runtime_error, "profile " << profile->to_string() << " is not part of any stream" );
+            DDS_THROW( runtime_error, "profile '" << profile->to_string() << "' is not part of any stream" );
         if( stream_profiles.nested( stream->name() ) )
             DDS_THROW( runtime_error, "more than one profile found for stream '" << stream->name() << "'" );
 
@@ -421,13 +421,13 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
 
     rsutils::json reply;
     write_control_message( j, &reply );
-    //option->set_value( new_value );
+    // the reply will contain the new value (which may be different) and will update the cached one
 }
 
 
 float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > & option )
 {
-    if( !option )
+    if( ! option )
         DDS_THROW( runtime_error, "must provide an option to query" );
 
     rsutils::json j = rsutils::json::object({
@@ -485,8 +485,8 @@ void dds_device::impl::create_notifications_reader()
     _notifications_reader = std::make_shared< dds_topic_reader_thread >( topic, _subscriber );
 
     dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
-    //On discovery writer sends a burst of messages, if history is too small we might loose some of them
-    //(even if reliable). Setting depth to cover known use-cases plus some spare
+    // On discovery writer sends a burst of messages, if history is too small we might lose some of them
+    // (even if reliable). Setting depth to cover known use-cases plus some spare
     rqos.history().depth = 24;
     rqos.override_from_json( _device_settings.nested( "notification" ) );
 
