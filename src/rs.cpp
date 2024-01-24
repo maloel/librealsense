@@ -84,9 +84,15 @@ struct rs2_device_list
     std::vector< std::shared_ptr< librealsense::device_info > > list;
 };
 
+struct rs2_options_list_value : rs2_option_value
+{
+    // Add a string member to hold the actual string
+    std::string string_value;
+};
+
 struct rs2_options_list
 {
-    std::vector< rs2_option > list;
+    std::vector< rs2_options_list_value > list;
 };
 
 struct rs2_sensor : public rs2_options
@@ -679,7 +685,17 @@ HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return new rs2_options_list{ options->options->get_supported_options() };
+    auto rs2_list = new rs2_options_list;
+    auto option_ids = options->options->get_supported_options();
+    rs2_list->list.reserve( option_ids.size() );
+    for( auto option_id : option_ids )
+    {
+        rs2_options_list_value value;
+        value.id = option_id;
+        value.type = RS2_OPTION_TYPE_COUNT;  // we don't have one
+        rs2_list->list.push_back( value );
+    }
+    return rs2_list;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
 
@@ -700,9 +716,16 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, options)
 rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return options->list[i];
+    return options->list.at( i ).id;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(RS2_OPTION_COUNT, options)
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_OPTION_COUNT, options, i)
+
+rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list * options, int i, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    return &options->list.at( i );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, i )
 
 void rs2_delete_options_list(rs2_options_list* list) BEGIN_API_CALL
 {
@@ -1208,6 +1231,28 @@ const char* rs2_get_option_value_description(const rs2_options* options, rs2_opt
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
 
+static void populate_options_list( rs2_options_list * updated_options_list,
+                                   options_watcher::options_and_values const & updated_options )
+{
+    for( auto id_value : updated_options )
+    {
+        options_watcher::option_and_value const & option_and_value = id_value.second;
+        rs2_options_list_value rs2_value;
+        rs2_value.id = id_value.first;
+        if( option_and_value.last_known_value.is_number_float() )
+        {
+            rs2_value.type = RS2_OPTION_TYPE_FLOAT;
+            rs2_value.as_float = option_and_value.last_known_value.get< float >();
+        }
+        else if( option_and_value.last_known_value.is_string() )
+        {
+            rs2_value.type = RS2_OPTION_TYPE_STRING;
+            rs2_value.as_string = option_and_value.last_known_value.string_ref().c_str();
+        }
+        updated_options_list->list.push_back( std::move( rs2_value ) );
+    }
+}
+
 void rs2_set_options_changed_callback( rs2_options * options,
                                        rs2_options_changed_callback_ptr callback,
                                        rs2_error ** error ) BEGIN_API_CALL
@@ -1217,11 +1262,10 @@ void rs2_set_options_changed_callback( rs2_options * options,
     auto sens = dynamic_cast< rs2_sensor * >( options );
     VALIDATE_NOT_NULL( sens );
     sens->subscription = sens->sensor->register_options_changed_callback(
-        [callback]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+        [callback]( options_watcher::options_and_values const & updated_options )
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
-            for( auto option : updated_options )
-                updated_options_list->list.push_back( option.first );
+            populate_options_list( updated_options_list, updated_options );
             callback( updated_options_list );
         } );
 }
@@ -1242,11 +1286,10 @@ void rs2_set_options_changed_callback_cpp( rs2_options * options,
     auto sens = dynamic_cast< rs2_sensor * >( options );
     VALIDATE_NOT_NULL( sens );
     sens->subscription = sens->sensor->register_options_changed_callback(
-        [cb]( const std::map< rs2_option, std::shared_ptr< option > > & updated_options )
+        [cb]( options_watcher::options_and_values const & updated_options )
         {
             rs2_options_list * updated_options_list = new rs2_options_list(); // Should be on heap if user will choose to save for later use.
-            for( auto option : updated_options )
-                updated_options_list->list.push_back( option.first );
+            populate_options_list( updated_options_list, updated_options );
             cb->on_value_changed( updated_options_list );
         } );
 }

@@ -11,66 +11,62 @@
 
 
 namespace rs2
-{    
+{
     class options_list
     {
     public:
+        options_list( options_list const & ) = default;
+        options_list( options_list && ) = default;
+
         explicit options_list( std::shared_ptr< rs2_options_list > list )
             : _list( std::move( list ) )
         {
+            rs2_error * e = nullptr;
+            _size = rs2_get_options_list_size( _list.get(), &e );
+            error::handle( e );
         }
 
         options_list()
             : _list( nullptr )
+            , _size( 0 )
         {
         }
 
-        options_list & operator=( std::shared_ptr< rs2_options_list > list )
-        {
-            _list = std::move( list );
-            return *this;
-        }
-
-        rs2_option operator[]( size_t index ) const
+        rs2_option_value const * operator[]( size_t index ) const
         {
             rs2_error * e = nullptr;
-            rs2_option opt = rs2_get_option_from_list( _list.get(), static_cast< int >( index ), &e );
+            rs2_option_value const * p_value
+                = rs2_get_option_value_from_list( _list.get(), static_cast< int >( index ), &e );
             error::handle( e );
-            return opt;
+            return p_value;
         }
 
-        size_t size() const
-        {
-            rs2_error * e = nullptr;
-            auto size = rs2_get_options_list_size( _list.get(), &e );
-            error::handle( e );
-            return size;
-        }
+        size_t size() const { return _size; }
 
-        rs2_option front() const { return ( *this )[0]; }
-        rs2_option back() const { return ( *this )[size() - 1]; }
+        rs2_option_value const * front() const { return ( *this )[0]; }
+        rs2_option_value const * back() const { return ( *this )[size() - 1]; }
 
-        class options_list_iterator
+        class iterator
         {
-            options_list_iterator( const options_list & list, size_t index )
+            iterator( const options_list & list, size_t index )
                 : _list( list )
                 , _index( index )
             {
             }
 
         public:
-            rs2_option operator*() const { return _list[_index]; }
-            bool operator!=( const options_list_iterator & other ) const
+            rs2_option_value const * operator*() const { return _list[_index]; }
+            
+            bool operator!=( const iterator & other ) const
             {
                 return other._index != _index || &other._list != &_list;
             }
-
-            bool operator==( const options_list_iterator & other ) const
+            bool operator==( const iterator & other ) const
             {
                 return ! ( *this != other );
             }
 
-            options_list_iterator & operator++()
+            iterator & operator++()
             {
                 _index++;
                 return *this;
@@ -82,13 +78,14 @@ namespace rs2
             size_t _index;
         };
 
-        options_list_iterator begin() const { return options_list_iterator( *this, 0 ); }
-        options_list_iterator end() const { return options_list_iterator( *this, size() ); }
+        iterator begin() const { return iterator( *this, 0 ); }
+        iterator end() const { return iterator( *this, size() ); }
 
-        operator std::shared_ptr< rs2_options_list >() { return _list; };
+        std::shared_ptr< rs2_options_list > get() const { return _list; };
 
     private:
         std::shared_ptr< rs2_options_list > _list;
+        size_t _size;
     };
     
     class options_changed_callback : public rs2_options_changed_callback
