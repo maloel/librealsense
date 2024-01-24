@@ -10,6 +10,10 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #ifndef LIBREALSENSE_RS2_OPTION_H
 #define LIBREALSENSE_RS2_OPTION_H
 
+
+#include <stdint.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -121,6 +125,26 @@ extern "C" {
         RS2_OPTION_SOC_PVT_TEMPERATURE, /**< Temperature of PVT SOC */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
+
+    typedef enum rs2_option_type
+    {
+        RS2_OPTION_TYPE_NUMBER,
+        RS2_OPTION_TYPE_FLOAT,
+        RS2_OPTION_TYPE_STRING,
+        RS2_OPTION_TYPE_COUNT
+    } rs2_option_type;
+
+    typedef struct rs2_option_value
+    {
+        rs2_option id;
+        rs2_option_type type;
+        union {
+            char const * as_string;  /**< NOTE: only valid while rs2_option_value is valid */
+            float as_float;
+            int64_t as_number_signed;
+            uint64_t as_number_unsigned;
+        };
+    } rs2_option_value;
 
     /**
     * Returns the option name if the option exists, or "UNKNOWN" otherwise.
@@ -291,8 +315,17 @@ extern "C" {
     * get the specific option from options list
     * \param[in] i    the index of the option
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return the option ID
     */
     rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error);
+
+    /**
+    * get the specific option from options list
+    * \param[in] i    the index of the option
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return temporary (goes away with the options-list) pointer to the option-value struct
+    */
+    rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list * options, int i, rs2_error ** error );
 
     /**
     * Deletes options list

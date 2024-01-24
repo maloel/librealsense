@@ -40,6 +40,7 @@ dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
     , _dev( dev )
     , _name( sensor_name )
     , _md_enabled( dev->supports_metadata() )
+    , _options_watcher( dev, sensor_name )
 {
 }
 

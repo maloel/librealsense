@@ -95,6 +95,7 @@ EXPORTS
     rs2_is_option_read_only
     rs2_get_options_list
     rs2_get_option_from_list
+    rs2_get_option_value_from_list
     rs2_get_options_list_size
     rs2_delete_options_list
     rs2_set_options_changed_callback
