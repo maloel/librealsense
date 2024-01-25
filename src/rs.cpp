@@ -84,15 +84,51 @@ struct rs2_device_list
     std::vector< std::shared_ptr< librealsense::device_info > > list;
 };
 
-struct rs2_options_list_value : rs2_option_value
+namespace rsutils {
+    class reference_count
+    {
+        std::atomic< int64_t > _count{ 0 };
+
+    public:
+        void add_ref() { _count.fetch_add( 1 ); }
+
+        // Return true if reference count reaches 0
+        bool release() { return 1 == _count.fetch_add( -1 ); }
+    };
+}
+
+struct rs2_option_value_wrapper : rs2_option_value
 {
-    // Add a string member to hold the actual string
-    std::string string_value;
+    // Keep the original json value, so we can refer to it (e.g., with as_string)
+    std::shared_ptr< rsutils::json > p_json;
+
+    // Add a reference count to control lifetime
+    mutable rsutils::reference_count ref_count;
+
+    rs2_option_value_wrapper( rs2_option id_, std::shared_ptr< rsutils::json > const & json_ )
+    {
+        id = id_;
+        type = RS2_OPTION_TYPE_COUNT;
+        if( p_json = json_ )
+        {
+            if( p_json->is_number_float() )
+            {
+                type = RS2_OPTION_TYPE_FLOAT;
+                as_float = p_json->get< float >();
+            }
+            else if( p_json->is_string() )
+            {
+                type = RS2_OPTION_TYPE_STRING;
+                as_string = p_json->string_ref().c_str();
+            }
+        }
+        ref_count.add_ref();
+    }
 };
 
 struct rs2_options_list
 {
-    std::vector< rs2_options_list_value > list;
+    std::vector< rs2_option_value_wrapper const * > list;
 };
 
 struct rs2_sensor : public rs2_options
@@ -671,6 +707,26 @@ float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
 
+rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( options );
+    VALIDATE_OPTION( options, option_id );
+    auto wrapper = new rs2_option_value_wrapper(
+        option_id,
+        std::make_shared< rsutils::json >( options->options->get_option( option_id ).query() ) );
+    return wrapper;
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, option_id )
+
+void rs2_delete_option_value( rs2_option_value const * p_value ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( p_value );
+    auto wrapper = static_cast< rs2_option_value_wrapper const * >( p_value );
+    if( wrapper && wrapper->ref_count.release() )
+        delete wrapper;
+}
+NOEXCEPT_RETURN( , p_value )
+
 void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
@@ -690,10 +746,8 @@ rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** e
     rs2_list->list.reserve( option_ids.size() );
     for( auto option_id : option_ids )
     {
-        rs2_options_list_value value;
-        value.id = option_id;
-        value.type = RS2_OPTION_TYPE_COUNT;  // we don't have one
-        rs2_list->list.push_back( value );
+        auto wrapper = new rs2_option_value_wrapper( option_id, {} );  // empty json
+        rs2_list->list.push_back( wrapper );
     }
     return rs2_list;
 }
@@ -716,20 +770,22 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, options)
 rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return options->list.at( i ).id;
+    return options->list.at( i )->id;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_OPTION_COUNT, options, i)
 
 rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list * options, int i, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( options );
-    return &options->list.at( i );
+    return options->list.at( i );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, options, i )
 
 void rs2_delete_options_list(rs2_options_list* list) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(list);
+    for( auto wrapper : list->list )
+        rs2_delete_option_value( wrapper );
     delete list;
 }
 NOEXCEPT_RETURN(, list)
@@ -1237,19 +1293,8 @@ static void populate_options_list( rs2_options_list * updated_options_list,
     for( auto id_value : updated_options )
     {
         options_watcher::option_and_value const & option_and_value = id_value.second;
-        rs2_options_list_value rs2_value;
-        rs2_value.id = id_value.first;
-        if( option_and_value.last_known_value.is_number_float() )
-        {
-            rs2_value.type = RS2_OPTION_TYPE_FLOAT;
-            rs2_value.as_float = option_and_value.last_known_value.get< float >();
-        }
-        else if( option_and_value.last_known_value.is_string() )
-        {
-            rs2_value.type = RS2_OPTION_TYPE_STRING;
-            rs2_value.as_string = option_and_value.last_known_value.string_ref().c_str();
-        }
-        updated_options_list->list.push_back( std::move( rs2_value ) );
+        updated_options_list->list.push_back(
+            new rs2_option_value_wrapper( id_value.first, option_and_value.p_last_known_value ) );
     }
 }
 

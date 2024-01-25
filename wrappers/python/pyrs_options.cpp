@@ -13,7 +13,7 @@ void init_options(py::module &m) {
         rs2_option id;
         py::object value;
 
-        option_value( rs2_option_value const * value_ )
+        option_value( rs2::option_value const & value_ )
             : id( value_->id )
         {
             if( RS2_OPTION_TYPE_FLOAT == value_->type )
@@ -28,7 +28,16 @@ void init_options(py::module &m) {
     };
     py::class_< option_value >( m, "option_value" )
         .def_readwrite( "id", &option_value::id )
-        .def_readwrite( "value", &option_value::value );  // None if no value available
+        .def_readwrite( "value", &option_value::value )  // None if no value available
+        .def( "__repr__",
+              []( option_value const & self )
+              {
+                  std::ostringstream os;
+                  os << '<' << rs2_option_to_string( self.id );
+                  os << ' ' << py::str( self.value );
+                  os << '>';
+                  return os.str();
+              } );
     // given an iterator, return an option_value
     struct option_value_from_iterator
     {

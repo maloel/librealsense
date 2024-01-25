@@ -7,7 +7,7 @@
 
 #include <rsutils/signal.h>
 #include <rsutils/concurrency/concurrency.h>
-#include <rsutils/json.h>
+#include <rsutils/json-fwd.h>
 
 #include <map>
 #include <set>
@@ -31,7 +31,7 @@ public:
     struct option_and_value
     {
         std::shared_ptr< option > sptr;
-        rsutils::json last_known_value;
+        std::shared_ptr< rsutils::json > p_last_known_value;
     };
 
     using options_and_values = std::map< rs2_option, option_and_value >;

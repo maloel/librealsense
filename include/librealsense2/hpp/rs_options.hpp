@@ -12,6 +12,22 @@
 
 namespace rs2
 {
+    class option_value
+    {
+        std::shared_ptr< const rs2_option_value > _value;
+
+    public:
+        option_value( rs2_option_value const * handle )
+            : _value( handle, rs2_delete_option_value )
+        {
+        }
+        option_value( option_value const & ) = default;
+        option_value( option_value && ) = default;
+        option_value() = default;
+
+        rs2_option_value const * operator->() const { return _value.get(); }
+    };
+
     class options_list
     {
     public:
@@ -32,19 +48,18 @@ namespace rs2
         {
         }
 
-        rs2_option_value const * operator[]( size_t index ) const
+        option_value operator[]( size_t index ) const
         {
             rs2_error * e = nullptr;
-            rs2_option_value const * p_value
-                = rs2_get_option_value_from_list( _list.get(), static_cast< int >( index ), &e );
+            auto value = rs2_get_option_value_from_list( _list.get(), static_cast< int >( index ), &e );
             error::handle( e );
-            return p_value;
+            return value;
         }
 
         size_t size() const { return _size; }
 
-        rs2_option_value const * front() const { return ( *this )[0]; }
-        rs2_option_value const * back() const { return ( *this )[size() - 1]; }
+        option_value front() const { return ( *this )[0]; }
+        option_value back() const { return ( *this )[size() - 1]; }
 
         class iterator
         {
@@ -55,7 +70,7 @@ namespace rs2
             }
 
         public:
-            rs2_option_value const * operator*() const { return _list[_index]; }
+            option_value operator*() const { return _list[_index]; }
             
             bool operator!=( const iterator & other ) const
             {
@@ -165,7 +180,7 @@ namespace rs2
         }
 
         /**
-        * read option's value
+        * read option's float value
         * \param[in] option   option id to be queried
         * \return value of the option
         */
@@ -175,6 +190,19 @@ namespace rs2
             auto res = rs2_get_option(_options, option, &e);
             error::handle(e);
             return res;
+        }
+
+        /**
+        * read option's value
+        * \param[in] option_id   option id to be queried
+        * \return                option value
+        */
+        option_value get_option_value( rs2_option option_id ) const
+        {
+            rs2_error * e = nullptr;
+            auto value = rs2_get_option_value( _options, option_id, &e );
+            error::handle( e );
+            return value;
         }
 
         /**
