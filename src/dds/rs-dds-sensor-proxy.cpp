@@ -40,6 +40,7 @@ dds_sensor_proxy::dds_sensor_proxy( std::string const & sensor_name,
     , _dev( dev )
     , _name( sensor_name )
     , _md_enabled( dev->supports_metadata() )
+    , _options_watcher( dev, sensor_name )
 {
 }
 
@@ -159,6 +160,12 @@ void dds_sensor_proxy::register_basic_converters()
 
     // Confidence
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE ) );
+}
+
+
+rsutils::subscription dds_sensor_proxy::register_options_changed_callback( options_watcher::callback && cb )
+{
+    return _options_watcher.subscribe( std::move( cb ) );
 }
 
 
