@@ -613,6 +613,30 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 
     // Initialize the DDS device server with the supported streams
     _dds_device_server->init( supported_streams, options, extrinsics );
+
+    for( auto & name_sensor : _rs_sensors )
+    {
+        auto & sensor = name_sensor.second;
+        sensor.on_options_changed(
+            [this, weak_sensor = std::weak_ptr< rs2_sensor >( sensor.get() )]( rs2::options_list const & options )
+            {
+                if( auto strong_sensor = weak_sensor.lock() )
+                {
+                    rs2::sensor sensor( strong_sensor );
+                    for( auto changed_option : options )
+                    {
+                        std::string const option_name = sensor.get_option_name( changed_option->id );
+                        json option_values = json::object();
+                        option_values[option_name] = changed_option->as_float;
+                        json j = json::object( {
+                            { "id", "set-option" },
+                            { "option-values", std::move( option_values ) },
+                        } );
+                        _dds_device_server->publish_notification( std::move( j ) );
+                    }
+                }
+            } );
+    }
 }
 
 
