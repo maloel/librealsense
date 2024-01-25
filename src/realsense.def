@@ -86,6 +86,8 @@ EXPORTS
     rs2_extract_target_dimensions
 
     rs2_get_option
+    rs2_get_option_value
+    rs2_delete_option_value
     rs2_set_option
     rs2_supports_option
     rs2_get_option_range
@@ -142,6 +144,7 @@ EXPORTS
     rs2_format_to_string
     rs2_distortion_to_string
     rs2_option_to_string
+    rs2_option_type_to_string
     rs2_option_from_string
     rs2_camera_info_to_string
     rs2_frame_metadata_to_string

@@ -1,9 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-
 #include <src/core/options-watcher.h>
 #include <proc/synthetic-stream.h>
+#include <rsutils/json.h>
+
+using rsutils::json;
 
 
 namespace librealsense {
@@ -25,7 +27,7 @@ void options_watcher::register_option( rs2_option id, std::shared_ptr< option > 
 {
     {
         std::lock_guard< std::mutex > lock( _mutex );
-        _options[id] = { option, rsutils::missing_json };
+        _options[id] = { option };
     }
 
     if( should_start() )
@@ -127,11 +129,11 @@ options_watcher::options_and_values options_watcher::update_options()
     {
         try
         {
-            auto curr_val = opt.second.sptr->query();
+            json curr_val = opt.second.sptr->query();
 
-            if( ! opt.second.last_known_value.exists() || opt.second.last_known_value != curr_val )
+            if( ! opt.second.p_last_known_value || *opt.second.p_last_known_value != curr_val )
             {
-                opt.second.last_known_value = curr_val;
+                opt.second.p_last_known_value = std::make_shared< json >( std::move( curr_val ) );
                 updated_options[opt.first] = opt.second;
             }
         }

@@ -134,6 +134,12 @@ extern "C" {
         RS2_OPTION_TYPE_COUNT
     } rs2_option_type;
 
+    /**
+    * Returns the option type as a string, or "UNKNOWN" otherwise.
+    * \param[in] type    the option type identifier
+    */
+    const char * rs2_option_type_to_string( rs2_option_type type );
+
     typedef struct rs2_option_value
     {
         rs2_option id;
@@ -280,6 +286,15 @@ extern "C" {
     float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error);
 
     /**
+    * read option value from the sensor
+    * \param[in] options    the options container
+    * \param[in] option_id  option id to be queried
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return pointer to the value structure of the option; use rs2_delete_option_value to clean up
+    */
+    rs2_option_value const * rs2_get_option_value( const rs2_options * options, rs2_option option_id, rs2_error ** error );
+
+    /**
     * write new value to sensor option
     * \param[in] options    the options container
     * \param[in] option     option id to be queried
@@ -326,6 +341,12 @@ extern "C" {
     * \return temporary (goes away with the options-list) pointer to the option-value struct
     */
     rs2_option_value const * rs2_get_option_value_from_list( const rs2_options_list * options, int i, rs2_error ** error );
+
+    /**
+    * Clean up a value and all it points to
+    * \param[in] handle value to delete
+    */
+    void rs2_delete_option_value( rs2_option_value const * handle );
 
     /**
     * Deletes options list

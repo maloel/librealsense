@@ -13,7 +13,7 @@ void init_options(py::module &m) {
         rs2_option id;
         py::object value;
 
-        option_value( rs2_option_value const * value_ )
+        option_value( rs2::option_value const & value_ )
             : id( value_->id )
         {
             if( RS2_OPTION_TYPE_FLOAT == value_->type )
