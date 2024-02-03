@@ -136,6 +136,29 @@ struct rs2_sensor : public rs2_options
     rsutils::subscription subscription;
 };
 
+namespace librealsense {
+
+template<>
+struct arg_streamer< rs2_options *, false >
+{
+    void stream_arg( std::ostream & out, rs2_options * options, bool last )
+    {
+        out << ':';
+        if( options )
+        {
+            if( auto sens = dynamic_cast< rs2_sensor * >( options ) )
+                out << " '" << sens->sensor->get_info( RS2_CAMERA_INFO_NAME ) << "'";
+            else
+                out << (int *)options;  // Go through (int*) to avoid dumping the content of char*
+        }
+        else
+            out << "nullptr";
+        out << ( last ? "" : ", " );
+    }
+};
+
+}  // namespace librealsense
+
 struct rs2_context
 {
     std::shared_ptr<librealsense::context> ctx;
@@ -204,7 +227,7 @@ struct rs2_error
 
 rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
-    LOG_ERROR( "[" << name << "][" << rs2_exception_type_to_string( type ) << "] " << what << ": " << args );
+    LOG_ERROR( "[" << name << "( " << args << " ) " << rs2_exception_type_to_string( type ) << "] " << what );
     return new rs2_error{ what, name, args, type };
 }
 NOEXCEPT_RETURN(nullptr, what, name, args, type)
