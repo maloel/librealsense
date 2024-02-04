@@ -256,7 +256,10 @@ bool dds_device::check_reply( rsutils::json const & reply, std::string * p_expla
     else
     {
         os << "[";
-        if( auto id = reply.nested( topics::reply::key::id ) )
+        // An 'id' is mandatory, but if it's a response to a control it's contained there
+        auto const control = reply.nested( topics::reply::key::control );
+        auto const control_sample = control ? reply.nested( topics::reply::key::sample ) : rsutils::missing_json;
+        if( auto id = ( control_sample ? control : reply ).nested( topics::reply::key::id ) )
         {
             if( id.is_string() )
                 os << "\"" << id.string_ref() << "\" ";
