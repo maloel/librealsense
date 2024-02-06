@@ -615,21 +615,21 @@ void dds_device::impl::on_stream_header( json const & j, eprosima::fastdds::dds:
 
     if( _streams.size() >= _n_streams_expected )
         DDS_THROW( runtime_error, "more streams than expected (" << _n_streams_expected << ") received" );
-    auto & stream_type = j.at( "type" ).string_ref();
-    auto & stream_name = j.at( "name" ).string_ref();
+    auto & stream_type = j.at( topics::notification::stream_header::key::type ).string_ref();
+    auto & stream_name = j.at( topics::notification::stream_header::key::name ).string_ref();
 
     auto & stream = _streams[stream_name];
     if( stream )
         DDS_THROW( runtime_error, "stream '" << stream_name << "' already exists" );
 
-    auto & sensor_name = j.at( "sensor-name" ).string_ref();
+    auto & sensor_name = j.at( topics::notification::stream_header::key::sensor_name ).string_ref();
     size_t default_profile_index = j.at( "default-profile-index" ).get< size_t >();
     dds_stream_profiles profiles;
 
 #define TYPE2STREAM( S, P )                                                                                            \
     if( stream_type == #S )                                                                                            \
     {                                                                                                                  \
-        for( auto & profile : j["profiles"] )                                                                          \
+        for( auto & profile : j[topics::notification::stream_header::key::profiles] )                                  \
             profiles.push_back( dds_stream_profile::from_json< dds_##P##_stream_profile >( profile ) );                \
         stream = std::make_shared< dds_##S##_stream >( stream_name, sensor_name );                                     \
     }                                                                                                                  \
@@ -644,7 +644,7 @@ void dds_device::impl::on_stream_header( json const & j, eprosima::fastdds::dds:
 
 #undef TYPE2STREAM
 
-    if( j.at( "metadata-enabled" ).get< bool >() )
+    if( j.at( topics::notification::stream_header::key::metadata_enabled ).get< bool >() )
     {
         create_metadata_reader();
         stream->enable_metadata();  // Call before init_profiles
@@ -674,7 +674,7 @@ void dds_device::impl::on_stream_options( json const & j, eprosima::fastdds::dds
     if( _state != state_t::WAIT_FOR_STREAM_OPTIONS )
         return;
 
-    auto & stream_name = j.at( "stream-name" ).string_ref();
+    auto & stream_name = j.at( topics::notification::stream_options::key::stream_name ).string_ref();
     auto stream_it = _streams.find( stream_name );
     if( stream_it == _streams.end() )
         DDS_THROW( runtime_error,
