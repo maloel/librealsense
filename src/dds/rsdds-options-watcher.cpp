@@ -25,9 +25,8 @@ dds_options_watcher::dds_options_watcher( std::shared_ptr< realdds::dds_device >
 dds_options_watcher::options_and_values dds_options_watcher::update_options()
 {
     realdds::topics::flexible_msg msg( json{
-        { "id", "query-option" },
-        { "sensor-name", _sensor_name },
-        { "option-name", json::array() }  // [] = empty array = get all option values
+        { "id", "query-options" },
+        { "sensor-name", _sensor_name }
     } );
 
     rsutils::json reply;

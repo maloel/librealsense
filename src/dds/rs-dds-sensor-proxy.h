@@ -6,7 +6,7 @@
 #include <src/frame.h>
 #include <src/software-sensor.h>
 #include <src/proc/formats-converter.h>
-#include "rsdds-options-watcher.h"
+#include <src/core/options-watcher.h>
 
 #include <realdds/dds-metadata-syncer.h>
 
@@ -41,7 +41,7 @@ class dds_sensor_proxy : public software_sensor
     std::shared_ptr< realdds::dds_device > const _dev;
     std::string const _name;
     bool const _md_enabled;
-    dds_options_watcher _options_watcher;
+    options_watcher _options_watcher;
 
     typedef realdds::dds_metadata_syncer syncer_type;
     static void frame_releaser( syncer_type::frame_type * f ) { static_cast< frame * >( f )->release(); }

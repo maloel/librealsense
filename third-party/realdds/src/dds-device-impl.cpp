@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include "dds-device-impl.h"
 
@@ -126,7 +126,7 @@ std::string dds_device::impl::debug_name() const
 void dds_device::impl::on_notification( json && j, eprosima::fastdds::dds::SampleInfo const & notification_sample )
 {
     typedef std::map< std::string,
-                      void ( dds_device::impl::* )( rsutils::json const &,
+                      void ( dds_device::impl::* )( json const &,
                                                     eprosima::fastdds::dds::SampleInfo const & ) >
         notification_handlers;
     static notification_handlers const _notification_handlers{
@@ -249,7 +249,7 @@ void dds_device::impl::on_set_option( json const & j, eprosima::fastdds::dds::Sa
     {
         if( option->get_name() == option_name )
         {
-            option->set_value( value_j.get< float >() );
+            option->set_value( value_j );
             return;
         }
     }
@@ -289,7 +289,7 @@ void dds_device::impl::on_query_options( json const & j, eprosima::fastdds::dds:
         {
             if( option->get_name() == option_name )
             {
-                option->set_value( new_value.get< float >() );
+                option->set_value( new_value );
                 return;
             }
         }
@@ -301,6 +301,7 @@ void dds_device::impl::on_query_options( json const & j, eprosima::fastdds::dds:
     if( ! option_values.is_object() )
         throw std::runtime_error( "missing option-values" );
 
+    LOG_DEBUG( "[" << debug_name() << "] got query-options: " << option_values.dump(4) );
     for( auto it = option_values.begin(); it != option_values.end(); ++it )
     {
         if( it->is_object() )
@@ -400,7 +401,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
 }
 
 
-void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
+void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & option, json new_value )
 {
     if( ! option )
         DDS_THROW( runtime_error, "must provide an option to set" );
@@ -419,7 +420,7 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
 }
 
 
-float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > & option )
+json dds_device::impl::query_option_value( const std::shared_ptr< dds_option > & option )
 {
     if( ! option )
         DDS_THROW( runtime_error, "must provide an option to query" );
@@ -434,7 +435,7 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
     json reply;
     write_control_message( j, &reply );
 
-    return reply.at( topics::reply::query_option::key::value ).get< float >();
+    return reply.at( topics::reply::query_option::key::value );
 }
 
 
@@ -683,9 +684,11 @@ void dds_device::impl::on_stream_options( json const & j, eprosima::fastdds::dds
     if( auto options_j = j.nested( topics::notification::stream_options::key::options ) )
     {
         dds_options options;
-        for( auto & option : options_j )
+        for( auto & option_j : options_j )
         {
-            options.push_back( dds_option::from_json( option ) );
+            LOG_DEBUG( "[" << debug_name() << "]     ... " << option_j );
+            auto option = dds_option::from_json( option_j );
+            options.push_back( option );
         }
 
         stream_it->second->init_options( options );

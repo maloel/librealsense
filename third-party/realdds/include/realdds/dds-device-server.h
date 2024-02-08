@@ -94,12 +94,17 @@ public:
     bool has_metadata_readers() const;
 
     typedef std::function< void( const std::shared_ptr< realdds::dds_option > & option, float value ) > set_option_callback;
-    typedef std::function< float( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
+    typedef std::function< rsutils::json( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
     void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
     void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
 
     typedef std::function< bool( std::string const &, rsutils::json const &, rsutils::json & ) > control_callback;
     void on_control( control_callback callback ) { _control_callback = std::move( callback ); }
+
+    // Locate an option based on stream name (empty for device option) and option name
+    std::shared_ptr< dds_option > find_option( std::string const & option_name, std::string const & stream_name ) const;
+    // Same as find_options, except throws if not found
+    std::shared_ptr< dds_option > get_option( std::string const & option_name, std::string const & stream_name ) const;
 
 private:
     struct control_sample;
@@ -109,9 +114,7 @@ private:
     void on_query_option( control_sample const &, rsutils::json & reply );
     void on_query_options( control_sample const &, rsutils::json & reply );
 
-    std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & stream_name ) const;
-    std::shared_ptr< dds_option > get_option( const std::string & option_name, const std::string & stream_name ) const;
-    float query_option( std::shared_ptr< dds_option > const & ) const;
+    rsutils::json query_option( std::shared_ptr< dds_option > const & ) const;
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;

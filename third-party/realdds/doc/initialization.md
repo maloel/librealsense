@@ -84,11 +84,11 @@ This is optional: not all devices have options. See [device](device.md).
 ```
 
 * `"options"` is an array of options
-    * Each option is an array of `[name, value, range..., default-value, description, options...]`:
+    * Each option is an array of `[name, value, range..., default-value, description, properties...]`:
         * The `name` is what will be displayed to the user
         * The current `value`
         * An optional `range` of valid values
-            * Numeric options (`float`, `int`), defined by a `minimum`, `maximum`, and `stepping`, e.g. "Domain" in the example above
+            * Numeric options (`float`, `integer`, `unsigned`), defined by a `minimum`, `maximum`, and `stepping`, e.g. "Domain" in the example above
                 * I.e., is-valid = one-of( `minimum`, `minimum+1*stepping`, `minimum+2*stepping`, ..., `maximum` )
             * Booleans can remove the range, e.g. `["Enabled", true, true, "Description"]`
             * Free string options would likewise have no range, e.g. `["Name", "Bob", "", "The customer's name"]`
@@ -96,10 +96,18 @@ This is optional: not all devices have options. See [device](device.md).
             * **NOTE**: Only numeric options are implemented at this time
                 * Booleans can be expressed as a range with `minimum=0`, `maximum=1`, `stepping=1`
         * A `default-value` which also adheres to the range
+            * If this and the range are missing, the option is read-only
         * A user-friendly description that describes the option, to be shown in any tooltip
-        * Additional `options` describing behavior
-            * E.g., `"read-only"`, `"volatile"`, etc.
-            * **NOTE**: none are implemented at this time
+        * Additional `properties` describing behavior or nature, as an array of (case-sensitive) strings
+            * `"optional"` to note that it's possible for it to not have a value; lack of a value is denoted as `null` in the JSON
+                * If optional, a type must also be present!
+                * E.g., `["name", null, "description", ["optional", "string"]]` is an optional read-only string value that's currently unset
+            * `"string"`, `"signed"`, `"unsigned"`, `"boolean"`, `"float"`, `"IPv4"` are possible types
+                * If not there, the value type (if not `null`) can be used
+                    * Numeric integral values default to `signed`
+                * `"IPv4"` for a string option that conforms to `W.X.Y.Z` format
+            * `"read-only"` options have neither range nor default value, so this property is optional
+                * `set-option` will fail for these, though their value may change on the server side
     * The device server has final say whether an option value is valid or not, and return an error if `set-option` specifies an unsupported or invalid value based on context
 
 Device options will not be shown in the Viewer.

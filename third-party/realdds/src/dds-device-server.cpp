@@ -375,9 +375,9 @@ void dds_device_server::on_set_option( control_sample const & control, rsutils::
 }
 
 
-float dds_device_server::query_option( std::shared_ptr< dds_option > const & option ) const
+json dds_device_server::query_option( std::shared_ptr< dds_option > const & option ) const
 {
-    float value;
+    json value;
     if( _query_option_callback )
     {
         value = _query_option_callback( option );
@@ -405,37 +405,59 @@ void dds_device_server::on_query_option( control_sample const & control, rsutils
 }
 
 
-void dds_device_server::on_query_options( control_sample const & control, rsutils::json & reply )
+void dds_device_server::on_query_options( control_sample const & control, json & reply )
 {
-    std::string const & stream_name  // optional
-        = control.json.nested( topics::control::query_options::key::stream_name ).string_ref_or_empty();
-
     // We return a stream->option->value mapping in the reply "option-values"
-    rsutils::json & option_values = reply[topics::reply::query_options::key::option_values] = rsutils::json::object();
-    if( stream_name.empty() )
+    json & option_values = reply[topics::reply::query_options::key::option_values] = json::object();
+
+    auto fill_option_values = [this]( dds_options const & options, json & values )
     {
-        std::string const & sensor_name  // optional
-            = control.json.nested( topics::control::query_options::key::sensor_name ).string_ref_or_empty();
-        for( auto const & option : _options )
+        for( auto const & option : options )
         {
             auto stream = option->stream();
-            // If we're asked for a sensor, ignore this option if not in it
-            if( ! sensor_name.empty() && ( ! stream || stream->sensor_name() != sensor_name ) )
-                continue;
-            // Device options are embedded directly in option-values
-            auto & stream_j = stream ? option_values[stream->name()] : option_values;
-            stream_j[option->get_name()] = query_option( option );
+            values[option->get_name()] = query_option( option );
+        }
+    };
+
+    if( auto stream_name_j = control.json.nested( topics::control::query_options::key::stream_name ) )
+    {
+        if( ! stream_name_j.is_string() )
+            DDS_THROW( runtime_error, "stream-name expected as a string" );
+
+        auto & stream_name = stream_name_j.string_ref();
+        if( stream_name.empty() )
+        {
+            // Just want device options, embedded directly in option-values
+            fill_option_values( _options, option_values );
+        }
+        else
+        {
+            auto it = _stream_name_to_server.find( stream_name );
+            if( it == _stream_name_to_server.end() )
+                DDS_THROW( runtime_error, "stream '" + stream_name + "' not found" );
+            fill_option_values( it->second->options(), option_values[stream_name] );
+        }
+    }
+    else if( auto sensor_name_j = control.json.nested( topics::control::query_options::key::sensor_name ) )
+    {
+        if( ! sensor_name_j.is_string() )
+            DDS_THROW( runtime_error, "sensor-name expected as a string" );
+
+        for( auto & stream_server : _stream_name_to_server )
+        {
+            auto stream = stream_server.second;
+            if( stream->sensor_name() == sensor_name_j.string_ref() )
+                fill_option_values( stream->options(), option_values[stream->name()] );
         }
     }
     else
     {
-        auto it = _stream_name_to_server.find( stream_name );
-        if( it != _stream_name_to_server.end() )
+        // User asked for ALL options (device & all streams)
+        fill_option_values( _options, option_values );
+        for( auto & stream_server : _stream_name_to_server )
         {
-            auto stream = it->second;
-            auto & stream_j = option_values[stream->name()];
-            for( auto const & option : stream->options() )
-                stream_j[option->get_name()] = query_option( option );
+            auto stream = stream_server.second;
+            fill_option_values( stream->options(), option_values[stream->name()] );
         }
     }
 }

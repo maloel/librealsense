@@ -82,6 +82,7 @@ namespace rs2
             {
                 s->on_options_changed( [this]( const options_list & list )
                 {
+                    LOG_DEBUG( "-------------> " << list.size() << " options changed" );
                     for( auto changed_option : list )
                     {
                         auto it = options_metadata.find( changed_option->id );

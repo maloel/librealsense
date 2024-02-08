@@ -41,7 +41,8 @@ public:
 
     float query() const override;
 
-    bool is_enabled() const override { return true; }
+    bool is_read_only() const override;
+    bool is_enabled() const override;
     const char * get_description() const override;
 };
 
