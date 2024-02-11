@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 
 #include <rsutils/py/pybind11.h>
 #include <rsutils/easylogging/easyloggingpp.h>
@@ -11,6 +11,8 @@
 #include <rsutils/number/stabilized-value.h>
 #include <rsutils/os/executable-name.h>
 #include <rsutils/os/special-folder.h>
+
+using rsutils::json;
 
 
 #define NAME pyrsutils
@@ -40,7 +42,7 @@ PYBIND11_MODULE(NAME, m) {
         py::arg( "max-length" ) = 96 );
     m.def(
         "shorten_json_string",
-        []( rsutils::json const & j, size_t max_length )
+        []( json const & j, size_t max_length )
         { return rsutils::string::shorten_json_string( j.dump(), max_length ).to_string(); },
         py::arg( "json" ),
         py::arg( "max-length" ) = 96 );
@@ -151,4 +153,51 @@ PYBIND11_MODULE(NAME, m) {
         .value( "user_pictures", rsutils::os::special_folder::user_pictures )
         .value( "user_videos", rsutils::os::special_folder::user_videos );
     m.def( "get_special_folder", rsutils::os::get_special_folder );
+
+    enum json_value_type {
+        null = json::value_t::null,
+        object = json::value_t::object,
+        array = json::value_t::array,
+        string = json::value_t::string,
+        boolean = json::value_t::boolean,
+        number_integer = json::value_t::number_integer,
+        number_unsigned = json::value_t::number_unsigned,
+        number_float = json::value_t::number_float,
+        binary = json::value_t::binary,
+        discarded = json::value_t::discarded
+    };
+    py::enum_< json_value_type >( m, "json_value_type" )
+        .value( "null", json_value_type::null )
+        .value( "object", json_value_type::object )
+        .value( "array", json_value_type::array )
+        .value( "string", json_value_type::string )
+        .value( "boolean", json_value_type::boolean )
+        .value( "number_integer", json_value_type::number_integer )
+        .value( "number_unsigned", json_value_type::number_unsigned )
+        .value( "number_float", json_value_type::number_float )
+        .value( "binary", json_value_type::binary )
+        .value( "discarded", json_value_type::discarded );
+    struct json_w
+    {
+        json j;
+    };
+    py::class_< json_w >( m, "json" )
+        .def( py::init<>() )
+        .def( py::init< json const & >() )
+        .def_static( "parse",
+                     []( std::string const & s ) {  //
+                         return json_w{ json::parse( s ) };
+                     } )
+        .def_readwrite( "j", &json_w::j )
+        .def( "type", []( json_w const & self ) { return (json_value_type)self.j.type(); } )
+        .def( "type_name", []( json_w const & self ) { return self.j.type_name(); } )
+        .def( "size", []( json_w const & self ) { return self.j.size(); } )
+        .def( "empty", []( json_w const & self ) { return self.j.empty(); } )
+        .def( "__repr__",
+              []( json_w const & self )
+              {
+                  std::ostringstream os;
+                  os << self.j;
+                  return os.str();
+              } );
 }
