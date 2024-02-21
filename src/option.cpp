@@ -36,6 +36,13 @@ void option_base::enable_recording(std::function<void(const option&)> recording_
     _recording_function = recording_action;
 }
 
+rs2_option_type option::get_value_type() const noexcept
+{
+    // By default, all options are floats
+    return RS2_OPTION_TYPE_FLOAT;
+}
+
+
 void option::create_snapshot(std::shared_ptr<option>& snapshot) const
 {
     snapshot = std::make_shared<const_value_option>(get_description(), query());
