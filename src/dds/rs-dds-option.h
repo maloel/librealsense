@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
-
 #pragma once
 
 #include <src/option.h>
@@ -21,6 +20,7 @@ namespace librealsense {
 class rs_dds_option : public option_base
 {
     std::shared_ptr< realdds::dds_option > _dds_opt;
+    rs2_option_type const _rs_type;
 
 public:
     typedef std::function< void( const std::string & name, float value ) > set_option_callback;
@@ -34,6 +34,8 @@ public:
     rs_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt,
                    set_option_callback set_opt_cb,
                    query_option_callback query_opt_cb );
+
+    rs2_option_type get_value_type() const noexcept override { return _rs_type; }
 
     void set( float value ) override;
 
