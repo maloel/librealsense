@@ -16,7 +16,9 @@ void init_options(py::module &m) {
         option_value( rs2::option_value const & value_ )
             : id( value_->id )
         {
-            if( RS2_OPTION_TYPE_FLOAT == value_->type )
+            if( ! value_->is_valid )
+                value = py::cast< py::none >( Py_None );
+            else if( RS2_OPTION_TYPE_FLOAT == value_->type )
                 value = py::float_( value_->as_float );
             else if( RS2_OPTION_TYPE_STRING == value_->type )
                 value = py::str( value_->as_string );
