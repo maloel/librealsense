@@ -4,8 +4,7 @@
 
 #include "extension.h"
 #include <src/basics.h>
-
-enum rs2_option_type;
+#include <librealsense2/h/rs_option.h>
 
 
 namespace librealsense {
