@@ -4,7 +4,6 @@
 #include "rs-dds-option.h"
 
 #include <realdds/dds-option.h>
-#include <librealsense2/h/rs_option.h>
 
 
 namespace librealsense {
@@ -30,6 +29,8 @@ static rs2_option_type rs_type_from_dds_option( std::shared_ptr< realdds::dds_op
         return RS2_OPTION_TYPE_FLOAT;
     if( std::dynamic_pointer_cast< realdds::dds_string_option >( dds_opt ) )
         return RS2_OPTION_TYPE_STRING;
+    if( std::dynamic_pointer_cast< realdds::dds_boolean_option >( dds_opt ) )
+        return RS2_OPTION_TYPE_BOOLEAN;
     if( std::dynamic_pointer_cast< realdds::dds_integer_option >( dds_opt ) )
         return RS2_OPTION_TYPE_INTEGER;
     return RS2_OPTION_TYPE_COUNT;
