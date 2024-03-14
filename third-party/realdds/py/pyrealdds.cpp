@@ -919,7 +919,12 @@ PYBIND11_MODULE(NAME, m) {
         motion_stream_client_base( m, "motion_stream", stream_client_base );
     motion_stream_client_base
         .def( "set_gyro_intrinsics", &dds_motion_stream::set_gyro_intrinsics )
-        .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics );
+        .def( "set_accel_intrinsics", &dds_motion_stream::set_accel_intrinsics )
+        .def( FN_FWD( dds_motion_stream,
+                      on_data_available,
+                      ( dds_motion_stream &, imu_msg && ),
+                      ( imu_msg && i ),
+                      callback( self, std::move( i ) ); ) );
 
 
     using subscription = rsutils::subscription;
