@@ -45,7 +45,9 @@ As such, metadata content is itself flexible and easily changed without predefin
     * `frame-number` supplied the sequential number of the frame - optional
     * `timestamp` is **critical** and is the frame timestamp, same as was sent with the image - this is used to synchronize to the image
     * `timestamp-domain` tells the client how to interpret the timestamp - optional (if missing, assuming it's a hardware timestamp)
-* The `metadata` contains the actual customizable values for metadata, as `name`-`value` mappings: the `name` is the string name of the metadata field, and the `value` its value
+* The `metadata` contains the actual customizable values for metadata, as `name`-`value` mappings
+    * The `name` is the string name of the metadata field
+    * The `value` is a 64-bit signed integer value
 
 No requirements are set for the metadata content.
 However, some agreement is needed between the server and client if the data is to be made use of! For purposes of librealsense, the names must match those returned by  `rs2_frame_metadata_to_string` and the values must be integral `long long` values.
