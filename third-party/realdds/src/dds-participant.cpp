@@ -217,10 +217,13 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // correctly and the application is stuck. eProsima is working on it. Manual solution delete shared memory files,
     // C:\ProgramData\eprosima\fastrtps_interprocess on Windows, /dev/shm on Linux
     auto udp_transport = std::make_shared< eprosima::fastdds::rtps::UDPv4TransportDescriptor >();
-    // Also change the send/receive buffers: we deal with lots of information and, without this, we'll get dropped
-    // frames and unusual behavior...
+    // Also change the receive buffers: we deal with lots of information and, without this, we'll get dropped frames and
+    // unusual behavior...
     udp_transport->sendBufferSize = 16 * 1024 * 1024;
     udp_transport->receiveBufferSize = 16 * 1024 * 1024;
+    // The server may not be able to handle fragmented packets; certain hardware cannot handle more than 1500 bytes!
+    // UDP default is 64K; overridable via 'udp/max-message-size'
+    udp_transport->maxMessageSize = 1500;
     pqos.transport().use_builtin_transports = false;
     pqos.transport().user_transports.push_back( udp_transport );
 
