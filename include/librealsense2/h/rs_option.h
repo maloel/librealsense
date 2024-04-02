@@ -162,6 +162,16 @@ extern "C" {
     */
     const char * rs2_option_type_to_string( rs2_option_type type );
 
+    /**
+    * A rectangle expressed in 64 bits, used with rs2_option_value::as_rect.
+    * Same semantics as rs2_set_region_of_interest.
+    */
+    typedef struct rs2_option_rect
+    {
+        int16_t x1, y1;
+        int16_t x2, y2;
+    } rs2_option_rect;
+
     /** \brief The value of an option, in a known option type.
     */
     typedef struct rs2_option_value
@@ -170,11 +180,12 @@ extern "C" {
         int is_valid;                     /**< 0 if no value available; 1 otherwise */
         rs2_option_type type;
 #pragma pack(push,1)
-        union {
+        union
+        {
             char const * as_string;       /**< valid only while rs2_option_value is alive! */
             float as_float;
             int64_t as_integer;           /**< including boolean value */
-            struct { int16_t x1, y1, x2, y2; } as_rect;
+            rs2_option_rect as_rect;
         };
 #pragma pack(pop)
     } rs2_option_value;
