@@ -754,7 +754,7 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
     case RS2_OPTION_TYPE_BOOLEAN:
         return (float)option.get_value().get< bool >();
 
-    case RS2_OPTION_TYPE_STRING:
+    case RS2_OPTION_TYPE_STRING: {
         // We can convert "enum" options to a float value
         auto r = option.get_range();
         if( r.min == 0.f && r.step == 1.f )
@@ -770,6 +770,7 @@ float rs2_get_option(const rs2_options* options, rs2_option option_id, rs2_error
             }
         }
         throw not_implemented_exception( "use rs2_get_option_value to get string values" );
+    }
 
     case RS2_OPTION_TYPE_RECT:
         throw not_implemented_exception( "use rs2_get_option_value to get rect values" );
