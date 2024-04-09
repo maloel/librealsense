@@ -23,6 +23,7 @@
 #include <realdds/dds-guid.h>
 #include <realdds/dds-time.h>
 #include <realdds/dds-topic.h>
+#include <realdds/dds-serialization.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-publisher.h>
@@ -336,7 +337,11 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< reader_qos >( m, "reader_qos" )  //
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
-            os << "<" SNAME ".reader_qos";
+            os << "<" SNAME ".reader_qos " << self.reliability();
+            if( ! ( self.durability() == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
+                os << /*" durability"*/ " " << self.durability();
+            if( ! ( self.liveliness() == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
+                os << " liveliness" " " << self.liveliness();
             os << ">";
             return os.str();
         } );
@@ -364,7 +369,11 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< writer_qos >( m, "writer_qos" )  //
         .def( "__repr__", []( writer_qos const & self ) {
             std::ostringstream os;
-            os << "<" SNAME ".writer_qos";
+            os << "<" SNAME ".writer_qos " << self.reliability();
+            if( ! ( self.durability() == eprosima::fastdds::dds::DurabilityQosPolicy() ) )
+                os << /*" durability"*/ " " << self.durability();
+            if( ! ( self.liveliness() == eprosima::fastdds::dds::LivelinessQosPolicy() ) )
+                os << " liveliness" " " << self.liveliness();
             os << ">";
             return os.str();
         } );
