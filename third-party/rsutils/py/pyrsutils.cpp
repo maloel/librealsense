@@ -6,6 +6,7 @@
 #include <rsutils/string/split.h>
 #include <rsutils/string/from.h>
 #include <rsutils/string/shorten-json-string.h>
+#include <rsutils/ios/word-format.h>
 #include <rsutils/version.h>
 #include <rsutils/number/running-average.h>
 #include <rsutils/number/stabilized-value.h>
@@ -151,4 +152,30 @@ PYBIND11_MODULE(NAME, m) {
         .value( "user_pictures", rsutils::os::special_folder::user_pictures )
         .value( "user_videos", rsutils::os::special_folder::user_videos );
     m.def( "get_special_folder", rsutils::os::get_special_folder );
+
+    struct word_format
+    {
+        std::string const input;
+        rsutils::ios::word_format wf;
+
+        word_format( std::string const & str )
+            : input( str )
+            , wf( input )
+        {
+        }
+    };
+    py::class_< word_format >( m, "word_format" )
+        .def( py::init< std::string const & >() )
+        .def( "set_delimiters", []( word_format & self, char const * delimiters ) -> word_format & { self.wf.delimited_by( delimiters ); return self; } )
+        .def( "output_dash", []( word_format & self ) -> word_format & { self.wf.delimited_by( self.wf._delimiters, rsutils::string::word_format::rf_dash ); return self; } )
+        .def( "output_space", []( word_format & self ) -> word_format & { self.wf.delimited_by( self.wf._delimiters, rsutils::string::word_format::rf_space ); return self; } )
+        .def( "capitalize_first_letter", []( word_format & self ) -> word_format & { self.wf.capitalize_first_letter(); return self; } )
+        .def( "uppercase", []( word_format & self ) -> word_format & { self.wf.uppercase(); return self; } )
+        .def( "lowercase", []( word_format & self ) -> word_format & { self.wf.lowercase(); return self; } )
+        .def( "__str__", []( word_format const & self )
+              {
+                  std::ostringstream ss;
+                  ss << self.wf;
+                  return ss.str();
+              } );
 }
