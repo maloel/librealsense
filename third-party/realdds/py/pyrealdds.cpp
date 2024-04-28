@@ -266,21 +266,14 @@ PYBIND11_MODULE(NAME, m) {
                     { self.init( domain_id, script_name(), local_settings ); },
               "local-settings"_a = json::object(), "domain-id"_a = -1 )
         .def( "init",
-              []( dds_participant & self, realdds::dds_domain_id domain_id, std::string const & name, json const & local_settings )
-                    { self.init( domain_id, name, local_settings ); },
-            "domain-id"_a, "participant-name"_a, "local-settings"_a = json::object() )
+              py::overload_cast< realdds::dds_domain_id, std::string const &, json const & >( &dds_participant::init ),
+              "domain-id"_a, "participant-name"_a, "local-settings"_a = json::object() )
         .def( "is_valid", &dds_participant::is_valid )
         .def( "guid", &dds_participant::guid )
         .def( "create_guid", &dds_participant::create_guid )
         .def( "__bool__", &dds_participant::is_valid )
-        .def( "name",
-              []( dds_participant const & self ) {
-                  eprosima::fastdds::dds::DomainParticipantQos qos;
-                  if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
-                      return std::string( qos.name() );
-                  return std::string();
-              } )
-        .def( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
+        .def( "name", &dds_participant::name )
+        .def_static( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
         .def( "names", []( dds_participant const & self ) { return self.get()->get_participant_names(); } )
         .def( "settings", &dds_participant::settings )
         .def( "__repr__",
@@ -293,9 +286,7 @@ PYBIND11_MODULE(NAME, m) {
                   }
                   else
                   {
-                      eprosima::fastdds::dds::DomainParticipantQos qos;
-                      if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
-                          os << " \"" << qos.name() << "\"";
+                      os << " \"" << self.name() << "\"";
                       os << " " << realdds::print_guid( self.guid() );
                   }
                   os << ">";
