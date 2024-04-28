@@ -166,6 +166,25 @@ double frame::calc_actual_fps() const
     return 0.;  // Unknown actual FPS
 }
 
+int64_t frame::calc_latency() const
+{
+    rs2_metadata_type source_timestamp;  // when frame was transmitted, in embedded time domain
+    if( ! find_metadata( RS2_FRAME_METADATA_FRAME_TIMESTAMP, &source_timestamp ) )
+        return 0;
+
+    auto domain_offset = _owner;
+    source_timestamp += domain_offset;  // convert to local time domain
+
+    auto destination_timestamp = additional_data.backend_timestamp;  // when backend (==DDS/USB) received it, in our time domain
+
+    auto transit = destination_timestamp - source_timestamp;
+
+    // we devide by 2 (worst case as host is not real time, so latency from embedded to line is worst case half of transit time)
+    transit /= 2;
+
+    return transit;
+}
+
 rs2_time_t frame::get_frame_system_time() const
 {
     return additional_data.system_time;

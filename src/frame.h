@@ -78,6 +78,10 @@ public:
     // Return FPS calculated as (1000*d_frames/d_timestamp), or 0 if this cannot be estimated
     double calc_actual_fps() const;
 
+    // Return frame latency (time to arrive: frame-timestamp, coverted to local time domain, to backend timestamp) in
+    // nanoseconds. Domain conversions use a running average of previous frames, so this is an estimate at best...
+    int64_t calc_latency() const;
+
     rs2_time_t get_frame_system_time() const override;
 
     std::shared_ptr< stream_profile_interface > get_stream() const override { return stream; }

@@ -419,6 +419,23 @@ namespace librealsense
         }
     };
 
+
+    class latency_md_parser : public md_attribute_parser_base
+    {
+    public:
+        bool find( const librealsense::frame & frm, rs2_metadata_type * p_value ) const override
+        {
+            auto latency_in_ns = frm.calc_latency();
+            if( fps <= 0. )
+                // In case of frame counter reset fallback to fps from the stream configuration
+                return false;
+            if( p_value )
+                *p_value = fps;
+            return true;
+        }
+    };
+
+
     /**\brief A helper function to create a specialized parser for RS4xx sensor timestamp*/
     inline std::shared_ptr<md_attribute_parser_base> make_rs400_sensor_ts_parser(std::shared_ptr<md_attribute_parser_base> frame_ts_parser,
         std::shared_ptr<md_attribute_parser_base> sensor_ts_parser)

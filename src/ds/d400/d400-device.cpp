@@ -1257,7 +1257,14 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(d400_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto raw_depth_ep = std::make_shared<uvc_sensor>(ds::DEPTH_STEREO, std::make_shared<platform::multi_pins_uvc_device>(depth_devices), std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(d400_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
+        auto raw_depth_ep
+            = std::make_shared< uvc_sensor >( ds::DEPTH_STEREO,
+                                              std::make_shared< platform::multi_pins_uvc_device >( depth_devices ),
+                                              std::unique_ptr< frame_timestamp_reader >( new global_timestamp_reader(
+                                                  std::move( d400_timestamp_reader_metadata ),
+                                                  _tf_keeper,
+                                                  enable_global_time_option ) ),
+                                              this );
         auto depth_ep = std::make_shared<ds5u_depth_sensor>(this, raw_depth_ep);
 
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
