@@ -29,6 +29,7 @@ The library will be compiled without the metadata support!\n")
 #include "uvc/uvc-types.h"
 #include <src/backend.h>  // monotonic_to_realtime
 
+#include <src/core/time-service.h>
 #include <rsutils/string/from.h>
 
 #include "Shlwapi.h"
@@ -167,6 +168,33 @@ namespace librealsense
         }
 
 
+        static inline int64_t get_ticks()
+        {
+            LARGE_INTEGER ticks;
+            QueryPerformanceCounter( &ticks );
+            return ticks.QuadPart;
+        }
+
+
+        static inline int64_t get_tick_frequency()
+        {
+            LARGE_INTEGER ticks;
+            if( ! QueryPerformanceFrequency( &ticks ) )
+                ticks.QuadPart = 10000000ll;
+            LOG_DEBUG( "tick frequency= " << ticks.QuadPart );
+            return ticks.QuadPart;
+        }
+
+
+        static inline rs2_time_t ticks_to_rs2( int64_t const ticks )
+        {
+            // convert to milli
+            static auto frequency = rs2_time_t( get_tick_frequency() );
+            //return ticks / 10000.;
+            return 1000ll /*milli/sec*/ * ticks / frequency /*ticks/sec*/;
+        }
+
+
         STDMETHODIMP source_reader_callback::OnReadSample(HRESULT hrStatus,
             DWORD dwStreamIndex,
             DWORD dwStreamFlags,
@@ -185,8 +213,31 @@ namespace librealsense
                         return S_OK;
                     }
                 }
+                else if( sample )
+                {
+                    // llTimestamp is monotonic, like a stopwatch, and uses QPC to count ticks:
+                    //      https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps
+                    // We convert this to system time by noting the first tick's "timestamp" and adding everything since
+                    // to a system clock baseline:
+                    if( ! owner->_start_time )
+                    {
+                        owner->_start_time = time_service::get_time();  // double, in milliseconds
+                        auto const dt = get_ticks() - llTimestamp;
+                        owner->_start_time -= ticks_to_rs2( dt );
+                        LOG_DEBUG( "------> start= " << std::fixed << owner->_start_time << "  base= " << llTimestamp << "; current ticks= " << get_ticks() << "; dt= " << dt );
+                        owner->_first_tick = llTimestamp;               // int64, 100ns tick count
+                        llTimestamp = 0;
+                    }
+                    else
+                    {
+                        //auto const dt = get_ticks() - llTimestamp;
+                        //LOG_DEBUG( "------> timestamp= " << llTimestamp << " = " << llTimestamp - owner->_first_tick << "; dt = " << dt );
+                        llTimestamp -= owner->_first_tick;
+                    }
+                }
                 owner->_has_started.set();
 
+                // Start reading the next sample -- when done it'll call OnReadSample again
                 LOG_HR(owner->_reader->ReadSample(dwStreamIndex, 0, nullptr, nullptr, nullptr, nullptr));
 
                 if (!owner->_is_started)
@@ -206,19 +257,22 @@ namespace librealsense
 #ifdef METADATA_SUPPORT
                             try_read_metadata(sample, metadata_size, &metadata);
 #endif
+
+                            rs2_time_t const backend_timestamp
+                                = owner->_start_time + ticks_to_rs2( llTimestamp );
+                            //LOG_DEBUG( "------>      + " << llTimestamp << " = " << std::fixed << backend_timestamp );
+                            frame_object f{ current_length, metadata_size, byte_buffer, metadata, backend_timestamp };
+
                             try
                             {
-                                auto& stream = owner->_streams[dwStreamIndex];
-                                std::lock_guard<std::mutex> lock(owner->_streams_mutex);
-                                auto profile = stream.profile;
-                                frame_object f{ current_length, metadata_size, byte_buffer, metadata, monotonic_to_realtime(llTimestamp/10000.f) };
-
-                                auto continuation = [buffer, this]()
+                                auto & stream = owner->_streams[dwStreamIndex];
+                                auto continuation = [buffer]
                                 {
                                     buffer->Unlock();
                                 };
 
-                                stream.callback(profile, f, continuation);
+                                std::lock_guard< std::mutex > lock( owner->_streams_mutex );
+                                stream.callback( stream.profile, f, continuation );
                             }
                             catch (...)
                             {
@@ -230,8 +284,10 @@ namespace librealsense
             }
 
             return S_OK;
-        };
+        }
+
         STDMETHODIMP source_reader_callback::OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) { return S_OK; }
+
         STDMETHODIMP source_reader_callback::OnFlush(DWORD)
         {
             auto owner = _owner.lock();
@@ -789,7 +845,7 @@ namespace librealsense
             _systemwide_lock(info.unique_id.c_str(), WAIT_FOR_MUTEX_TIME_OUT),
             _location(""), _device_usb_spec(usb3_type)
         {
-            if (!is_connected(info))
+            if (!is_connected(info))  // TODO this can be done as part of foreach_uvc_device below
             {
                 throw std::runtime_error("Camera not connected!");
             }
@@ -883,6 +939,7 @@ namespace librealsense
             CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
             CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
             _power_state = D0;
+            _start_time = 0;  // signal that we need to reset system time
         }
 
         void wmf_uvc_device::set_d3()
@@ -1017,6 +1074,8 @@ namespace librealsense
                                 }
 
                                 _readsample_result = S_OK;
+
+                                // Start reading the first sample -- when done it'll call OnReadSample again
                                 CHECK_HR(_reader->ReadSample(mfp.index, 0, nullptr, nullptr, nullptr, nullptr));
 
                                 const auto timeout_ms = RS2_DEFAULT_TIMEOUT;
