@@ -125,6 +125,9 @@ namespace librealsense
             CComPtr<IMFAttributes>                  _device_attrs = nullptr;
             CComPtr<IMFAttributes>                  _reader_attrs = nullptr;
 
+            rs2_time_t                              _start_time = 0;
+            MFTIME                                  _first_tick;
+
             CComPtr<IAMCameraControl>               _camera_control = nullptr;
             CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
             std::unordered_map<int, CComPtr<IKsControl>>      _ks_controls;
