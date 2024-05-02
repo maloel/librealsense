@@ -589,8 +589,14 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
         .def_readwrite( "timestamp", &image_msg::timestamp )
-        .def( "crc", []( image_msg const & self )
-              { return rsutils::number::calc_crc32( self.raw_data.data(), self.raw_data.size() ); } )
+        .def_readwrite( "encoding", &image_msg::encoding )
+        .def_readwrite( "frame_id", &image_msg::frame_id )
+        .def_readwrite( "is_bigendian", &image_msg::is_bigendian )
+        .def_readwrite( "step", &image_msg::step )
+        .def_readonly( "source_crc", &image_msg::crc )
+        .def_property_readonly( "dest_crc",
+                                []( image_msg const & self )
+                                { return rsutils::number::calc_crc32( self.raw_data.data(), self.raw_data.size() ); } )
         .def( "__bool__", &image_msg::is_valid )
         .def( "__repr__",
               []( image_msg const & self )
@@ -600,10 +606,21 @@ PYBIND11_MODULE(NAME, m) {
                   if( self.width > 0 && self.height > 0 )
                   {
                       os << ' ' << self.width << 'x' << self.height;
-                      os << 'x' << (self.raw_data.size() / (self.width * self.height));
+                      auto bpp = ( self.raw_data.size() / ( self.width * self.height ) );
+                      os << 'x' << bpp;
+                      if( self.step != self.width * bpp )
+                          os << " step " << self.step;
                   }
+                  os << ' ' << self.encoding;
                   os << " @ " << realdds::time_to_string( self.timestamp );
-                  os << " crc " << rsutils::number::calc_crc32( self.raw_data.data(), self.raw_data.size() );
+                  os << " frame-id " << self.frame_id;
+                  if( self.crc )
+                  {
+                      auto dest_crc = rsutils::number::calc_crc32( self.raw_data.data(), self.raw_data.size() );
+                      if( self.crc != dest_crc )
+                          os << " crc " << dest_crc;
+                  }
+                  //os << " BE " << +self.is_bigendian;
                   os << ">";
                   return os.str();
               } )

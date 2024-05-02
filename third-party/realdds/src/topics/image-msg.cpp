@@ -8,9 +8,12 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
+
+#include <rsutils/number/crc32.h>
 
 
 namespace realdds {
@@ -23,6 +26,22 @@ image_msg::image_msg( sensor_msgs::msg::Image && rhs )
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
     timestamp = dds_time( rhs.header().stamp().sec(), rhs.header().stamp().nanosec() );
+    frame_id = rhs.header().frame_id().c_str();  // length is always 63
+    encoding = rhs.encoding().c_str();           // length is always 15
+    is_bigendian = rhs.is_bigendian();
+    step = rhs.step();
+    try
+    {
+        crc = std::stoul( frame_id );
+    }
+    catch( std::exception const & e )
+    {
+        crc = 0;
+        LOG_DEBUG( "failed to get CRC from frame_id: "
+                   << e.what() << "\n    " << frame_id << "(" << frame_id.length() << ") " << width << 'x' << height
+                   << 'x' << (raw_data.size() / (width * height)) << " @ " << time_to_string( timestamp )
+                   << " crc dest " << rsutils::number::calc_crc32( raw_data.data(), raw_data.size() ) );
+    }
 }
 
 
@@ -32,6 +51,22 @@ image_msg & image_msg::operator=( sensor_msgs::msg::Image && rhs )
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
     timestamp = dds_time( rhs.header().stamp().sec(), rhs.header().stamp().nanosec() );
+    frame_id = rhs.header().frame_id().c_str();  // length is always 63
+    encoding = rhs.encoding().c_str();           // length is always 15
+    is_bigendian = rhs.is_bigendian();
+    step = rhs.step();
+    try
+    {
+        crc = std::stoul( frame_id );
+    }
+    catch( std::exception const & e )
+    {
+        crc = 0;
+        LOG_DEBUG( "failed to get CRC from frame_id: "
+                   << e.what() << "\n    " << frame_id << "(" << frame_id.length() << ") " << width << 'x' << height
+                   << 'x' << ( raw_data.size() / ( width * height ) ) << " @ " << time_to_string( timestamp )
+                   << " crc dest " << rsutils::number::calc_crc32( raw_data.data(), raw_data.size() ) );
+    }
 
     return *this;
 }

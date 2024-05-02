@@ -68,6 +68,13 @@ public:
     int width = -1;
     int height = -1;
     dds_time timestamp;
+    
+    std::string frame_id;
+    std::string encoding;
+    uint8_t is_bigendian;
+    uint32_t step;
+
+    uint32_t crc;
 };
 
 
