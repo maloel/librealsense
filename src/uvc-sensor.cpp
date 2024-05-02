@@ -120,9 +120,10 @@ void uvc_sensor::open( const stream_profiles & requests )
                 [this, req_profile_base, req_profile, last_frame_number, last_timestamp](
                     platform::stream_profile p,
                     platform::frame_object f,
-                    std::function< void() > continuation ) mutable
+                    std::function< void() > continuation ) mutable  // because we change last_frame_number/last_timestamp
                 {
                     const auto system_time = time_service::get_time();  // time frame was received from the backend
+                    //LOG_DEBUG( "------>      system-time= " << std::fixed << system_time );
 
                     if( ! this->is_streaming() )
                     {

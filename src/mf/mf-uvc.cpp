@@ -179,18 +179,14 @@ namespace librealsense
         static inline int64_t get_tick_frequency()
         {
             LARGE_INTEGER ticks;
-            if( ! QueryPerformanceFrequency( &ticks ) )
-                ticks.QuadPart = 10000000ll;
-            LOG_DEBUG( "tick frequency= " << ticks.QuadPart );
+            QueryPerformanceFrequency( &ticks );
             return ticks.QuadPart;
         }
 
 
         static inline rs2_time_t ticks_to_rs2( int64_t const ticks )
         {
-            // convert to milli
             static auto frequency = rs2_time_t( get_tick_frequency() );
-            //return ticks / 10000.;
             return 1000ll /*milli/sec*/ * ticks / frequency /*ticks/sec*/;
         }
 
@@ -224,7 +220,7 @@ namespace librealsense
                         owner->_start_time = time_service::get_time();  // double, in milliseconds
                         auto const dt = get_ticks() - llTimestamp;
                         owner->_start_time -= ticks_to_rs2( dt );
-                        LOG_DEBUG( "------> start= " << std::fixed << owner->_start_time << "  base= " << llTimestamp << "; current ticks= " << get_ticks() << "; dt= " << dt );
+                        //LOG_DEBUG( "------> start= " << std::fixed << owner->_start_time << "  base= " << llTimestamp << "; current ticks= " << get_ticks() << "; dt= " << dt );
                         owner->_first_tick = llTimestamp;               // int64, 100ns tick count
                         llTimestamp = 0;
                     }

@@ -4,23 +4,29 @@
 #test:device D400*
 
 import pyrealsense2 as rs
-from rspy import test, log
+from rspy import cmdline, test, log
 from time import sleep
 
 #rs.log_to_console( rs.log_severity.debug )
 rs.log_to_file( rs.log_severity.debug, 'bet.log' )
 
+fps = int( cmdline.pop_arg( '--fps', '60' ) )
+
+
 with test.closure( 'setup', on_fail=test.ABORT ):
     dev = test.find_first_device_or_exit()
-    sensor = dev.first_color_sensor()
+    sensor = dev.first_depth_sensor()
 
     # Make sure global time is disabled (keep things as raw as possible)
     sensor.set_option( rs.option.global_time_enabled, 0 )
 
     profile = next( p for p in sensor.profiles if
-            p.fps() == 30
-        #and p.format() == rs.format.yuyv
-        and p.is_default() )
+            p.fps() == fps
+        and p.format() == rs.format.z16
+        and rs.video_stream_profile(p)
+        and rs.video_stream_profile(p).width() == 848
+        )
+    log.d( f'profile= {profile}' )
 
     def on_frame( frame ):
         # The time-of-arrival is when librealsense sensor gets the frame
