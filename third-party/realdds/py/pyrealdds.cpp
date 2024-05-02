@@ -589,6 +589,8 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "width", &image_msg::width )
         .def_readwrite( "height", &image_msg::height )
         .def_readwrite( "timestamp", &image_msg::timestamp )
+        .def( "crc", []( image_msg const & self )
+              { return rsutils::number::calc_crc32( self.raw_data.data(), self.raw_data.size() ); } )
         .def( "__bool__", &image_msg::is_valid )
         .def( "__repr__",
               []( image_msg const & self )
@@ -601,6 +603,7 @@ PYBIND11_MODULE(NAME, m) {
                       os << 'x' << (self.raw_data.size() / (self.width * self.height));
                   }
                   os << " @ " << realdds::time_to_string( self.timestamp );
+                  os << " crc " << rsutils::number::calc_crc32( self.raw_data.data(), self.raw_data.size() );
                   os << ">";
                   return os.str();
               } )
