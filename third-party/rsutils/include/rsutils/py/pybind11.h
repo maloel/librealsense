@@ -34,17 +34,30 @@ using namespace pybind11::literals;
 
 
 // "When calling a C++ function from Python, the GIL is always held"
-// -- since we're not being called from Python but instead are calling it,
-// we need to acquire it to not have issues with other threads...
+// -- since we're not being called from Python but instead are calling it, this is different:
+// 
+// "The wrapper for std::function always acquires the GIL via gil_scoped_acquire when the function is called, so your
+// python callback will always be called with the GIL held, regardless which thread it is called from."
+//   -- https://stackoverflow.com/questions/72876146/handling-gil-when-calling-python-lambda-from-c-function
+//
+// So we do not need to explicitly acquire the GIL:
+//py::gil_scoped_acquire gil;
+// 
+// BUT:
+// "if nothing else in the thread acquires the thread state and increments the reference count, then once your function
+// exits ... it will delete the thread state associated with that thread ... If you're calling the callback often, it
+// will create/delete the thread state a lot, which probably isn't great for performance"
+// 
+// Also, if the callback then calls C++ again (pretty common usage), things get complicated!
+//
 #define FN_FWD_CALL( CLS, FN_NAME, CODE )                                                                              \
     try                                                                                                                \
     {                                                                                                                  \
-        py::gil_scoped_acquire gil;                                                                                    \
         CODE                                                                                                           \
     }                                                                                                                  \
     catch( std::exception const & e )                                                                                  \
     {                                                                                                                  \
-        LOG_ERROR( "EXCEPTION in python " #CLS "." #FN_NAME ": " << e.what() ); \
+        LOG_ERROR( "EXCEPTION in python " #CLS "." #FN_NAME ": " << e.what() );                                        \
     }                                                                                                                  \
     catch( ... )                                                                                                       \
     {                                                                                                                  \
