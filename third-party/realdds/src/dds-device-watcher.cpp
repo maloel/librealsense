@@ -71,6 +71,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
                         else if( device.alive )
                         {
                             // We already know about this device; likely this was a broadcast meant for someone else
+                            LOG_DEBUG( "[" << device.alive->debug_name() << "] device (from " << _participant->print( guid ) << ") is already known & alive; ignoring" );
                             continue;
                         }
                         else if( device.alive = device.in_use.lock() )

@@ -159,6 +159,8 @@ void dds_device::impl::on_notification( json && j, dds_sample const & notificati
         // First handle the notification
         // An 'id' is mandatory, but if it's a response to a control it can be contained there
         auto id = ( control_sample ? control.get_json() : j ).nested( topics::notification::key::id ).string_ref();
+        //LOG_DEBUG( "[" << debug_name() << "] notification " << std::setw( 4 ) << j );
+        LOG_DEBUG( "[" << debug_name() << "] notification '" << id << "'" );
         auto it = _notification_handlers.find( id );
         if( it != _notification_handlers.end() )
             ( this->*( it->second ) )( j, notification_sample );
