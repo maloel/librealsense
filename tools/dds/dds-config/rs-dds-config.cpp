@@ -200,16 +200,16 @@ try
 {
     CmdLine cmd( "librealsense rs-dds-config tool", ' ', RS2_API_FULL_VERSION_STR );
     SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
+    SwitchArg golden_arg( "", "golden", "Return the read-only golden values (rather than the actual)", false );
     ValueArg< std::string > sn_arg( "", "serial-number", "S/N", false, "",
                                     "Device serial-number to use, if more than one device is available" );
 
     cmd.add( debug_arg );
+    cmd.add( golden_arg );
     cmd.add( sn_arg );
     cmd.parse( argc, argv );
 
     rs2::log_to_console( debug_arg.isSet() ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR );
-
-    std::cout << "Start listening to RS devices.." << std::endl;
 
     // Create a RealSense context and look for a device
     json settings = load_settings( {
@@ -233,7 +233,7 @@ try
                 if( ! sn.empty() && sn != possible_device.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
                     continue;
                 LOG_DEBUG( "trying " << possible_device.get_description() );
-                auto cmd = possible_device.build_command( GET_ETH_CONFIG, 1 );  // 0=golden; 1=actual
+                auto cmd = possible_device.build_command( GET_ETH_CONFIG, golden_arg.isSet() ? 0 : 1 );  // 0=golden; 1=actual
                 LOG_DEBUG( "cmd : " << rsutils::string::hexdump( cmd.data(), cmd.size() ) );
                 auto data = possible_device.send_and_receive_raw_data( cmd );
                 auto possible_config = verify_eth_config( data );
