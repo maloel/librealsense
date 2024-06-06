@@ -40,6 +40,15 @@ public:
 
     std::string to_string() const;
 
+    bool operator==( ip_address const & other ) const
+    {
+        return _b[0] == other._b[0] && _b[1] == other._b[1] && _b[2] == other._b[2] && _b[3] == other._b[3];
+    }
+    bool operator!=( ip_address const & other ) const
+    {
+        return _b[0] != other._b[0] || _b[1] != other._b[1] || _b[2] != other._b[2] || _b[3] != other._b[3];
+    }
+
 private:
     friend std::ostream & operator<<( std::ostream &, ip_address const & );
 };
