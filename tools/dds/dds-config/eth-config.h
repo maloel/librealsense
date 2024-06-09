@@ -62,4 +62,7 @@ struct eth_config
     eth_config() {}
     explicit eth_config( std::vector< uint8_t > const & hwm_response_without_code );
     eth_config( eth_config_v3 const & );
+
+    bool operator==( eth_config const & ) const noexcept;
+    bool operator!=( eth_config const & ) const noexcept;
 };

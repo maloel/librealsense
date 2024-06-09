@@ -90,3 +90,21 @@ eth_config::eth_config( std::vector< uint8_t > const & hwm_response )
                                   << "unrecognized Eth config table version " << header->version );
     }
 }
+
+
+bool eth_config::operator==( eth_config const & other ) const noexcept
+{
+    // Only compare those items that are configurable
+    return configured.ip == other.configured.ip && configured.netmask == other.configured.netmask
+        && configured.gateway == other.configured.gateway && dds.domain_id == other.dds.domain_id
+        && dhcp.on == other.dhcp.on && link.priority == other.link.priority && link.timeout == other.link.timeout;
+}
+
+
+bool eth_config::operator!=( eth_config const & other ) const noexcept
+{
+    // Only compare those items that are configurable
+    return configured.ip != other.configured.ip || configured.netmask != other.configured.netmask
+        || configured.gateway != other.configured.gateway || dds.domain_id != other.dds.domain_id
+        || dhcp.on != other.dhcp.on || link.priority != other.link.priority || link.timeout != other.link.timeout;
+}
