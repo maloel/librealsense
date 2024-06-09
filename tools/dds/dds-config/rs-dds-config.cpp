@@ -13,11 +13,14 @@
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
 #include <rsutils/string/from.h>
+#include <rsutils/ios/field.h>
+#include <rsutils/ios/indent.h>
 
 #include <iostream>
 
 using namespace TCLAP;
 using rsutils::json;
+using rsutils::ios::field;
 
 
 static json load_settings( json const & local_settings )
@@ -50,18 +53,73 @@ uint32_t const SET_ETH_CONFIG = 0xBA;
     while( false )
 
 
+template< class T >
+struct _output_field
+{
+    T const & _current;
+    T const & _requested;
+    char const * const _name;
+    
+    _output_field( const char * name, T const & current, T const & requested )
+        : _name( name )
+        , _current( current )
+        , _requested( requested )
+    {
+    }
+};
+template< class T >
+std::ostream & operator<<( std::ostream & os, _output_field< T > const & f )
+{
+    os << f._name << ':' << field::value << f._current;
+    if( f._requested != f._current )
+        os << field::value << "-->" << field::value << f._requested;
+    return os;
+}
+template< class T >
+_output_field< T > output_field( const char * name, T const & current )
+{
+    return { name, current, current };
+}
+template< class T >
+_output_field< T > output_field( const char * name, T const & current, T const & requested )
+{
+    return { name, current, requested };
+}
+
+
 int main( int argc, char * argv[] )
 try
 {
     CmdLine cmd( "librealsense rs-dds-config tool", ' ', RS2_API_FULL_VERSION_STR );
-    SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
-    SwitchArg golden_arg( "", "golden", "Return the read-only golden values (rather than the actual)", false );
-    ValueArg< std::string > sn_arg( "", "serial-number", "S/N", false, "",
-                                    "Device serial-number to use, if more than one device is available" );
+    SwitchArg debug_arg( "", "debug", "Enable debug logging" );
+    SwitchArg golden_arg( "", "golden", "Return the read-only golden values (rather than the actual)" );
+    ValueArg< std::string > sn_arg( "", "serial-number",
+                                    "Device serial-number to use, if more than one device is available",
+                                    false, "", "S/N" );
+    ValueArg< std::string > ip_arg( "", "ip",
+                                    "Device static IP address to use when DHCP is off",
+                                    false, "", "1.2.3.4" );
+    ValueArg< std::string > mask_arg( "", "mask",
+                                    "Device static IP network mask to use when DHCP is off",
+                                    false, "", "1.2.3.4" );
+    ValueArg< std::string > gateway_arg( "", "gateway",
+                                      "Device static IP network mask to use when DHCP is off",
+                                      false, "", "1.2.3.4" );
+    SwitchArg usb_only_arg( "", "usb-only", "Configure device to always use USB; never Ethernet" );
+    SwitchArg usb_first_arg( "", "usb-first", "Configure device to prioritize USB before Ethernet" );
+    SwitchArg eth_only_arg( "", "eth-only", "Configure device to always use Ethernet; never USB" );
+    SwitchArg eth_first_arg( "", "eth-first", "Configure device to prioritize Ethernet over USB (the default)" );
 
     cmd.add( debug_arg );
     cmd.add( golden_arg );
     cmd.add( sn_arg );
+    cmd.add( ip_arg );
+    cmd.add( mask_arg );
+    cmd.add( gateway_arg );
+    cmd.add( usb_only_arg );
+    cmd.add( usb_first_arg );
+    cmd.add( eth_only_arg );
+    cmd.add( eth_first_arg );
     cmd.parse( argc, argv );
 
     bool const golden = golden_arg.isSet();
@@ -76,7 +134,7 @@ try
 
     auto device_list = ctx.query_devices();
     rs2::device device;
-    eth_config config;
+    eth_config current;
     std::string sn;
     if( sn_arg.isSet() )
         sn = sn_arg.getValue();
@@ -98,19 +156,19 @@ try
                     throw std::runtime_error( rsutils::string::from()
                                               << "bad response "
                                               << rsutils::string::hexdump( data.data(), data.size() ) );
-                if( code < 0 )
+                if( code != GET_ETH_CONFIG )
                     throw std::runtime_error( rsutils::string::from() << "bad response " << code );
                 LOG_DEBUG( "data: " << rsutils::string::hexdump( data.data(), data.size() ).format( "{4} {repeat:}{1}{:}" ) );
                 data.erase( data.begin(), data.begin() + sizeof( code ) );
 
-                eth_config possible_config( data );
+                eth_config config( data );
                 if( device )
                 {
                     std::cerr << "-F- More than one device is available; please use --serial-number <>" << std::endl;
                     return EXIT_FAILURE;
                 }
                 device = possible_device;
-                config = possible_config;
+                current = config;
             }
         }
         catch( std::exception const & e )
@@ -128,40 +186,87 @@ try
         return EXIT_FAILURE;
     }
 
-    std::ostream & os = std::cout;
-
-    os << "Device: " << device.get_description() << std::endl;
-    os << "  MAC address: " << config.mac_address << std::endl;
-    os << "  configured: " << config.configured << std::endl;
-    if( config.actual && config.actual != config.configured )
-        os << "  actual    : " << config.actual << std::endl;
-    os << "  DDS: " << std::endl;
-    os << "    domain ID: " << config.dds.domain_id << std::endl;
-    os << "  link: ";
-    if( ! golden )
+    eth_config requested( current );
+    if( golden )
     {
-        if( config.link.speed )
-            os << config.link.speed << " Mbps";
-        else
-            os << "OFF";
+        if( ip_arg.isSet() || mask_arg.isSet() || usb_only_arg.isSet() || usb_first_arg.isSet() || eth_only_arg.isSet()
+            || eth_first_arg.isSet() )
+        {
+            throw std::runtime_error( "Cannot change any settings with --golden" );
+        }
+    }
+    else
+    {
+        if( ip_arg.isSet() )
+            requested.configured.ip = rsutils::string::ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
+        if( mask_arg.isSet() )
+            requested.configured.netmask = rsutils::string::ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
+        if( gateway_arg.isSet() )
+            requested.configured.gateway = rsutils::string::ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
+        if( usb_only_arg.isSet() + usb_first_arg.isSet() + eth_only_arg.isSet() + eth_first_arg.isSet() > 1 )
+            throw std::runtime_error( "--usb-only, --usb-first, --eth-only, and --eth-first are mutually exclusive" );
+        if( usb_only_arg.isSet() )
+            requested.link.priority = link_priority::usb_only;
+        else if( usb_first_arg.isSet() )
+            requested.link.priority = link_priority::usb_first;
+        else if( eth_only_arg.isSet() )
+            requested.link.priority = link_priority::eth_only;
+        else if( eth_first_arg.isSet() )
+            requested.link.priority = link_priority::eth_first;
+    }
+
+    std::ostream & os = std::cout;
+    {
+        field::group device_group;
+        os << "Device: " << device.get_description() << rsutils::ios::indent() << device_group;
+        {
+            os << field::separator << output_field( "MAC address", current.mac_address );
+            os << field::separator << output_field( "configured", current.configured, requested.configured );
+            if( current.actual && current.actual != current.configured )
+                os << field::separator << output_field( "actual    ", current.actual );
+
+            {
+                field::group dds_group;
+                os << field::separator << "DDS:" << dds_group;
+                os << field::separator << output_field( "domain ID", current.dds.domain_id );
+            }
+            {
+                os << field::separator << "link:" << field::value;
+                if( ! golden )
+                {
+                    if( current.link.speed )
+                        os << current.link.speed << " Mbps";
+                    else
+                        os << "OFF";
+                }
+                field::group link_group;
+                os << link_group;
+                os << field::separator << output_field( "MTU, bytes", current.link.mtu );
+                os << field::separator << output_field( "timeout, ms", current.link.timeout );
+                os << field::separator << output_field( "priority", current.link.priority, requested.link.priority );
+            }
+            {
+                std::string current_dhcp( current.dhcp.on ? "ON" : "OFF" );
+                std::string requested_dhcp( requested.dhcp.on ? "ON" : "OFF" );
+                os << field::separator << output_field( "DHCP", current_dhcp, requested_dhcp );
+                field::group dhcp_group;
+                os << dhcp_group;
+                os << field::separator << output_field( "timeout, sec", current.dhcp.timeout );
+            }
+        }
     }
     os << std::endl;
-    os << "    MTU, bytes: " << config.link.mtu << std::endl;
-    os << "    timeout, ms: " << config.link.timeout << std::endl;
-    os << "    priority: " << config.link.priority << std::endl;
-    os << "  DHCP: " << ( config.dhcp.on ? "ON" : "OFF" ) << std::endl;
-    os << "    timeout, sec: " << config.dhcp.timeout << std::endl;
 
     return EXIT_SUCCESS;
 }
 catch( const rs2::error & e )
 {
-    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args()
+    std::cerr << "-F- RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args()
               << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
 }
 catch( const std::exception & e )
 {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "-F- " << e.what() << std::endl;
     return EXIT_FAILURE;
 }
