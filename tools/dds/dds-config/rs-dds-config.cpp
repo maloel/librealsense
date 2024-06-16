@@ -124,7 +124,7 @@ try
     SwitchArg debug_arg( "", "debug", "Enable debug (-D-) output; by default only errors (-E-) are shown" );
     SwitchArg quiet_arg( "", "quiet", "Suppress regular informational (-I-) messages" );
     SwitchArg no_reset_arg( "", "no-reset", "Do not hardware reset after changes are made" );
-    SwitchArg golden_arg( "", "golden", "Show R/O golden values and how they were changed; mutually exclusive with any changes" );
+    SwitchArg golden_arg( "", "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
     SwitchArg factory_reset_arg( "", "factory-reset", "Reset settings back to the --golden values" );
     ValueArg< std::string > sn_arg( "", "serial-number",
                                     "Device serial-number to use, if more than one device is available",
@@ -239,9 +239,10 @@ try
         }
         else
         {
-            // Show golden values as "current" and how they were changed as "requested"; no actual changes will be made
+            // Current is the golden values; show them vs the actual values in requested
+            // No actual changes will be made
             LOG_DEBUG( "getting current:" );
-            current = get_eth_config( device, false );  // golden
+            requested = get_eth_config( device, false );  // not golden
         }
     }
     else
@@ -337,8 +338,8 @@ try
             throw std::runtime_error( rsutils::string::from()
                                       << "Failed to change: bad response size " << data.size() << ' '
                                       << rsutils::string::hexdump( data.data(), data.size() ) );
-        //if( code != SET_ETH_CONFIG )
-        //    throw std::runtime_error( rsutils::string::from() << "Failed to change: bad response " << code );
+        if( code != SET_ETH_CONFIG )
+            throw std::runtime_error( rsutils::string::from() << "Failed to change: bad response " << code );
         INFO( "Successfully changed" );
         if( ! no_reset_arg.isSet() )
         {
