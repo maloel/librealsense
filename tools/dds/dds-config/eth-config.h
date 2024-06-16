@@ -9,7 +9,7 @@
 #include <rsutils/string/from.h>
 
 
-enum class link_priority
+enum class link_priority : uint8_t
 {
     usb_only = 0,
     eth_only = 1,
@@ -65,4 +65,6 @@ struct eth_config
 
     bool operator==( eth_config const & ) const noexcept;
     bool operator!=( eth_config const & ) const noexcept;
+
+    std::vector< uint8_t > build_command() const;
 };

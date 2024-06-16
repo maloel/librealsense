@@ -108,3 +108,26 @@ bool eth_config::operator!=( eth_config const & other ) const noexcept
         || configured.gateway != other.configured.gateway || dds.domain_id != other.dds.domain_id
         || dhcp.on != other.dhcp.on || link.priority != other.link.priority || link.timeout != other.link.timeout;
 }
+
+
+std::vector< uint8_t > eth_config::build_command() const
+{
+    std::vector< uint8_t > data;
+    data.resize( sizeof( eth_config_v3 ) );
+    eth_config_v3 & cfg = *reinterpret_cast< eth_config_v3 * >( data.data() );
+    configured.ip.get_components( cfg.config_ip );
+    configured.netmask.get_components( cfg.config_netmask );
+    configured.gateway.get_components( cfg.config_gateway );
+    cfg.dhcp_on = dhcp.on;
+    cfg.dhcp_timeout = dhcp.timeout;
+    cfg.domain_id = dds.domain_id;
+    cfg.link_check_timeout = link.timeout;
+    cfg.link_priority = (uint8_t)link.priority;
+
+    cfg.mtu = 9000;  // R/O, but must be sest to this value
+
+    cfg.header.version = 3;
+    cfg.header.size = sizeof( cfg ) - sizeof( cfg.header );
+    cfg.header.crc = rsutils::number::calc_crc32( data.data() + sizeof( cfg.header ), cfg.header.size );
+    return data;
+}
