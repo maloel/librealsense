@@ -49,6 +49,15 @@ public:
         return _b[0] != other._b[0] || _b[1] != other._b[1] || _b[2] != other._b[2] || _b[3] != other._b[3];
     }
 
+    void get_components( uint8_t & b0, uint8_t & b1, uint8_t & b2, uint8_t & b3 ) const
+    {
+        b0 = _b[0];
+        b1 = _b[1];
+        b2 = _b[2];
+        b3 = _b[3];
+    }
+    void get_components( uint8_t b[4] ) const { get_components( b[0], b[1], b[2], b[3] ); }
+
 private:
     friend std::ostream & operator<<( std::ostream &, ip_address const & );
 };
