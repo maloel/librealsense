@@ -304,6 +304,7 @@ def check_log_for_fails( path_to_log, testname, configuration=None, repetition=1
     if not results:
         return False
 
+    log.d( results.string )
     total = int( results.group( 1 ) )
     passed = int( results.group( 2 ) )
     if results.group( 3 ) == 'failed':
@@ -440,6 +441,7 @@ def test_wrapper_( test, configuration=None, repetition=1, retry=0, sns=None ):
     except subprocess.TimeoutExpired:
         log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, repetition, suffix=' ' ) + 'timed out' )
     except subprocess.CalledProcessError as cpe:
+        log.d( f'exit code {cpe.returncode} >>>{cpe.output}<<<' )
         if not check_log_for_fails( log_path, test.name, configuration, repetition, sns=sns ):
             # An unexpected error occurred
             log.e( log.red + test.name + log.reset + ':',
