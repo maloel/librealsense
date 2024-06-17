@@ -304,6 +304,9 @@ def check_log_for_fails( path_to_log, testname, configuration=None, repetition=1
     if not results:
         return False
 
+    log.debug_indent()
+    log.d( results.string )
+    log.debug_unindent()
     total = int( results.group( 1 ) )
     passed = int( results.group( 2 ) )
     if results.group( 3 ) == 'failed':

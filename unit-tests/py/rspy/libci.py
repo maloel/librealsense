@@ -70,6 +70,9 @@ def run( cmd, stdout = None, timeout = 200, append = False ):
         else:
             result = result.split( '\n' )
         return result
+    except subprocess.CalledProcessError as cpe:
+        log.d( f'exit code {cpe.returncode} >>>{cpe.output}<<<' )
+        raise
     finally:
         if handle:
             handle.close()
