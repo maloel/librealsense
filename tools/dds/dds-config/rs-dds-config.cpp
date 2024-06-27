@@ -9,12 +9,13 @@
 #include <tclap/ValueArg.h>
 
 #include <rsutils/os/special-folder.h>
-//#include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
 #include <rsutils/string/from.h>
 
 #include <iostream>
+#include <thread>
+#include <set>
 
 using namespace TCLAP;
 using rsutils::json;
@@ -101,6 +102,8 @@ _output_field< T > setting( const char * name, T const & current, T const & requ
 
 eth_config get_eth_config( rs2::debug_protocol hwm, bool golden )
 {
+    if( ! hwm )
+        throw std::runtime_error( "no debug_protocol available" );
     auto cmd = hwm.build_command( GET_ETH_CONFIG, golden ? 0 : 1 );  // 0=golden; 1=actual
     LOG_DEBUG( "cmd: " << rsutils::string::hexdump( cmd.data(), cmd.size() ).format( HWM_FMT ) );
     auto data = hwm.send_and_receive_raw_data( cmd );
@@ -114,6 +117,40 @@ eth_config get_eth_config( rs2::debug_protocol hwm, bool golden )
     data.erase( data.begin(), data.begin() + sizeof( code ) );
 
     return eth_config( data );
+}
+
+
+bool find_device( rs2::context const & ctx,
+                  rs2::device & device,
+                  eth_config & config,
+                  ValueArg< std::string > & sn_arg,
+                  bool const golden,
+                  std::set< std::string > & devices_looked_at )
+{
+    auto device_list = ctx.query_devices();
+    auto const n_devices = device_list.size();
+    for( uint32_t i = 0; i < n_devices; ++i )
+    {
+        auto possible_device = device_list[i];
+        try
+        {
+            std::string sn = possible_device.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+            if( sn_arg.isSet() && sn != sn_arg.getValue() )
+                continue;
+            if( ! devices_looked_at.insert( sn ).second )
+                continue;  // insert failed: device was already looked at
+            LOG_DEBUG( "trying " << possible_device.get_description() );
+            config = get_eth_config( possible_device, golden );
+            if( device )
+                throw std::runtime_error( "More than one device is available; please use --serial-number" );
+            device = possible_device;
+        }
+        catch( std::exception const & e )
+        {
+            LOG_DEBUG( "failed! " << e.what() );
+        }
+    }
+    return device;
 }
 
 
@@ -181,45 +218,33 @@ try
     rs2::log_to_console( debug_arg.isSet() ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR );
 
     // Create a RealSense context and look for a device
-    json settings = load_settings( {
-        { "dds", false },  // Don't discover ethernet devices; we want local devices only 
-    } );
+    json settings = load_settings( json::object() );
     rs2::context ctx( settings.dump() );
 
-    auto device_list = ctx.query_devices();
     rs2::device device;
     eth_config current;
-    std::string sn;
-    if( sn_arg.isSet() )
-        sn = sn_arg.getValue();
-    auto n_devices = device_list.size();
-    for( uint32_t i = 0; i < n_devices; ++i )
+    std::set< std::string > devices_looked_at;
+    if( ! find_device( ctx, device, current, sn_arg, golden, devices_looked_at ) )
     {
-        try
+        auto dds_enabled = settings.nested( "dds", "enabled", &json::is_boolean );
+        if( ! dds_enabled || dds_enabled.get< bool >() )
         {
-            if( auto possible_device = rs2::debug_protocol( device_list[i] ) )
+            LOG_DEBUG( "Waiting for ETH devices..." );
+            int tries = 5;
+            while( tries-- > 0 )
             {
-                if( ! sn.empty() && sn != possible_device.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
-                    continue;
-                LOG_DEBUG( "trying " << possible_device.get_description() );
-                current = get_eth_config( possible_device, golden );
-                if( device )
-                    throw std::runtime_error( "More than one device is available; please use --serial-number <>" );
-                device = possible_device;
+                std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+                if( find_device( ctx, device, current, sn_arg, golden, devices_looked_at ) )
+                    break;
             }
         }
-        catch( std::exception const & e )
+        if( ! device )
         {
-            LOG_DEBUG( "failed! " << e.what() );
-            continue;
-        }
-    }
-    if( ! device )
-    {
-        if( sn.empty() )
+            if( sn_arg.isSet() )
+                throw std::runtime_error( "Device not found or does not support Eth" );
+
             throw std::runtime_error( "No device found supporting Eth" );
-        else
-            throw std::runtime_error( "Device not found or does not support Eth" );
+        }
     }
     INFO( "Device: " << device.get_description() );
 
