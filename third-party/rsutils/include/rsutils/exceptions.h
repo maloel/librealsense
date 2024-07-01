@@ -12,4 +12,4 @@ namespace rsutils {
 enum _throw_if_not_valid { throw_if_not_valid };
 
 
-};
+}
