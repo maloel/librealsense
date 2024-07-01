@@ -130,7 +130,7 @@ std::vector< uint8_t > eth_config::build_command() const
     cfg.link_check_timeout = link.timeout;
     cfg.link_priority = (uint8_t)link.priority;
 
-    cfg.mtu = 9000;  // R/O, but must be sest to this value
+    cfg.mtu = 9000;  // R/O, but must be set to this value
 
     cfg.header.version = 3;
     cfg.header.size = sizeof( cfg ) - sizeof( cfg.header );
