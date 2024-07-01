@@ -26,6 +26,8 @@
 #include <rsutils/string/from.h>
 #include <rsutils/number/crc32.h>
 
+#include <src/hw-monitor.h>
+
 using rsutils::json;
 
 
@@ -146,7 +148,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
     : software_device( dev_info )
     , _dds_dev( dev )
 {
-    LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
+    //LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
     register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name() );
     register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root() );
     register_info( RS2_CAMERA_INFO_PRODUCT_ID, "DDS" );
@@ -278,7 +280,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
 
     for( auto & sensor_info : sensor_name_to_info )
     {
-        LOG_DEBUG( sensor_info.first );
+        //LOG_DEBUG( sensor_info.first );
 
         // Set profile's ID based on the dds_stream's ID (index already set). Connect the profile to the extrinsics graph.
         for( auto & profile : sensor_info.second.proxy->get_stream_profiles() )
@@ -302,7 +304,10 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             auto stream_iter = streams.find( sidx );
             if( stream_iter == streams.end() )
             {
-                LOG_DEBUG( "        no dds stream" );
+                LOG_DEBUG( "        no dds stream for "
+                           << sensor_info.first << ' ' << get_string( profile->get_stream_type() ) << ' '
+                           << profile->get_stream_index() << ' ' << get_string( profile->get_format() ) << " @ "
+                           << profile->get_framerate() );
                 continue;
             }
 
@@ -345,7 +350,7 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
                     auto const dds_extr = _dds_dev->get_extrinsics( from_stream.first, to_stream.first );
                     if( ! dds_extr )
                     {
-                        LOG_DEBUG( "missing extrinsics from " << from_stream.first << " to " << to_stream.first );
+                        //LOG_DEBUG( "missing extrinsics from " << from_stream.first << " to " << to_stream.first );
                         continue;
                     }
                     rs2_extrinsics extr = to_rs2_extrinsics( dds_extr );
@@ -565,6 +570,10 @@ std::vector< uint8_t > dds_device_proxy::build_command( uint32_t opcode,
                                                         uint8_t const * data,
                                                         size_t dataLength ) const
 {
+    // TODO temporary until properly implemented on device
+    return hw_monitor::build_command( opcode, param1, param2, param3, param4, data, dataLength );
+
+
     // debug_interface function
     rsutils::string::hexarray hexdata( std::vector< uint8_t >( data, data + dataLength ) );
     json control = rsutils::json::object( { { realdds::topics::control::key::id, realdds::topics::control::hwm::id },
