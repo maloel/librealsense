@@ -9,6 +9,12 @@
 
 std::ostream & operator<<( std::ostream & os, link_priority p )
 {
+    if( static_cast< uint8_t >( p ) & static_cast< uint8_t >( link_priority::_dynamic_bit ) )
+    {
+        os << "dynamic-";
+        p = static_cast< link_priority >( static_cast< uint8_t >( p )
+                                          & ~static_cast< uint8_t >( link_priority::_dynamic_bit ) );
+    }
     switch( p )
     {
     case link_priority::usb_only:

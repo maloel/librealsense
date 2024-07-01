@@ -14,7 +14,11 @@ enum class link_priority : uint8_t
     usb_only = 0,
     eth_only = 1,
     eth_first = 2,
-    usb_first = 3
+    usb_first = 3,
+
+    _dynamic_bit = 0x10,
+    dynamic_eth_first = eth_first | _dynamic_bit,
+    dynamic_usb_first = usb_first | _dynamic_bit
 };
 std::ostream & operator<<( std::ostream & os, link_priority );
 

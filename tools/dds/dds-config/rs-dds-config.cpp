@@ -187,10 +187,9 @@ try
     ValueArg< uint8_t > domain_id_arg( "", "domain-id",
                                        "DDS Domain ID to use (default is 0)",
                                        false, 0, "0-232" );
-    SwitchArg usb_only_arg( "", "usb-only", "Configure device to always use USB; never Ethernet" );
-    SwitchArg usb_first_arg( "", "usb-first", "Configure device to prioritize USB before Ethernet" );
-    SwitchArg eth_only_arg( "", "eth-only", "Configure device to always use Ethernet; never USB" );
-    SwitchArg eth_first_arg( "", "eth-first", "Configure device to prioritize Ethernet over USB (the default)" );
+    SwitchArg usb_first_arg( "", "usb-first", "Prioritize USB before Ethernet" );
+    SwitchArg eth_first_arg( "", "eth-first", "Prioritize Ethernet and fall back to USB after link timeout" );
+    SwitchArg dynamic_priority_arg( "", "dynamic-priority", "Dynamically prioritize the last-working connection method (the default)" );
 
     // In reverse order to how they will be listed
     cmd.add( no_reset_arg );
@@ -201,10 +200,9 @@ try
     cmd.add( dhcp_timeout_arg );
     cmd.add( dhcp_arg );
     cmd.add( link_timeout_arg );
+    cmd.add( dynamic_priority_arg );
     cmd.add( eth_first_arg );
-    cmd.add( eth_only_arg );
     cmd.add( usb_first_arg );
-    cmd.add( usb_only_arg );
     cmd.add( factory_reset_arg );
     cmd.add( golden_arg );
     cmd.add( sn_arg );
@@ -251,8 +249,8 @@ try
     eth_config requested( current );
     if( golden || factory_reset_arg.isSet() )
     {
-        if( ip_arg.isSet() || mask_arg.isSet() || usb_only_arg.isSet() || usb_first_arg.isSet() || eth_only_arg.isSet()
-            || eth_first_arg.isSet() || link_timeout_arg.isSet() || dhcp_arg.isSet() || dhcp_timeout_arg.isSet()
+        if( ip_arg.isSet() || mask_arg.isSet() || usb_first_arg.isSet() || eth_first_arg.isSet()
+            || dynamic_priority_arg.isSet() || link_timeout_arg.isSet() || dhcp_arg.isSet() || dhcp_timeout_arg.isSet()
             || golden == factory_reset_arg.isSet() )
         {
             throw std::runtime_error( "Cannot change any settings with --golden" );
@@ -278,16 +276,15 @@ try
             requested.configured.netmask = rsutils::string::ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
         if( gateway_arg.isSet() )
             requested.configured.gateway = rsutils::string::ip_address( ip_arg.getValue(), rsutils::throw_if_not_valid );
-        if( usb_only_arg.isSet() + usb_first_arg.isSet() + eth_only_arg.isSet() + eth_first_arg.isSet() > 1 )
-            throw std::invalid_argument( "--usb-only, --usb-first, --eth-only, and --eth-first are mutually exclusive" );
-        if( usb_only_arg.isSet() )
-            requested.link.priority = link_priority::usb_only;
-        else if( usb_first_arg.isSet() )
+        if( usb_first_arg.isSet() + eth_first_arg.isSet() + dynamic_priority_arg.isSet() > 1 )
+            throw std::invalid_argument( "--usb-first, --eth-first, and --dynamic-priority are mutually exclusive" );
+        if( usb_first_arg.isSet() )
             requested.link.priority = link_priority::usb_first;
-        else if( eth_only_arg.isSet() )
-            requested.link.priority = link_priority::eth_only;
         else if( eth_first_arg.isSet() )
             requested.link.priority = link_priority::eth_first;
+        else if( dynamic_priority_arg.isSet() )
+            requested.link.priority  // Enable eth-first if we have a link
+                = current.link.speed ? link_priority::dynamic_eth_first : link_priority::dynamic_usb_first;
         if( link_timeout_arg.isSet() )
             requested.link.timeout = link_timeout_arg.getValue();
         if( dhcp_arg.isSet() )
