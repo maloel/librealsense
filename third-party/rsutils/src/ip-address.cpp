@@ -15,7 +15,7 @@ namespace string {
 static bool parse_ip_part( char const *& pch, uint8_t & out_byte ) noexcept
 {
     // Parse part of the IP address, and return it
-    // Return -1 on failure
+    // Return false on failure
     // On success, pch should be on the character after the number:
     //        192.168.11.55
     //      in^  ^out
