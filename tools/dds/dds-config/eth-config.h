@@ -4,7 +4,7 @@
 
 #include "eth-config-header.h"
 
-#include <rsutils/string/ip-address.h>
+#include <rsutils/type/ip-address.h>
 #include <rsutils/string/hexdump.h>
 #include <rsutils/string/from.h>
 
@@ -25,9 +25,9 @@ std::ostream & operator<<( std::ostream & os, link_priority );
 
 struct ip_3
 {
-    rsutils::string::ip_address ip;
-    rsutils::string::ip_address netmask;
-    rsutils::string::ip_address gateway;
+    rsutils::type::ip_address ip;
+    rsutils::type::ip_address netmask;
+    rsutils::type::ip_address gateway;
 
     operator bool() const { return ip.is_valid(); }
 
