@@ -8,6 +8,7 @@
 #pragma pack( push, 1 )
 
 // The structure data for eth config info, version 3
+// See table definition in HWMC v0.53 spec
 struct eth_config_v3
 {
     eth_config_header header;

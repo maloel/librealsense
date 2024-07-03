@@ -8,11 +8,11 @@
 #pragma pack( push, 1 )
 
 // The header structure for eth config
-typedef struct {
+struct eth_config_header
+{
     uint16_t version;
     uint16_t size;  // without header
     uint32_t crc;   // without header
-} eth_config_header;
+};
 
 #pragma pack( pop )
-
