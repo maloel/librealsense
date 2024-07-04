@@ -11,6 +11,7 @@
 #include <rsutils/os/special-folder.h>
 #include <rsutils/json.h>
 #include <rsutils/json-config.h>
+#include <rsutils/string/hexdump.h>
 #include <rsutils/string/from.h>
 
 #include <iostream>
@@ -63,12 +64,12 @@ bool g_quiet = false;
 
 struct indent
 {
-    int spaces;
-    indent( int spaces ) : spaces( spaces ) {}
+    int _spaces;
+    indent( int spaces ) : _spaces( spaces ) {}
 };
 std::ostream & operator<<( std::ostream & os, indent const & ind )
 {
-    for( int i = ind.spaces; i; --i )
+    for( int i = ind._spaces; i; --i )
         os << ' ';
     return os;
 }
@@ -311,7 +312,7 @@ try
     {
         INFO( indent( 4 ) << setting( "MAC address", current.mac_address ) );
         INFO( indent( 4 ) << setting( "configured", current.configured, requested.configured ) );
-        if( current.actual && current.actual != current.configured )
+        if( ! golden && current.actual && current.actual != current.configured )
             INFO( indent( 4 ) << setting( "actual    ", current.actual ) );
 
         {

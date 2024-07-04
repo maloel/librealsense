@@ -5,6 +5,8 @@
 #include "eth-config-v3.h"
 
 #include <rsutils/number/crc32.h>
+#include <rsutils/string/hexdump.h>
+#include <rsutils/string/from.h>
 
 
 std::ostream & operator<<( std::ostream & os, link_priority p )

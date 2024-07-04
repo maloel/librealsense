@@ -5,8 +5,6 @@
 #include "eth-config-header.h"
 
 #include <rsutils/type/ip-address.h>
-#include <rsutils/string/hexdump.h>
-#include <rsutils/string/from.h>
 
 
 enum class link_priority : uint8_t
