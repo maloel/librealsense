@@ -60,6 +60,10 @@ public:
     {
         auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>( d500_device::_hw_monitor, ds::LASERONCONST, ds::LASERONCONST);
         get_depth_sensor().register_option(RS2_OPTION_EMITTER_ALWAYS_ON,emitter_always_on_opt);
+
+        // MRD gives the wrong result for the 5e, so turn off for now (TODO)
+        // check_symmetrization_enabled() is not overridable, so we do it manually:
+        _is_symmetrization_enabled = false;
     }
 
     std::shared_ptr< matcher > create_matcher( const frame_holder & frame ) const override
