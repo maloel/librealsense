@@ -13,7 +13,8 @@ namespace librealsense
         return static_cast<int>(std::ceil(msg_length / (float)HW_MONITOR_BUFFER_SIZE));
     }
 
-    hw_monitor_extended_buffers::hwm_buffer_type hw_monitor_extended_buffers::get_buffer_type(command cmd) const
+    hw_monitor_extended_buffers::hwm_buffer_type
+    hw_monitor_extended_buffers::get_buffer_type( command const & cmd ) const
     {
         bool provide_whole_table = (cmd.param4 == 0);
         switch( cmd.cmd)
@@ -40,47 +41,42 @@ namespace librealsense
             return hw_monitor::send(cmd, p_response, locked_transfer);
         case hwm_buffer_type::extended_receive:
             return extended_receive(cmd, p_response, locked_transfer);
-        case  hwm_buffer_type::extended_send:
+        case hwm_buffer_type::extended_send:
             extended_send(cmd, p_response, locked_transfer);
             break;
-        default:
-            return std::vector<uint8_t>();
         }
-        return std::vector<uint8_t>();
+        return {};
     }
 
-    std::vector<uint8_t> hw_monitor_extended_buffers::extended_receive(command cmd, hwmon_response* p_response, bool locked_transfer) const
+    std::vector< uint8_t > hw_monitor_extended_buffers::extended_receive( command const & cmd,
+                                                                          hwmon_response * p_response,
+                                                                          bool locked_transfer ) const
     {
-        std::vector< uint8_t > recv_msg;
-
         // send first command with 0/0 on param4, this should get the first chunk withoud knowing
         // the actual table size, actual size will be returned as part for the response header and
         // will be used to calculate the extended loop range
         auto ans = hw_monitor::send(cmd, p_response, locked_transfer);
-        recv_msg.insert(recv_msg.end(), ans.begin(), ans.end());
-
-        if (recv_msg.size() < sizeof(ds::table_header))
-            throw std::runtime_error(rsutils::string::from() << "Table data has invalid size = " << recv_msg.size());
-
+        if( ans.size() < sizeof( ds::table_header ) )
+            throw std::runtime_error( rsutils::string::from() << "Table data has invalid size = " << ans.size() );
 
         ds::table_header* th = reinterpret_cast<ds::table_header*>( ans.data() );
         size_t recv_msg_length = sizeof(ds::table_header) + th->table_size;
+        if( recv_msg_length <= HW_MONITOR_BUFFER_SIZE )
+            return ans;
 
-        if (recv_msg_length > HW_MONITOR_BUFFER_SIZE)
+        uint16_t overall_chunks = get_number_of_chunks( recv_msg_length );
+        command cmdi( cmd );  // we'll need to modify per chunk
+
+        // Since we already have the first chunk we start the loop from index 1
+        for( int i = 1; i < overall_chunks; ++i )
         {
-            uint16_t overall_chunks = get_number_of_chunks( recv_msg_length );
+            // chunk number is in param4
+            cmdi.param4 = compute_chunks_param( overall_chunks, i );
 
-            // Since we already have the first chunk we start the loop from index 1
-            for( int i = 1; i < overall_chunks; ++i )
-            {
-                // chunk number is in param4
-                cmd.param4 = compute_chunks_param( overall_chunks, i );
-
-                auto ans = hw_monitor::send( cmd, p_response, locked_transfer );
-                recv_msg.insert( recv_msg.end(), ans.begin(), ans.end() );
-            }
+            auto chunk = hw_monitor::send( cmdi, p_response, locked_transfer );
+            ans.insert( ans.end(), chunk.begin(), chunk.end() );
         }
-        return recv_msg;
+        return ans;
     }
 
     void hw_monitor_extended_buffers::extended_send(command cmd, hwmon_response* p_response, bool locked_transfer) const
