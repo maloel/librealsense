@@ -30,8 +30,8 @@ namespace librealsense
 
     private:
         int get_number_of_chunks(size_t msg_length) const;
-        hwm_buffer_type get_buffer_type(command cmd) const;
-        std::vector<uint8_t> extended_receive(command cmd, hwmon_response* p_response, bool locked_transfer) const;
+        hwm_buffer_type get_buffer_type( command const & ) const;
+        std::vector< uint8_t > extended_receive( command const &, hwmon_response * p_response, bool locked_transfer ) const;
         void extended_send(command cmd, hwmon_response* p_response, bool locked_transfer) const;
 
         // The following method prepares the param4 of the command for extended buffers
