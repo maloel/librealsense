@@ -149,6 +149,7 @@ void dds_device::impl::on_notification( json && j, dds_sample const & notificati
         { topics::notification::stream_header::id, &dds_device::impl::on_stream_header },
         { topics::notification::stream_options::id, &dds_device::impl::on_stream_options },
         { topics::notification::log::id, &dds_device::impl::on_log },
+        { topics::notification::calibration_changed::id, &dds_device::impl::on_calibration_changed },
     };
 
     auto const control = j.nested( topics::reply::key::control );
@@ -749,6 +750,39 @@ void dds_device::impl::on_stream_options( json const & j, dds_sample const & sam
         set_state( state_t::READY );
     else
         set_state( state_t::WAIT_FOR_STREAM_HEADER );
+}
+
+
+void dds_device::impl::on_calibration_changed( json const & j, dds_sample const & sample )
+{
+    for( auto const & name_stream : _streams )
+    {
+        auto & stream = name_stream.second;
+
+        auto j_int = j.nested( stream->name(), topics::notification::calibration_changed::key::intrinsics );
+        if( ! j_int )
+            return;  // stream isn't updated
+
+        try
+        {
+            auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream );
+            if( ! video_stream )
+                DDS_THROW( runtime_error, "not a video stream" );
+
+            if( video_stream->get_intrinsics().size() != 1 )
+                DDS_THROW( runtime_error, "more than one intrinsics cannot be updated" );
+            auto new_intrinsics = *video_stream->get_intrinsics().begin();
+            new_intrinsics.override_from_json( j_int );
+
+            LOG_DEBUG( "calibration-changed '" << stream->name() << "': changing " << j_int << " --> " << new_intrinsics );
+            video_stream->set_intrinsics( { new_intrinsics } );
+            _on_calibration_changed.raise( stream );
+        }
+        catch( std::exception const & e )
+        {
+            LOG_ERROR( "calibration-changed '" << stream->name() << "': " << e.what() );
+        }
+    }
 }
 
 
