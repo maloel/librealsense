@@ -769,13 +769,34 @@ void dds_device::impl::on_calibration_changed( json const & j, dds_sample const 
             if( ! video_stream )
                 DDS_THROW( runtime_error, "not a video stream" );
 
-            if( video_stream->get_intrinsics().size() != 1 )
-                DDS_THROW( runtime_error, "more than one intrinsics cannot be updated" );
-            auto new_intrinsics = *video_stream->get_intrinsics().begin();
-            new_intrinsics.override_from_json( j_int );
+            auto const & old_intrinsics = video_stream->get_intrinsics();
+            std::set< video_intrinsics > new_intrinsics;
+            if( j_int.is_array() )
+            {
+                // Multiple resolutions are provided, likely from legacy devices from the adapter
+                if( j_int.size() != old_intrinsics.size() )
+                    DDS_THROW( runtime_error, "expecting " << old_intrinsics.size() << " intrinsics; got: " << j_int );
+                for( auto & ij : j_int )
+                {
+                    auto i = video_intrinsics::from_json( ij );
+                    auto it = old_intrinsics.find( i );  // uses width & height only
+                    if( it == old_intrinsics.end() )
+                        DDS_THROW( runtime_error, "intrinsics not found: " << ij );
+                    if( ! new_intrinsics.insert( std::move( i ) ).second )
+                        DDS_THROW( runtime_error, "width & height specified twice: " << ij );
+                }
+                LOG_DEBUG( "calibration-changed '" << stream->name() << "': changing " << j_int );
+            }
+            else
+            {
+                // Single intrinsics that will get scaled
+                auto i = *old_intrinsics.begin();
+                i.override_from_json( j_int );
+                LOG_DEBUG( "calibration-changed '" << stream->name() << "': changing " << j_int << " --> " << i );
+                new_intrinsics.insert( std::move( i ) );
+            }
 
-            LOG_DEBUG( "calibration-changed '" << stream->name() << "': changing " << j_int << " --> " << new_intrinsics );
-            video_stream->set_intrinsics( { new_intrinsics } );
+            video_stream->set_intrinsics( std::move( new_intrinsics ) );
             _on_calibration_changed.raise( stream );
         }
         catch( std::exception const & e )

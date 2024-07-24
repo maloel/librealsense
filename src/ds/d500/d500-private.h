@@ -82,6 +82,7 @@ namespace librealsense
             rgb_calibration_id = 0xb9,
             rgb_lut_id = 0xba,
             imu_calibration_id = 0xbb,
+            stream_pipe_cfg = 0xbe,
             calib_cfg_id = 0xc0dd,
             max_id = -1
         };
@@ -160,6 +161,18 @@ namespace librealsense
             mini_intrinsics           rectified_intrinsics;
             uint8_t                   reserved[48];
         };
+
+        // See 'Stream_Pipe_Cfg (Dynamic)' sheet in depth-safety-flash-memory document, v0.93
+#pragma pack(push,1)
+        struct d500_stream_pipe_cfg_table
+        {
+            table_header header;
+            uint8_t depth_symmetrization;
+            uint8_t rgb_symmetrization;
+            uint8_t depth_vertical_alignment;
+            uint8_t reserved[237];
+        };
+#pragma pack(pop)
 
         rs2_intrinsics get_d500_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d500_calibration_table_id table_id, 
             uint32_t width, uint32_t height, bool is_symmetrization_enabled = false);

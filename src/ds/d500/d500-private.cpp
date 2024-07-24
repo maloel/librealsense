@@ -114,6 +114,8 @@ namespace librealsense
             intrinsics.width = width;
             intrinsics.height = height;
 
+            std::cout << "--------> depth symmetrization is " << is_symmetrization_enabled << std::endl;
+
             auto rect_params = compute_rect_params_from_resolution(table->rectified_intrinsics, 
                 width, height, is_symmetrization_enabled);
 

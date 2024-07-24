@@ -712,12 +712,14 @@ namespace librealsense
 
     bool d500_device::check_symmetrization_enabled() const
     {
-        command cmd{ ds::MRD, 0x80000004, 0x80000008 };
-        auto res = _hw_monitor->send(cmd);
-        uint32_t val = *reinterpret_cast<uint32_t*>(res.data());
-        return val == 1;
+        using namespace ds;
+        auto reply = get_d500_raw_calibration_table( d500_calibration_table_id::stream_pipe_cfg );
+        auto table = check_calib< d500_stream_pipe_cfg_table >( reply );
+        std::cout << "=========> " << rsutils::string::hexdump( *table ) << std::endl;
+        std::cout << "---------> depth symmetrization is " << +table->depth_symmetrization << std::endl;
+        return table->depth_symmetrization;
     }
-    
+
     void d500_device::get_gvd_details(const std::vector<uint8_t>& gvd_buff, ds::d500_gvd_parsed_fields* parsed_fields) const
     {
         parsed_fields->gvd_version[0] = *reinterpret_cast<const uint8_t*>(gvd_buff.data() + ds::d500_gvd_offsets::version_offset);
