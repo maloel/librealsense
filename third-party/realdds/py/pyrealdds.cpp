@@ -23,7 +23,7 @@
 #include <realdds/dds-guid.h>
 #include <realdds/dds-time.h>
 #include <realdds/dds-topic.h>
-#include <realdds/dds-topic-reader.h>
+#include <realdds/dds-topic-reader-thread.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-subscriber.h>
@@ -406,7 +406,8 @@ PYBIND11_MODULE(NAME, m) {
         } );
 
     using realdds::dds_topic_reader;
-    py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > >( m, "topic_reader" )
+    py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > > topic_reader_base( m, "topic_reader" );
+    topic_reader_base  //
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
         .def( FN_FWD( dds_topic_reader, on_data_available, (dds_topic_reader &), (), callback( self ); ) )
         .def( FN_FWD( dds_topic_reader,
@@ -427,6 +428,10 @@ PYBIND11_MODULE(NAME, m) {
               py::call_guard< py::gil_scoped_release >() )
         .def( "qos", []() { return reader_qos(); } )
         .def( "qos", []( reliability r, durability d ) { return reader_qos( r, d ); } );
+
+    using realdds::dds_topic_reader_thread;
+    py::class_< dds_topic_reader_thread, std::shared_ptr< dds_topic_reader_thread > >( m, "topic_reader_thread", topic_reader_base )
+        .def( py::init< std::shared_ptr< dds_topic > const & >() );
 
     using writer_qos = realdds::dds_topic_writer::qos;
     py::class_< writer_qos >( m, "writer_qos" )  //
