@@ -11,7 +11,7 @@
 
 int main(int argc, const char * argv[]) try
 {
-    TCLAP::CmdLine cmd( "realsense-viewer", ' ', RS2_API_FULL_VERSION_STR );
+    TCLAP::CmdLine cmd( "rs-depth-quality", ' ', RS2_API_FULL_VERSION_STR );
 #ifdef BUILD_EASYLOGGINGPP
     TCLAP::SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
     cmd.add( debug_arg );
