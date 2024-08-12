@@ -402,9 +402,15 @@ dds_device_proxy::dds_device_proxy( std::shared_ptr< const device_info > const &
             if( it == _stream_name_to_profiles.end() )
                 throw std::runtime_error( rsutils::string::from() << "no such stream?!" );
 
-            auto video_stream = std::dynamic_pointer_cast< const realdds::dds_video_stream >( stream );
-            for( auto & profile : it->second )
-                set_video_profile_intrinsics( profile, video_stream );
+            if( auto video_stream = std::dynamic_pointer_cast< const realdds::dds_video_stream >( stream ) )
+            {
+                for( auto & profile : it->second )
+                    set_video_profile_intrinsics( profile, video_stream );
+            }
+            else
+            {
+                throw std::runtime_error( rsutils::string::from() << "non-video stream calibrations not supported" );
+            }
         } );
 }
 
