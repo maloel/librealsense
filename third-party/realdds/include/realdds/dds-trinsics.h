@@ -75,6 +75,7 @@ struct video_intrinsics
             && focal_length == other.focal_length && distortion == other.distortion
             && force_symmetry == other.force_symmetry;
     }
+    bool operator!=( video_intrinsics const & other ) const { return ! operator==( other ); }
 
     video_intrinsics scaled_to( int width, int height ) const;
 
@@ -103,6 +104,7 @@ struct motion_intrinsics
     {
         return data != other.data || noise_variances != other.noise_variances || bias_variances != other.bias_variances;
     }
+    bool operator==( motion_intrinsics const & other ) const { return ! operator!=( other ); }
 };
 
 
