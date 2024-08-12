@@ -761,7 +761,7 @@ void dds_device::impl::on_calibration_changed( json const & j, dds_sample const 
 
         auto j_int = j.nested( stream->name(), topics::notification::calibration_changed::key::intrinsics );
         if( ! j_int )
-            return;  // stream isn't updated
+            continue;  // stream isn't updated
 
         try
         {
