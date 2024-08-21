@@ -24,6 +24,9 @@
 #include <mutex>
 
 
+using rsutils::json;
+
+
 namespace librealsense {
 
 
@@ -72,6 +75,8 @@ struct domain_context
 {
     rsutils::shared_ptr_singleton< realdds::dds_participant > participant;
     rsutils::shared_ptr_singleton< rsdds_watcher_singleton > device_watcher;
+    int seconds_to_wait = 0;
+    std::mutex wait_mutex;
 };
 //
 // Domains are mapped by ID:
@@ -85,8 +90,7 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
     : super( ctx )
 {
     auto dds_settings = ctx->get_settings().nested( std::string( "dds", 3 ) );
-    if( ! dds_settings.exists()
-        || dds_settings.is_object() && dds_settings.nested( std::string( "enabled", 7 ) ).default_value( true ) )
+    if( dds_settings.nested( std::string( "enabled", 7 ) ).default_value( false ) )
     {
         auto domain_id = dds_settings.nested( std::string( "domain", 6 ) ).default_value< realdds::dds_domain_id >( 0 );
         auto participant_name_j = dds_settings.nested( std::string( "participant", 11 ) );
@@ -124,6 +128,11 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
 
             // qos will get further overriden with the settings we pass in
             _participant->init( domain_id, qos, dds_settings.default_object() );
+
+            // allow a certain number of seconds to wait for devices to appear
+            domain.seconds_to_wait
+                = dds_settings.nested( std::string( "query-wait-time", 15 ), &json::is_number_integer )
+                      .default_value( 5 );
         }
         else if( participant_name_j.exists() && participant_name != _participant->name() )
         {
@@ -162,6 +171,43 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
     if( _watcher_singleton )
     {
         unsigned const mask = context::combine_device_masks( requested_mask, get_context()->get_device_mask() );
+
+        auto participant = _watcher_singleton->get_device_watcher()->get_participant();
+        domain_context * p_domain = nullptr;
+        {
+            std::lock_guard< std::mutex > lock( domain_context_by_id_mutex );
+            auto it = domain_context_by_id.find( participant->domain_id() );
+            if( it != domain_context_by_id.end() )
+                p_domain = &it->second;
+        }
+        if( p_domain )
+        {
+            std::lock_guard< std::mutex > lock( p_domain->wait_mutex );
+            if( p_domain->seconds_to_wait > 0 )
+            {
+                // do this within the mutex: if multiple threads all try to query_devices, the others will
+                LOG_DEBUG( "waiting " << p_domain->seconds_to_wait << " seconds for devices on domain " << participant->domain_id() << " ..." );
+
+                // Set up a separate counter: if no new participants in the last 2 seconds, quit
+                auto listener = participant->create_listener();
+                std::atomic< int > seconds_left( 2 );
+                listener->on_participant_added( [&]( realdds::dds_guid, char const * ) { seconds_left = 2; } );
+
+                while( true )
+                {
+                    std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+                    if( --p_domain->seconds_to_wait <= 0 )
+                        break;
+                    if( --seconds_left <= 0 )
+                    {
+                        LOG_DEBUG( "no new participants; stopping wait with " << p_domain->seconds_to_wait << " seconds left" );
+                        break;
+                    }
+                }
+
+                p_domain->seconds_to_wait = 0;
+            }
+        }
 
         _watcher_singleton->get_device_watcher()->foreach_device(
             [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool
