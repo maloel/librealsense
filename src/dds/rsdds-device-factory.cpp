@@ -185,8 +185,10 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
             std::lock_guard< std::mutex > lock( p_domain->wait_mutex );
             if( p_domain->seconds_to_wait > 0 )
             {
-                // do this within the mutex: if multiple threads all try to query_devices, the others will
-                LOG_DEBUG( "waiting " << p_domain->seconds_to_wait << " seconds for devices on domain " << participant->domain_id() << " ..." );
+                // do this within the mutex: if multiple threads all try to query_devices, the others will also wait
+                // until we're done
+                LOG_DEBUG( "waiting " << p_domain->seconds_to_wait << " seconds for devices on domain "
+                                      << participant->domain_id() << " ..." );
 
                 // Set up a separate counter: if no new participants in the last 2 seconds, quit
                 auto listener = participant->create_listener();
