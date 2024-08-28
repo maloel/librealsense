@@ -2,7 +2,7 @@
 // Copyright(c) 2024 Intel Corporation. All Rights Reserved.
 #pragma once
 
-// Command-Line Interface for out tools/examples/etc.
+// Command-Line Interface for our tools/examples/etc.
 // Requires that 'tclap' be added to project dependencies!
 
 #include <tclap/CmdLine.h>
@@ -188,6 +188,7 @@ public:
 //      --eth
 //      --eth-only
 //      --no-eth
+//      --domain-id <0-232>
 //
 class cli : public cli_no_dds
 {
@@ -198,7 +199,7 @@ public:
         : super( tool_name, version_string )
         , eth_arg( "eth", "Use DDS devices, even if disabled" )
         , eth_only_arg( "eth-only", "Use ONLY DDS devices; do not look for USB/MIPI devices" )
-        , no_eth_arg( "no-eth", "Disable DDS devices, even if enabled" )
+        , no_eth_arg( "no-eth", "Do not detect DDS devices, even if enabled in the configuration" )
         , domain_id_arg( "domain-id", "0-232", 0, "Domain ID to use with DDS devices" )
     {
 #ifdef BUILD_WITH_DDS
