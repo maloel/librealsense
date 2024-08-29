@@ -197,7 +197,7 @@ class cli : public cli_no_dds
 public:
     cli( std::string const & tool_name, std::string const & version_string )
         : super( tool_name, version_string )
-        , eth_arg( "eth", "Use DDS devices, even if disabled" )
+        , eth_arg( "eth", "Detect DDS devices, even if disabled in the configuration" )
         , eth_only_arg( "eth-only", "Use ONLY DDS devices; do not look for USB/MIPI devices" )
         , no_eth_arg( "no-eth", "Do not detect DDS devices, even if enabled in the configuration" )
         , domain_id_arg( "domain-id", "0-232", 0, "Domain ID to use with DDS devices" )
