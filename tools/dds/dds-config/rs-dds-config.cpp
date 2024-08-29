@@ -25,6 +25,7 @@ using rsutils::type::ip_address;
 
 uint32_t const GET_ETH_CONFIG = 0xBB;
 uint32_t const SET_ETH_CONFIG = 0xBA;
+uint32_t const DFU = 0x1E;
 char const * const HWM_FMT = "{4} {04}({4i},{4i},{4i},{4i}) {repeat:}{1}{:}";
 
 
@@ -86,6 +87,19 @@ _output_field< T > setting( const char * name, T const & current, T const & requ
 }
 
 
+void check_hwm_response( uint32_t const opcode, std::vector< uint8_t > & data )
+{
+    int32_t const & code = *reinterpret_cast< int32_t const * >( data.data() );
+    if( data.size() < sizeof( code ) )
+        throw std::runtime_error( rsutils::string::from()
+                                  << "bad response " << rsutils::string::hexdump( data.data(), data.size() ) );
+    if( code != opcode )
+        throw std::runtime_error( rsutils::string::from() << "bad response " << code );
+    LOG_DEBUG( "response: " << rsutils::string::hexdump( data.data(), data.size() ).format( "{4} {repeat:}{1}{:}" ) );
+    data.erase( data.begin(), data.begin() + sizeof( code ) );
+}
+
+
 eth_config get_eth_config( rs2::debug_protocol hwm, bool golden )
 {
     if( ! hwm )
@@ -93,15 +107,7 @@ eth_config get_eth_config( rs2::debug_protocol hwm, bool golden )
     auto cmd = hwm.build_command( GET_ETH_CONFIG, golden ? 0 : 1 );  // 0=golden; 1=actual
     LOG_DEBUG( "cmd: " << rsutils::string::hexdump( cmd.data(), cmd.size() ).format( HWM_FMT ) );
     auto data = hwm.send_and_receive_raw_data( cmd );
-    int32_t const & code = *reinterpret_cast<int32_t const *>(data.data());
-    if( data.size() < sizeof( code ) )
-        throw std::runtime_error( rsutils::string::from()
-                                  << "bad response " << rsutils::string::hexdump( data.data(), data.size() ) );
-    if( code != GET_ETH_CONFIG )
-        throw std::runtime_error( rsutils::string::from() << "bad response " << code );
-    LOG_DEBUG( "response: " << rsutils::string::hexdump( data.data(), data.size() ).format( "{4} {repeat:}{1}{:}" ) );
-    data.erase( data.begin(), data.begin() + sizeof( code ) );
-
+    check_hwm_response( GET_ETH_CONFIG, data );
     return eth_config( data );
 }
 
@@ -125,7 +131,11 @@ bool find_device( rs2::context const & ctx,
                 continue;
             if( ! devices_looked_at.insert( sn ).second )
                 continue;  // insert failed: device was already looked at
-            LOG_DEBUG( "trying " << possible_device.get_description() );
+            if( possible_device.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+                LOG_DEBUG( "trying " << possible_device.get_description() << ", FW version "
+                                     << possible_device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) );
+            else
+                LOG_DEBUG( "trying " << possible_device.get_description() );
             config = get_eth_config( possible_device, golden );
             if( device )
                 throw std::runtime_error( "More than one device is available; please use --serial-number" );
@@ -151,6 +161,7 @@ try
     cli::flag no_reset_arg( "no-reset", "Do not hardware reset after changes are made" );
     cli::flag golden_arg( "golden", "Show R/O golden values vs. current; mutually exclusive with any changes" );
     cli::flag factory_reset_arg( "factory-reset", "Reset settings back to the --golden values" );
+    cli::flag dfu_arg( "dfu", "Put the device in DFU mode" );
     cli::value< std::string > sn_arg( "serial-number", "S/N", "", "Device serial-number to use, if more than one device is available" );
     cli::value< std::string > ip_arg( "ip", "address", "", "Device static IP address to use when DHCP is off" );
     cli::value< std::string > mask_arg( "mask", "1.2.3.4", "", "Device static IP network mask to use when DHCP is off" );
@@ -170,6 +181,7 @@ try
         .arg( disable_arg )
         .arg( golden_arg )
         .arg( factory_reset_arg )
+        .arg( dfu_arg )
         .arg( usb_first_arg )
         .arg( eth_first_arg )
         .arg( dynamic_priority_arg )
@@ -223,21 +235,30 @@ try
     INFO( "Device: " << device.get_description() );
 
     eth_config requested( current );
-    if( golden || factory_reset_arg.isSet() || reset_arg.isSet() )
+    if( golden || factory_reset_arg.isSet() || reset_arg.isSet() || dfu_arg.isSet() )
     {
         if( ip_arg.isSet() || mask_arg.isSet() || usb_first_arg.isSet() || eth_first_arg.isSet()
             || dynamic_priority_arg.isSet() || link_timeout_arg.isSet() || dhcp_arg.isSet() || dhcp_timeout_arg.isSet() )
         {
             throw std::runtime_error( "Cannot change any settings with --golden, --factory-reset, or --reset" );
         }
-        if( golden + factory_reset_arg.isSet() + reset_arg.isSet() > 1 )
+        if( golden + factory_reset_arg.isSet() + reset_arg.isSet() + dfu_arg.isSet() > 1 )
         {
-            throw std::runtime_error( "Mutually exclusive: --golden, --factory-reset, and --reset" );
+            throw std::runtime_error( "Mutually exclusive: --golden, --factory-reset, --dfu, and --reset" );
         }
         if( reset_arg.isSet() )
         {
             INFO( "Resetting..." );
             device.hardware_reset();
+            return EXIT_SUCCESS;
+        }
+        if( dfu_arg.isSet() )
+        {
+            rs2::debug_protocol hwm = device;
+            auto cmd = hwm.build_command( DFU, 1 );
+            LOG_DEBUG( "cmd: " << rsutils::string::hexdump( cmd.data(), cmd.size() ).format( HWM_FMT ) );
+            auto data = hwm.send_and_receive_raw_data( cmd );
+            check_hwm_response( DFU, data );
             return EXIT_SUCCESS;
         }
         if( factory_reset_arg.isSet() )
