@@ -75,7 +75,8 @@ struct domain_context
 {
     rsutils::shared_ptr_singleton< realdds::dds_participant > participant;
     rsutils::shared_ptr_singleton< rsdds_watcher_singleton > device_watcher;
-    int seconds_to_wait = 0;
+    int query_devices_max = 0;
+    int query_devices_min = 0;
     std::mutex wait_mutex;
 };
 //
@@ -129,10 +130,13 @@ rsdds_device_factory::rsdds_device_factory( std::shared_ptr< context > const & c
             // qos will get further overriden with the settings we pass in
             _participant->init( domain_id, qos, dds_settings.default_object() );
 
-            // allow a certain number of seconds to wait for devices to appear
-            domain.seconds_to_wait
-                = dds_settings.nested( std::string( "query-wait-time", 15 ), &json::is_number_integer )
+            // allow a certain number of seconds to wait for devices to appear (if set to 0, no waiting will occur)
+            domain.query_devices_max
+                = dds_settings.nested( std::string( "query-devices-max", 17 ), &json::is_number_integer )
                       .default_value( 5 );
+            domain.query_devices_min
+                = dds_settings.nested( std::string( "query-devices-min", 17 ), &json::is_number_integer )
+                      .default_value( 3 );
         }
         else if( participant_name_j.exists() && participant_name != _participant->name() )
         {
@@ -183,31 +187,49 @@ std::vector< std::shared_ptr< device_info > > rsdds_device_factory::query_device
         if( p_domain )
         {
             std::lock_guard< std::mutex > lock( p_domain->wait_mutex );
-            if( p_domain->seconds_to_wait > 0 )
+            if( p_domain->query_devices_max > 0 )
             {
-                // do this within the mutex: if multiple threads all try to query_devices, the others will also wait
-                // until we're done
-                LOG_DEBUG( "waiting " << p_domain->seconds_to_wait << " seconds for devices on domain "
-                                      << participant->domain_id() << " ..." );
+                // Wait for devices the first time (per domain)
+                // Do this with the mutex locked: if multiple threads all try to query_devices, the others will also
+                // wait until we're done
+                int timeout = p_domain->query_devices_max;
+                p_domain->query_devices_max = 0;
 
-                // Set up a separate counter: if no new participants in the last 2 seconds, quit
+                // We have to wait a minimum amount of time; this time really depends on several factors including
+                // network variables:
+                //      - the camera's announcement-period needs to fit into this time (e.g., if the camera announces
+                //        every 10 seconds then we might miss its announcement if we only wait 5); our cameras currently
+                //        have a period of 1.5 seconds
+                if( timeout <= p_domain->query_devices_min )
+                {
+                    timeout = p_domain->query_devices_min;
+                    LOG_DEBUG( "waiting " << timeout << " seconds for devices on domain " << participant->domain_id() << " ..." );
+                }
+                else
+                {
+                    LOG_DEBUG( "waiting " << p_domain->query_devices_min << '-' << timeout
+                                          << " seconds for devices on domain " << participant->domain_id() << " ..." );
+                }
+
+                // New devices take a bit of time (less than 2 seconds, though) to initialize, but they'll be preceeded
+                // with a new participant notification. So we set up a separate timer and short-circuit if the minimum
+                // time has elapsed and we haven't seen any new participants in the last 2 seconds:
                 auto listener = participant->create_listener();
-                std::atomic< int > seconds_left( 2 );
-                listener->on_participant_added( [&]( realdds::dds_guid, char const * ) { seconds_left = 2; } );
+                std::atomic< int > seconds_left( p_domain->query_devices_min );
+                listener->on_participant_added( [&]( realdds::dds_guid, char const * )
+                                                { seconds_left = std::max( seconds_left.load(), 2 ); } );
 
                 while( true )
                 {
                     std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-                    if( --p_domain->seconds_to_wait <= 0 )
-                        break;
+                    if( --timeout <= 0 )
+                        break;  // max time exceeded - can't wait any more
                     if( --seconds_left <= 0 )
                     {
-                        LOG_DEBUG( "no new participants; stopping wait with " << p_domain->seconds_to_wait << " seconds left" );
+                        LOG_DEBUG( "query_devices wait stopped with " << timeout << " seconds left" );
                         break;
                     }
                 }
-
-                p_domain->seconds_to_wait = 0;
             }
         }
 
