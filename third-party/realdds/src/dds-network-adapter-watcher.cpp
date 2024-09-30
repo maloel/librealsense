@@ -136,7 +136,7 @@ static rsutils::shared_ptr_singleton< network_adapter_watcher_singleton > the_ad
 dds_network_adapter_watcher::dds_network_adapter_watcher( callback && cb )
     : _singleton( detail::the_adapter_watcher.instance() )  // keep it alive
     , _subscription( _singleton->callbacks.subscribe(
-          [cb]( ip_set const & new_ips, ip_set const & old_ips ) { cb(); } ) )
+          [cb]( ip_set const & new_ips, ip_set const & old_ips ) { cb( new_ips, old_ips ); } ) )
 {
     // As long as someone keeps a pointer to a dds_network_adapter_watcher, the singleton will be kept alive and it will
     // watch for changes; as soon as all instances disappear, the singleton will disappear and the watch should stop.

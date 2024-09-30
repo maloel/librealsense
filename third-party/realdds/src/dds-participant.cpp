@@ -258,11 +258,29 @@ void dds_participant::init( dds_domain_id domain_id, qos & pqos, rsutils::json c
     else
         DDS_THROW( runtime_error, "provided settings are invalid: " << settings );
 
+    using ip_set = dds_network_adapter_watcher::ip_set;
     _adapter_watcher = std::make_shared< dds_network_adapter_watcher >(
-        [this]
+        [this, known_ips = std::make_shared< ip_set >()]( ip_set const & new_ips, ip_set const & old_ips )
         {
-            LOG_DEBUG( name() << ": refreshing QoS" );
-            refresh_qos();
+            for( auto const & ip : old_ips )
+            {
+                if( known_ips->insert( ip ).second )
+                    LOG_DEBUG( name() << ": +known " << ip );
+            }
+            bool refresh = false;
+            for( auto const & ip : new_ips )
+            {
+                if( known_ips->insert( ip ).second )
+                {
+                    LOG_DEBUG( name() << ": +known " << ip );
+                    refresh = true;
+                }
+            }
+            if( refresh )
+            {
+                LOG_DEBUG( name() << ": refreshing QoS" );
+                refresh_qos();
+            }
         } );
 
     LOG_DEBUG( "participant " << realdds::print_raw_guid( guid() ) << " " << pqos << "\nis up on domain " << domain_id

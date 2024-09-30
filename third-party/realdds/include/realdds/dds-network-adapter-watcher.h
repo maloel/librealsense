@@ -28,11 +28,11 @@ class dds_network_adapter_watcher
     rsutils::subscription _subscription;
 
 public:
-    using callback = std::function< void() >;
+    using ip_set = std::set< std::string >;
+    using callback = std::function< void( ip_set const & /*new_ips*/, ip_set const & /*old_ips*/ ) >;
 
     dds_network_adapter_watcher( callback && );
 
-    using ip_set = std::set< std::string >;
     static ip_set current_ips();
 };
 
