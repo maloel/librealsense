@@ -230,7 +230,7 @@ void formats_converter::prepare_to_convert( stream_profiles from_profiles )
     clear_active_cache();
 
     // Add missing data to target profiles (was not available during get_all_possible_target_profiles)
-    update_target_profiles_data( from_profiles );
+    //update_target_profiles_data( from_profiles );
 
     // Caching from_profiles to set as processed frames profile before calling user callback
     cache_from_profiles( from_profiles );
