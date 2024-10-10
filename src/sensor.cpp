@@ -567,6 +567,10 @@ void log_callback_end( uint32_t fps,
         {
         case format_conversion::basic:
             _formats_converter.drop_non_basic_formats();
+            result_profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles(),
+                                                                            true /*add_missing_identities*/ );
+            break;
+
             // fall-thru
         case format_conversion::full:
             result_profiles = _formats_converter.get_all_possible_profiles( get_raw_stream_profiles() );

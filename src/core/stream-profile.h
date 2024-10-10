@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <librealsense2/h/rs_sensor.h>
 #include <functional>  // std::hash
 #include <utility>     // std::swap
 #include <cstdint>
+#include <iosfwd>
 
 
 namespace librealsense {
@@ -70,6 +70,9 @@ inline bool operator<( const stream_profile & lhs, const stream_profile & rhs )
         return lhs.index < rhs.index;
     return lhs.stream < rhs.stream;
 }
+
+
+std::ostream & operator<<( std::ostream &, stream_profile const & );
 
 
 }  // namespace librealsense

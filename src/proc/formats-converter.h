@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2023-4 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include "processing-blocks-factory.h"
@@ -29,11 +28,10 @@ namespace librealsense
         void register_converters( const std::vector< processing_block_factory > & pbfs );
         void clear_registered_converters();
 
-        // Don't convert to types other then the raw camera formats (use only identity formats)
-        // Convert only interleaved formats (Y8I, Y12I), no colored infrared.
+        // Drop every format that's not identity, with some exceptions
         void drop_non_basic_formats();
 
-        stream_profiles get_all_possible_profiles( const stream_profiles & raw_profiles );
+        stream_profiles get_all_possible_profiles( const stream_profiles & raw_profiles, bool add_missing_identities = false );
         void prepare_to_convert( stream_profiles to_profiles );
 
         stream_profiles get_active_source_profiles() const;

@@ -1,12 +1,25 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2017-24 Intel Corporation. All Rights Reserved.
 
 #include "processing-blocks-factory.h"
-
 #include "stream.h"
+
+#include <ostream>
+
 
 namespace librealsense
 {
+    std::ostream & operator<<( std::ostream & os, processing_block_factory const & pbf )
+    {
+        for( auto & source : pbf.get_source_info() )
+            os << source;
+        os << " -> ";
+        for( auto & target : pbf.get_target_info() )
+            os << target;
+        return os;
+    }
+
+
     processing_block_factory::processing_block_factory(const std::vector<stream_profile>& from, const std::vector<stream_profile>& to, std::function<std::shared_ptr<processing_block>(void)> generate_func) :
         _source_info(from), _target_info(to), generate_processing_block(generate_func)
     {}

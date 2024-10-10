@@ -17,6 +17,22 @@ long & indent_flag( std::ios_base & s )
 }
 
 
+static long & first_flag( std::ios_base & s )
+{
+    static int const index = std::ios_base::xalloc();
+    return s.iword( index );
+}
+
+
+inline bool is_first( std::ios_base & s ) { return first_flag( s ) > 0; }
+inline bool set_first( std::ios_base & s, bool f = true )
+{
+    bool was_first = is_first( s );
+    first_flag( s ) = (long)f;
+    return was_first;
+}
+
+
 std::ostream & operator<<( std::ostream & os, indent const & indent )
 {
     add_indent( os, indent.d );
@@ -26,7 +42,9 @@ std::ostream & operator<<( std::ostream & os, indent const & indent )
 
 /*static*/ std::ostream & field::sameline( std::ostream & os )
 {
-    return os << ' ';
+    if( ! set_first( os, false ) )
+        os << ' ';
+    return os;
 }
 
 
@@ -37,6 +55,7 @@ std::ostream & operator<<( std::ostream & os, indent const & indent )
         os << '\n';
         while( i-- )
             os << ' ';
+        set_first( os, true );
     }
     else
     {
@@ -48,7 +67,31 @@ std::ostream & operator<<( std::ostream & os, indent const & indent )
 
 /*static*/ std::ostream & field::value( std::ostream & os )
 {
-    os << ' ';
+    if( ! set_first( os, false ) )
+        os << ' ';
+    return os;
+}
+
+
+/*static*/ std::ostream & field::first( std::ostream & os )
+{
+    set_first( os, true );
+    return os;
+}
+
+
+/*static*/ std::ostream & field::group::start( std::ostream & os )
+{
+    os << '[';
+    set_first( os, true );
+    return os;
+}
+
+
+/*static*/ std::ostream & field::group::end( std::ostream & os )
+{
+    os << ']';
+    set_first( os, false );
     return os;
 }
 
@@ -58,7 +101,7 @@ std::ostream & operator<<( std::ostream & os, field::group const & group )
     if( has_indent( os ) )
         os << indent();
     else
-        os << "[";
+        os << field::group::start;
     group.pos = &os;
     return os;
 }
@@ -71,7 +114,7 @@ field::group::~group()
         if( has_indent( *pos ) )
             *pos << unindent();
         else
-            *pos << " ]";
+            *pos << field::group::end;
     }
 }
 

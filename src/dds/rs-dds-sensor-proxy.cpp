@@ -25,6 +25,7 @@
 
 #include <src/proc/color-formats-converter.h>
 #include <src/proc/y12i-to-y16y16.h>
+#include <src/proc/y8i-to-y8y8.h>
 
 #include <rsutils/json.h>
 using rsutils::json;
@@ -180,6 +181,11 @@ void dds_sensor_proxy::register_basic_converters()
         { RS2_FORMAT_Y12I },
         { { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1 }, { RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2 } },
         []() { return std::make_shared< y12i_to_y16y16 >(); } );
+    _formats_converter.register_converter(
+        { RS2_FORMAT_Y8I },
+        { { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1 }, { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2 } },
+        []() { return std::make_shared< y8i_to_y8y8 >(); }
+    ); // L+R
 
     // Motion
     _formats_converter.register_converter( processing_block_factory::create_id_pbf( RS2_FORMAT_COMBINED_MOTION, RS2_STREAM_MOTION ) );

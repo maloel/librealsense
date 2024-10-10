@@ -7,7 +7,10 @@
 #include <src/core/frame-callback.h>
 
 #include <rsutils/string/from.h>
+#include <rsutils/ios/field.h>
 #include <ostream>
+
+using rsutils::ios::field;
 
 namespace librealsense
 {
@@ -37,6 +40,9 @@ void formats_converter::clear_registered_converters()
 
 void formats_converter::drop_non_basic_formats()
 {
+    // Drop every format that's not identity, with the following exceptions:
+    //      - Colored IR is dropped, even though it is identity
+
     for( size_t i = 0; i < _pb_factories.size(); ++i )
     {
         const auto & source = _pb_factories[i]->get_source_info();
@@ -63,6 +69,7 @@ void formats_converter::drop_non_basic_formats()
             continue; // Convert interleaved formats.
 
         // Remove unwanted converters. Move to last element in vector and pop it out.
+        LOG_DEBUG( "stripping processing block: " << *_pb_factories[i] );
         if( i != ( _pb_factories.size() -1 ) )
             std::swap( _pb_factories[i], _pb_factories.back() );
         _pb_factories.pop_back();
@@ -91,7 +98,25 @@ std::ostream & operator<<( std::ostream & os, const std::shared_ptr< stream_prof
     return os;
 }
 
-stream_profiles formats_converter::get_all_possible_profiles( const stream_profiles & raw_profiles )
+std::ostream & operator<<( std::ostream & os, stream_profile const & profile )
+{
+    os << field::group::start;
+    if( profile.stream != RS2_STREAM_ANY )
+        os << field::separator << rs2_stream_to_string( profile.stream );
+    if( profile.index )
+        os << field::separator << profile.index;
+    if( profile.width + profile.height )
+        os << field::separator << profile.width << "x" << profile.height;
+    if( profile.format != RS2_FORMAT_ANY )
+        os << field::separator << rs2_format_to_string( profile.format );
+    if( profile.fps )
+        os << field::separator << "@ " << profile.fps << " Hz";
+    os << field::group::end;
+    return os;
+}
+
+stream_profiles formats_converter::get_all_possible_profiles( const stream_profiles & raw_profiles,
+                                                              bool add_missing_identities )
 {
     // For each profile that can be used as input check all registered factories if they can create
     // a converter from the profile format (source). If so, create appropriate profiles for all possible target formats
@@ -102,6 +127,8 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
     for( auto & raw_profile : raw_profiles )
     {
         //LOG_DEBUG( "Raw profile: " << raw_profile );
+        bool found_factory = false;
+        bool found_identity = false;
         for( auto & pbf : _pb_factories )
         {
             const auto & sources = pbf->get_source_info();
@@ -110,6 +137,8 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                 if( source.format == raw_profile->get_format() &&
                    ( source.stream == raw_profile->get_stream_type() || source.stream == RS2_STREAM_ANY ) )
                 {
+                    found_factory = true;
+
                     // targets are saved with format, type and sometimes index. Updating fps and resolution before using as key
                     for( const auto & target : pbf->get_target_info() )
                     {
@@ -118,6 +147,9 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                         // Currently for infrared streams only.
                         if( source.stream == RS2_STREAM_INFRARED && raw_profile->get_stream_index() != target.index )
                             continue;
+
+                        if( source.format == target.format )
+                            found_identity = true;
 
                         auto cloned_profile = clone_profile( raw_profile );
                         cloned_profile->set_format( target.format );
@@ -160,6 +192,35 @@ stream_profiles formats_converter::get_all_possible_profiles( const stream_profi
                     }
                 }
             }
+        }
+
+        if( add_missing_identities && ! found_identity )
+        {
+            auto cloned_profile = clone_profile( raw_profile );
+            cloned_profile->set_format( raw_profile->get_format() );
+            cloned_profile->set_stream_index( raw_profile->get_stream_index() );
+            cloned_profile->set_stream_type( raw_profile->get_stream_type() );
+
+            auto pbf = std::make_shared< processing_block_factory >(
+                processing_block_factory::create_id_pbf( raw_profile->get_format(), raw_profile->get_stream_type() ) );
+            LOG_DEBUG( "adding identity processing block: " << *pbf );
+            _pb_factories.push_back( pbf );
+
+            // Cache pbf supported profiles for efficiency in find_pbf_matching_most_profiles
+            _pbf_supported_profiles[pbf.get()].push_back( cloned_profile );
+
+            // Cache mapping of each target profile to profiles it is converting from.
+            // Using map key type stream_profile and calling to_profile because stream_profile_interface is
+            // abstract, can't use as key. shared_ptr< stream_profile_interface > saves pointer as key which
+            // will result in bugs when mapping multiple raw profiles to the same converted profile.
+            _target_profiles_to_raw_profiles[to_profile( cloned_profile.get() )].push_back( raw_profile );
+
+            if( ! is_profile_in_list( cloned_profile, to_profiles ) )
+                to_profiles.push_back( cloned_profile );
+        }
+        else if( ! found_factory )
+        {
+            LOG_WARNING( "no factory found for raw profile: " << raw_profile );
         }
     }
 

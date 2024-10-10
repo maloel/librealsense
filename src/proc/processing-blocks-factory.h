@@ -1,16 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-
+// Copyright(c) 2017-24 Intel Corporation. All Rights Reserved.
 #pragma once
 
 #include <src/core/stream-profile.h>
 #include <src/core/stream-profile-interface.h>
 
-#include <vector>
-
-#include "../types.h"
-
 #include "identity-processing-block.h"
+
+#include <vector>
+#include <iosfwd>
+
 
 namespace librealsense
 {
@@ -67,4 +66,7 @@ namespace librealsense
         std::vector<stream_profile> _target_info;
         std::function<std::shared_ptr<processing_block>(void)> generate_processing_block;
     };
+
+
+    std::ostream & operator<<( std::ostream &, processing_block_factory const & );
 }
